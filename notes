@@ -1,0 +1,11 @@
+10-10-17
+Initialized this repository after doing some work in it
+
+What I have done is download the pairwise comparisons of fst between all populations into the fst folder. I have merged them into PBS with the two references and plotted that a couple of ways.
+
+I also created a pairwise comparison file, converted all fst to zscores and used zkeep column to only keep windows at minimum represented by 20 reads (2000bp-ish).
+
+I have also calculated pi, theta, tajimas D for neutrality in the angsd folder.
+I plotted that several ways to look at global changes in pi, theta, and Tajimas.
+
+I looked at admixture on all chromosomes and k2 and k4 were most supported so I plotted those.
