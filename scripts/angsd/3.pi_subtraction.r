@@ -1,4 +1,4 @@
-pi<-read.table("~/analysis/angsd/pi_5kb",header=TRUE,sep=',')
+pi<-read.table("~/analysis/data/angsd/pi_neut_5kb",header=TRUE,sep=',')
 pi2<-as.data.frame(pi[,4:10])
 
 pops<-c("scaf","start","end","bbvb","bbpb","bbsjsp","bbbnp","bbsp","bbgb",
@@ -6,9 +6,9 @@ pops<-c("scaf","start","end","bbvb","bbpb","bbsjsp","bbbnp","bbsp","bbgb",
         "pbsjsp","pbbnp","pbsp","pbgb",
         "sjspbnp","sjspsp","sjspgb",
         "bnpsp","bnpgb",
-        "spgb")
+        "spgb","keep")
 
-pidiff_temp<-matrix(nrow=1027369,ncol=21)
+pidiff_temp<-matrix(nrow=1026857,ncol=21)
 
 k<-0
 for (i in 1:6)
@@ -29,21 +29,21 @@ library(matrixStats)
 pistdev<-colSds(pidiff_temp,na.rm=TRUE)
 pistdev<-as.matrix(pistdev)
 
-zpi_temp<-matrix(nrow=1027369,ncol=21)
+zpi_temp<-matrix(nrow=1026857,ncol=21)
 
 
 for(i in 1:21)
 {
-  for(k in 1:1027369)
+  for(k in 1:1026857)
   {
     zpi_temp[k,i]<-(pidiff_temp[k,i]-pimeans[i])/pistdev[i]
   }
 }
 
-zpi<-cbind(pi[,1:3],zpi_temp)
+zpi<-cbind(pi[,1:3],zpi_temp,pi[,11])
 colnames(zpi)<-pops
 
-write.table(zpi,"~/analysis/angsd/zpi_keep_5kb",col.names=FALSE,row.names=FALSE,quote=FALSE,sep='\t')
+write.table(zpi,"~/analysis/data/angsd/zpi_keep_5kb",col.names=FALSE,row.names=FALSE,quote=FALSE,sep='\t')
 
 ###Run from here for pi graphs PBS
 
@@ -60,7 +60,7 @@ colnam<-names(distsp)[4:8]
 
 total_dist<-cbind(pidiff[1:3],distsp[colnam]+distgb[match(distsp$Scaf,distgb$Scaf),colnam])
 
-pbs_dist<-matrix(nrow=1027369,ncol=5)
+pbs_dist<-matrix(nrow=1026857,ncol=5)
 for (i in 1:5)
 {
   pbs_dist[,i]<-(total_dist[,i+3]-pidiff[,24])/2
@@ -80,13 +80,13 @@ for (i in 1:5){
   collow[i]<-quantile(pbs_dist[,i+3],prob=.01,na.rm=TRUE)
 }
 
-###DKGB
-pbs_dist[grep("Scaffold1171",pbs_dist$Scaf),]
+###chr1
+pbs_dist[grep("chr1",pbs_dist$Scaf),]
 
-plot(pbs_dist[grep("Scaffold1171",pbs_dist$Scaf),4],pch=20,cex=.8,col="black",ylim=c(-.025,.01))
-points(pbs_dist[grep("Scaffold1171",pbs_dist$Scaf),5],pch=20,cex=.8,col="grey")
-points(pbs_dist[grep("Scaffold1171",pbs_dist$Scaf),6],pch=20,cex=.8,col="red")
-points(pbs_dist[grep("Scaffold1171",pbs_dist$Scaf),7],pch=20,cex=.8,col="darkorange")
-points(pbs_dist[grep("Scaffold1171",pbs_dist$Scaf),8],pch=20,cex=.8,col="gold")
+plot(pbs_dist[grep("chr1",pbs_dist$Scaf),4],pch=20,cex=.8,col="black",ylim=c(-.1,.1))
+points(pbs_dist[grep("chr1",pbs_dist$Scaf),5],pch=20,cex=.8,col="grey")
+points(pbs_dist[grep("chr1",pbs_dist$Scaf),6],pch=20,cex=.8,col="red")
+points(pbs_dist[grep("chr1",pbs_dist$Scaf),7],pch=20,cex=.8,col="darkorange")
+points(pbs_dist[grep("chr1",pbs_dist$Scaf),8],pch=20,cex=.8,col="gold")
 
 abline(h=c(collow),col=c("black","grey","red","darkorange","gold"),lwd=3,lty=3)

@@ -1,6 +1,6 @@
 #Alternative Script
 
-fs <- list.files("~/analysis/angsd/raw/", "*5kb1kb.bed",full.names=TRUE)
+fs <- list.files("~/analysis/data/angsd/raw/", "*5kb1kb.bed",full.names=TRUE)
 neut <- list()
 
 for (i in 1:7){
@@ -16,14 +16,14 @@ nfs <- gsub("_neut_*","",nfs)
 nfs <- gsub("5kb1kb.bed*","",nfs)
 names(neut)<-nfs
 
-source("~/analysis/angsd/scripts/tajimas.r")
+source("~/analysis/scripts/angsd/tajimas.r")
 
 #LEFT OFF HERE
 
 ###Buffalo Bayou loding pi(column6), theta(column4), and counts(columns 5,7)
 
 
-bb<-read.table("~/analysis/angsd/raw/BB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+bb<-read.table("~/analysis/data/angsd/raw/BB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
 colnam<-c("scaf","Start","End","Theta","Tcount","Pi","Pcount")
 colnames(bb)<-colnam
 
@@ -52,7 +52,7 @@ write.table(bbtaj,"~/analysis/angsd/bbtaj",
 
 ###Vince Bayou
 
-vb<-read.table("~/analysis/angsd/raw/VB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+vb<-read.table("~/analysis/data/angsd/raw/VB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
 colnames(vb)<-colnam
 
 vb[,4]<-as.numeric(vb[,4])
@@ -79,7 +79,7 @@ write.table(vbtaj,"~/analysis/angsd/vbtaj",
 
 ###Patrick Bayou
 
-pb<-read.table("~/analysis/angsd/raw/PB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+pb<-read.table("~/analysis/data/angsd/raw/PB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
 colnames(pb)<-colnam
 
 pb[,4]<-as.numeric(pb[,4])
@@ -107,7 +107,7 @@ write.table(pbtaj,"~/analysis/angsd/pbtaj",
 
 ###San Jacinto State Park
 
-sj<-read.table("~/analysis/angsd/raw/SJ_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+sj<-read.table("~/analysis/data/angsd/raw/SJ_neut_5kb1kb.bed",stringsAsFactors=FALSE)
 colnames(sj)<-colnam
 
 sj[,4]<-as.numeric(sj[,4])
@@ -134,7 +134,7 @@ write.table(sjtaj,"~/analysis/angsd/sjtaj",row.names = FALSE,col.names = FALSE,q
 
 ###Baytown Nature Park
 
-bnp<-read.table("~/analysis/angsd/raw/BNP_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+bnp<-read.table("~/analysis/data/angsd/raw/BNP_neut_5kb1kb.bed",stringsAsFactors=FALSE)
 colnames(bnp)<-colnam
 
 bnp[,4]<-as.numeric(bnp[,4])
@@ -162,7 +162,7 @@ write.table(bnptaj,"~/analysis/angsd/bnptaj",
 
 ###Smith Point
 
-sp<-read.table("~/analysis/angsd/raw/SP_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+sp<-read.table("~/analysis/data/angsd/raw/SP_neut_5kb1kb.bed",stringsAsFactors=FALSE)
 colnames(sp)<-colnam
 
 sp[,4]<-as.numeric(sp[,4])
@@ -190,7 +190,7 @@ write.table(sptaj,"~/analysis/angsd/sptaj",
 
 ###Gangs Bayou
 
-gb<-read.table("~/analysis/angsd/raw/GB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+gb<-read.table("~/analysis/data/angsd/raw/GB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
 colnames(gb)<-colnam
 
 gb[,4]<-as.numeric(gb[,4])
@@ -215,6 +215,18 @@ plot(gbtaj,pch=20,cex=0.1)
 write.table(gbtaj,"~/analysis/angsd/gbtaj",
             row.names = FALSE,col.names = FALSE,quote = FALSE)
 
+############################ Calculating coverage
+
+cov<-cbind(bb[1:3],bb[,7],vb[,7],pb[,7],sj[,7],bnp[,7],sp[,7],gb[,7])
+
+nsnps<-cov[,4]
+for (i in 5:10){
+  nsnps <- nsnps + cov[,i]
+}
+nsnps <- nsnps/7
+
+subw <- nsnps > 20
+
 ###
 
 taj<-cbind(bbbase[1:3],bbtaj,vbtaj,pbtaj,sjtaj,bnptaj,sptaj,gbtaj)
@@ -232,10 +244,10 @@ write.csv(theta,file="~/analysis/angsd/thetas_neut_5kb",quote=FALSE,row.names=FA
 
 
 pi<-cbind(bb[1:3],bbbase[5],vbbase[5],pbbase[5],sjbase[5],bnpbase[5],
-          spbase[5],gbbase[5])
-piname<-c("scaf","start","end","bb","vb","pb","sjsp","bnp","sp","gb")
+          spbase[5],gbbase[5],keep=as.numeric(subw))
+piname<-c("scaf","start","end","bb","vb","pb","sj","bnp","sp","gb","keep")
 colnames(pi)<-piname
-write.csv(pi,file="~/analysis/angsd/pi_neut_5kb",quote=FALSE,row.names=FALSE)
+write.csv(pi,file="~/analysis/data/angsd/pi_neut_5kb",quote=FALSE,row.names=FALSE)
 
 ########
 

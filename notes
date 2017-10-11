@@ -9,3 +9,7 @@ I have also calculated pi, theta, tajimas D for neutrality in the angsd folder.
 I plotted that several ways to look at global changes in pi, theta, and Tajimas.
 
 I looked at admixture on all chromosomes and k2 and k4 were most supported so I plotted those.
+
+added a keep section to pi_5kb
+
+Read both zfst and zpi into R and subtracted zpi from zfst with a loop. Creates windows of interest for both high divergence and low diversity

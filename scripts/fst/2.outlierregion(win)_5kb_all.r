@@ -3,9 +3,9 @@
 #              bnppbs=BNPpbs,keep=as.numeric(subw)) ###forallpops###,
 
 
-#write.table(Allpbs,file="~/share/fst/Allpbs50kb",row.names=FALSE,col.names=FALSE,quote=FALSE,sep="\t")
+#write.table(Allpbs,file="~/share/data/fst/Allpbs50kb",row.names=FALSE,col.names=FALSE,quote=FALSE,sep="\t")
 
-pbs<-read.table("~/analysis/fst/allpbs5kb",header=FALSE,stringsAsFactors = FALSE)
+pbs<-read.table("~/analysis/data/fst/allpbs5kb",header=FALSE,stringsAsFactors = FALSE)
 pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs","keep")
 colnames(pbs)<-pbsname
 
@@ -45,7 +45,7 @@ awk '$4>0.2533448 || $5>0.1461146  || $6>0.1765786 || $7>0.2164984 || $8>0.05471
 
 #Put it back into R to look at it
 
-read.table("~/analysis/fst/PBSoutliers_5kb_all.bed",stringsAsFactors=FALSE)->PBSout
+read.table("~/analysis/data/fst/PBSoutliers_5kb_all.bed",stringsAsFactors=FALSE)->PBSout
 colnames(PBSout)<- c("Scaf","start","end","BBsum", "BBcount","VBsum","VBcount","PBsum","PBcount","SJsum","SJcount","BNPsum","BNPcount")
 
 ###############################
@@ -75,10 +75,10 @@ points(PBSout[ord2,"BNPsum"],col="gold",pch=20,cex=3)
 legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red","darkorange2","gold"),
        pch=20,cex=2.3,bty="n",y.intersp=.5,x.intersp=.5)
 
-
-
 size<-PBSout[,3]-PBSout[,2]
 quantile(size)
 sized<-density(size,na.rm=TRUE)
 plot(sized)
 polygon(sized,col='black',density=50)
+
+head(PBSout[ord2,],n=30)
