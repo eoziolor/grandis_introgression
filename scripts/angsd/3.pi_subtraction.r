@@ -83,10 +83,17 @@ for (i in 1:5){
 ###chr1
 pbs_dist[grep("chr1",pbs_dist$Scaf),]
 
-plot(pbs_dist[grep("chr1",pbs_dist$Scaf),4],pch=20,cex=.8,col="black",ylim=c(-.1,.1))
+plot(pbs_dist[grep("chr1",pbs_dist$Scaf),4],pch=20,cex=.8,col="black",ylim=c(-.1,.1),
+     ylab="delta pi (lower means resistant populations have lower diversity)",
+     xlab="chr1 position")
 points(pbs_dist[grep("chr1",pbs_dist$Scaf),5],pch=20,cex=.8,col="grey")
 points(pbs_dist[grep("chr1",pbs_dist$Scaf),6],pch=20,cex=.8,col="red")
 points(pbs_dist[grep("chr1",pbs_dist$Scaf),7],pch=20,cex=.8,col="darkorange")
 points(pbs_dist[grep("chr1",pbs_dist$Scaf),8],pch=20,cex=.8,col="gold")
 
 abline(h=c(collow),col=c("black","grey","red","darkorange","gold"),lwd=3,lty=3)
+
+legend(x=c(300000,350000),y=c(.05,.1),c("BB","VB","PB","SJSP","BNP"),pch=20,cex=1.2,
+       col=c("black","grey","red","darkorange","gold"), x.intersp=.3,y.intersp=.6)
+
+
