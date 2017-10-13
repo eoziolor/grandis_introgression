@@ -96,4 +96,11 @@ abline(h=c(collow),col=c("black","grey","red","darkorange","gold"),lwd=3,lty=3)
 legend(x=c(300000,350000),y=c(.05,.1),c("BB","VB","PB","SJSP","BNP"),pch=20,cex=1.2,
        col=c("black","grey","red","darkorange","gold"), x.intersp=.3,y.intersp=.6)
 
-
+#chr1 pi
+plot(pi[grep("chr1",pi$scaf),4],pch=20,cex=.5,col="black",ylim=c(-.1,.4))
+points(pi[grep("chr1",pi$scaf),5],pch=20,cex=.5,col="grey",ylim=c(-.1,.4))
+points(pi[grep("chr1",pi$scaf),6],pch=20,cex=.5,col="red",ylim=c(-.1,.4))
+points(pi[grep("chr1",pi$scaf),7],pch=20,cex=.5,col="darkorange",ylim=c(-.1,.4))
+points(pi[grep("chr1",pi$scaf),8],pch=20,cex=.5,col="gold",ylim=c(-.1,.4))
+points(pi[grep("chr1",pi$scaf),9],pch=20,cex=.5,col="cyan",ylim=c(-.1,.4))
+points(pi[grep("chr1",pi$scaf),10],pch=20,cex=.5,col="blue",ylim=c(-.1,.4))
