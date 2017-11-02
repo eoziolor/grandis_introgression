@@ -62,21 +62,21 @@ for (i in 1:7097){
 ord<-order(interest,decreasing=TRUE)
 
 par(mfrow=c(1,1))
-plot(pbs_dist[ord,4],col='black',pch=20,cex=0.5)
-points(pbs_dist[ord,5],col='red',pch=20,cex=0.5)
-points(pbs_dist[ord,6],col='orange',pch=20,cex=0.5)
-points(pbs_dist[ord,7],col='blue',pch=20,cex=0.5)
-points(pbs_dist[ord,8],col='green',pch=20,cex=0.5)
+plot(pbs_dist[ord,4],col='black',pch=20,cex=0.8)
+points(pbs_dist[ord,5],col='grey',pch=20,cex=0.8)
+points(pbs_dist[ord,6],col='red',pch=20,cex=0.8)
+points(pbs_dist[ord,7],col='darkorange',pch=20,cex=0.8)
+points(pbs_dist[ord,8],col='gold',pch=20,cex=0.8)
 
 #############################
 #superlimited
 
 ordlim<-ord[c(1:100)]
 plot(pbs_dist[ordlim,4],col='black',pch=20,cex=0.8)
-points(pbs_dist[ordlim,5],col='red',pch=20,cex=0.8)
-points(pbs_dist[ordlim,6],col='orange',pch=20,cex=0.8)
-points(pbs_dist[ordlim,7],col='blue',pch=20,cex=0.8)
-points(pbs_dist[ordlim,8],col='green',pch=20,cex=0.8)
+points(pbs_dist[ordlim,5],col='grey',pch=20,cex=0.8)
+points(pbs_dist[ordlim,6],col='red',pch=20,cex=0.8)
+points(pbs_dist[ordlim,7],col='darkorange',pch=20,cex=0.8)
+points(pbs_dist[ordlim,8],col='gold',pch=20,cex=0.8)
 
 
 ###################
@@ -95,7 +95,7 @@ legend(x=c(80,92),y=c(2800,4200),c("BB","VB","PB","SJSP","BNP"),pch=20,cex=1.7,
        col=c("black","grey","red","darkorange","gold"), x.intersp=.3,y.intersp=.6)
 
 
-
+write.table(pbs_dist[ordlim,1:3],"~/analysis/data/dfst/top50.bed",row.names=FALSE,quote=FALSE,col.names=FALSE,sep="\t")
 
 
 
