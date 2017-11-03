@@ -169,28 +169,28 @@ table(copies_per_ind[,c(1,3)]) %>%
 	(function(x){barplot(x,beside=TRUE)})
 
 
-###assign NBH individuals to haplogroups
-subl <- hap[,1]>850000&hap[,1]<900000
-subi <- gsub("_.","",colnames(hap))%in%rownames(copies_per_ind[copies_per_ind[,2]>=0&grepl("NBH|BI",copies_per_ind[,3]),])
-dist(t(hap[subl,subi]),method="manhattan") %>% hclust() %>% plot(.,cex=.75)
-hap[subl,subi] %>%
-	t() %>%
-	dist(.,method="manhattan") %>%
-	(function(x){ hclust(x)$order}) %>%
-	(hap[,subi])[,.] %>%
-	cbind(0,.) %>%
-	pimage(.)
-
-hapgrps <- hap[subl,subi] %>% t() %>% dist(.,method="manhattan") %>%
-	(function(x){ 
-		x <- hclust(x) 
-		x <- cutree(x,5)
-		x <- cbind(sam=gsub("_.","",names(x)),grp=x)
-		x
-		}) 
-hapgrps2 <- hapgrps %>% data.frame() %>% group_by(.,sam) %>% summarize(.,haps=paste(sort(grp),sep="",collapse="_")) %>% data.frame()
-rownames(hapgrps2) <- hapgrps2[,1]
-
+# ###assign NBH individuals to haplogroups
+# subl <- hap[,1]>850000&hap[,1]<900000
+# subi <- gsub("_.","",colnames(hap))%in%rownames(copies_per_ind[copies_per_ind[,2]>=0&grepl("NBH|BI",copies_per_ind[,3]),])
+# dist(t(hap[subl,subi]),method="manhattan") %>% hclust() %>% plot(.,cex=.75)
+# hap[subl,subi] %>%
+# 	t() %>%
+# 	dist(.,method="manhattan") %>%
+# 	(function(x){ hclust(x)$order}) %>%
+# 	(hap[,subi])[,.] %>%
+# 	cbind(0,.) %>%
+# 	pimage(.)
+# 
+# hapgrps <- hap[subl,subi] %>% t() %>% dist(.,method="manhattan") %>%
+# 	(function(x){ 
+# 		x <- hclust(x) 
+# 		x <- cutree(x,5)
+# 		x <- cbind(sam=gsub("_.","",names(x)),grp=x)
+# 		x
+# 		}) 
+# hapgrps2 <- hapgrps %>% data.frame() %>% group_by(.,sam) %>% summarize(.,haps=paste(sort(grp),sep="",collapse="_")) %>% data.frame()
+# rownames(hapgrps2) <- hapgrps2[,1]
+# 
 
 
 # return allele frequency given population, sex, data frame containing genotypes
@@ -231,7 +231,7 @@ subsmooth <- function(vec,by=10,width=1000){
 
 #smooth and subsample depth
 depsub <- as.data.frame(apply(dep[,-c(1,2)],MAR=2,FUN=subsmooth,by=20,width=500))
-depsub <- cbind("Scaffold10074",dep[seq(from=20,to=dim(dep)[1],by=20),2],depsub)
+depsub <- cbind("Chr1sub",dep[seq(from=20,to=dim(dep)[1],by=20),2],depsub)
 colnames(depsub)[1:2] <- c("scaffold","pos")
 
 par(mfrow=c(2,1),mar=c(2,2,1.5,0.5))
