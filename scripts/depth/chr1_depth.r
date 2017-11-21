@@ -16,13 +16,15 @@ colnames(gb)<-names
 
 #Just deletion
 plot(log(2*bb[700:900,6]),pch=20,cex=0.7,col="black",ylab="log raw read coverage over 5kb chunks",xlab="chunk between 600-1000kb inside chr1",
-     cex.lab=1.5,cex.axis=1.5)
-points(log(vb[700:900,6]),pch=20,cex=0.7,col="grey")
-points(log(pb[700:900,6]),pch=20,cex=0.7,col="red")
-points(log(2*sj[700:900,6]),pch=20,cex=0.7,col="darkorange")
-points(log(bnp[700:900,6]),pch=20,cex=0.7,col="gold")
-points(log(sp[700:900,6]),pch=20,cex=0.7,col="cyan")
+     cex.lab=1.5,cex.axis=1.5,ylim=c(3,9))
+points(log(vb[700:900,6]),pch=20,cex=0.7,col="black")
+points(log(pb[700:900,6]),pch=20,cex=0.7,col="black")
+points(log(2*sj[700:900,6]),pch=20,cex=0.7,col="red")
+points(log(bnp[700:900,6]),pch=20,cex=0.7,col="red")
+points(log(sp[700:900,6]),pch=20,cex=0.7,col="blue")
 points(log(gb[700:900,6]),pch=20,cex=0.7,col="blue")
+
+legend('bottomright',legend=c("reference","resistant"),col=c("blue","black"),pch=20,cex=1.6)
 
 #Relative to GB
 plot(log(2*bb[600:1000,6]/gb[600:1000,6]),pch=20,cex=0.7,col="black",ylab="log raw read coverage over 5kb chunks",xlab="chunk between 600-1000kb inside chr1",

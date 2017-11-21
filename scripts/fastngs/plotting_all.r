@@ -39,17 +39,17 @@ kall<-rbind(gb[gbord,],sp[spord,],bnp[bnpord,],sj[sjord,],pb[pbord,],vb[vbord,],
 kall<-na.omit(kall)
 
 par(mfrow=c(1,1))
-barplot(t(as.matrix(kall)),col=c("deepskyblue2","black"), ylab="Likelihood of belonging to reference or resistant genotype",
+barplot(t(as.matrix(kall)),col=c("deepskyblue2","black"), ylab="Likelihood of belonging",
         border=NA, xaxt="n",space=0,
-        cex.lab=1.5,cex.axis=1.5)
+        cex.lab=1.5,cex.axis=1.3)
 
-abline(b=0,v=c(0,48,96,144,168,215,264,288),col="grey50",lwd=3)
-abline(a=0,b=0,col="black",lwd=3)
-abline(h=c(0.25,.5,.75),col="purple",lwd=1.5,lty=5)
+# abline(b=0,v=c(0,48,96,144,168,215,264,288),col="grey50",lwd=3)
+# abline(a=0,b=0,col="black",lwd=3)
+# abline(h=c(0.25,.5,.75),col="purple",lwd=1.5,lty=5)
 
 ax<-c(24,72,124,156,192,240,276)
 axnames<-c("GB","SP","BNP", "SJ","PB","VB","BB")
-axis(side=1,at= ax, labels = axnames,tck=-.03)
+axis(side=1,at= ax, labels = axnames,tck=-.03,cex=1.5)
 
 ###histograms and densities
 
@@ -74,22 +74,22 @@ lines(gbh,col="blue")
 par(mfrow=c(2,1),mar=c(2,4,1,1))
 
 plot(bbh,col="black",ylim=c(0,7),xlim=c(-.2,1.2),
-     main="Bimodality suggests admixture through migration",xaxt='n',
-     cex.axis=1.2,lwd=2)
-lines(vbh,col="grey50",lwd=2)
-lines(pbh,col="red",lwd=2)
+     main="",xaxt='n',
+     cex.axis=1.2,lwd=2,bty="l")
+lines(vbh,col="black",lwd=2)
+lines(pbh,col="black",lwd=2)
 
-legend('topright',legend=c("BB","VB","PB"),col=c("black","grey","red","darkorange2","gold"),
-       pch=20,cex=1.2,bty="n",y.intersp=.5,x.intersp=.5)
+legend('topright',legend=c("resistant","intermediate","reference"),col=c("black","red","blue"),
+       pch=20,cex=1.5,bty="n",y.intersp=1,x.intersp=.5)
 
-plot(sjh,col="darkorange",ylim=c(0,48),xlim=c(-.2,1.2),main='K0 is reference genotype, K1 is resistant',
-     cex.axis=1.2,lwd=2)
-lines(bnph,col="gold",lwd=2)
-lines(sph,col="cyan",lwd=2)
+plot(sjh,col="red",ylim=c(0,48),xlim=c(-.2,1.2),main="",
+     cex.axis=1.2,lwd=2,bty="l")
+lines(bnph,col="red",lwd=2)
+lines(sph,col="blue",lwd=2)
 lines(gbh,col="blue",lwd=2)
-
-legend('topright',legend=c("SJ","BNP","SP","GB"),col=c("darkorange2","gold","cyan","blue"),
-       pch=20,cex=1.2,bty="n",y.intersp=.5,x.intersp=.5)
+# 
+# legend('topleft',legend=c("intermediate","reference"),col=c("red","blue"),
+#        pch=20,cex=1.5,bty="n",y.intersp=1,x.intersp=.5)
 
 
 ###

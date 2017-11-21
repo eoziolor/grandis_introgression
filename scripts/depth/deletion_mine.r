@@ -420,7 +420,7 @@ Fpopfreqs <- Fpopfreqs[which(rowSums(is.na(Fpopfreqs))==0),]
 tr <- Rcontml(X=t(Fpopfreqs),path="~/phylip-3.696/exe")
 
 #already ran bootstraps, don't re-run unless necessary. 
-trboot <- boot.phylo(tr,t(Fpopfreqs),FUN=function(x){Rcontml(X=x,path="~/phylip-3.696/exe")},trees=TRUE)
+#trboot <- boot.phylo(tr,t(Fpopfreqs),FUN=function(x){Rcontml(X=x,path="~/phylip-3.696/exe")},trees=TRUE)
 
 #for some reason boot.phylo calculates BP wrong. 
 plot(tr,type="unrooted",show.tip.label=FALSE)
