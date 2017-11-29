@@ -70,10 +70,16 @@ distgb2<-cbind(seq=seq(1:1026857),distgb)
 
 total_dist<-cbind(pidiff[1:3],distsp2[colnam]+distgb2[match(distsp2$seq,distgb2$seq),colnam])
 
+# pbs_dist<-matrix(nrow=1026857,ncol=5)
+# for (i in 1:5)
+# {
+#   pbs_dist[,i]<-(total_dist[,i+3]-pidiff[,24])/2
+# }
+
 pbs_dist<-matrix(nrow=1026857,ncol=5)
-for (i in 1:5)
+for(i in 1:5)
 {
-  pbs_dist[,i]<-(total_dist[,i+3]-pidiff[,24])/2
+  pbs_dist[,i]<-total_dist[,i+3]/2
 }
 
 pbs_dist<-cbind(pidiff[,1:3],pbs_dist)
@@ -91,7 +97,7 @@ for (i in 1:5){
 }
 
 ###chr1
-pbs_dist[grep("chr1",pbs_dist$Scaf),]
+#pbs_dist[grep("chr1",pbs_dist$Scaf),]
 
 plot(pbs_dist[grep("chr1\\b",pbs_dist$Scaf),4],pch=20,cex=.8,col="black",ylim=c(-.1,.1),
      ylab="delta pi (lower means resistant populations have lower diversity)",
@@ -114,3 +120,24 @@ points(pi[grep("chr1\\b",pi$scaf),7],pch=20,cex=.5,col="darkorange",ylim=c(-.1,.
 points(pi[grep("chr1\\b",pi$scaf),8],pch=20,cex=.5,col="gold",ylim=c(-.1,.4))
 points(pi[grep("chr1\\b",pi$scaf),9],pch=20,cex=.5,col="cyan",ylim=c(-.1,.4))
 points(pi[grep("chr1\\b",pi$scaf),10],pch=20,cex=.5,col="blue",ylim=c(-.1,.4))
+
+###AIP region (chr2:27525885-27626885)
+
+chr2<-pbs_dist[grep("chr2\\b",pbs_dist$Scaf),]
+plot(chr2[27500:27600,4],pch=20,cex=.5,col="black",ylim=c(-.1,.1))
+points(chr2[27500:27600,5],pch=20,cex=.5,col="grey")
+points(chr2[27500:27600,6],pch=20,cex=.5,col="red")
+points(chr2[27500:27600,7],pch=20,cex=.5,col="darkorange")
+points(chr2[27500:27600,8],pch=20,cex=.5,col="gold")
+
+plot(chr2[27000:28000,4],pch=20,cex=.5,col="black",ylim=c(-.01,.005),
+     xlab="Chr2:27000000:28000000 (in 5kb chunks)",
+     ylab="average difference between res pi and references pi")
+points(chr2[27000:28000,5],pch=20,cex=.5,col="grey")
+points(chr2[27000:28000,6],pch=20,cex=.5,col="red")
+points(chr2[27000:28000,7],pch=20,cex=.5,col="darkorange")
+points(chr2[27000:28000,8],pch=20,cex=.5,col="gold")
+
+legend("topright",y=c(.05,.1),c("BB","VB","PB","SJSP","BNP"),pch=20,cex=1.2,
+       col=c("black","grey","red","darkorange","gold"), x.intersp=.3,y.intersp=.6)
+abline(h=0,col="purple",lty=2)
