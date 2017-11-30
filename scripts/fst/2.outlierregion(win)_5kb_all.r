@@ -82,3 +82,8 @@ plot(sized)
 polygon(sized,col='black',density=50)
 
 head(PBSout[ord2,],n=30)
+
+
+###For region discovery
+
+write.table(PBSout[,1:3],"~/analysis/data/fst/individual_pbs/all_pbs.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)

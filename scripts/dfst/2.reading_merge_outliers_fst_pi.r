@@ -95,7 +95,7 @@ legend(x=c(80,92),y=c(2800,4200),c("BB","VB","PB","SJSP","BNP"),pch=20,cex=1.7,
        col=c("black","grey","red","darkorange","gold"), x.intersp=.3,y.intersp=.6)
 
 
-write.table(pbs_dist[ordlim,1:3],"~/analysis/data/dfst/top50.bed",row.names=FALSE,quote=FALSE,col.names=FALSE,sep="\t")
+write.table(pbs_dist[ordlim,1:3],"~/analysis/data/dfst/top100.txt",row.names=FALSE,quote=FALSE,col.names=FALSE,sep="\t")
 
 
 

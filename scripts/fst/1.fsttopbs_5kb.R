@@ -96,17 +96,13 @@ abline(h=0,col="purple",lty=2)
 
 ###finding neutral regions to do admixture on
 
-pbsalt<- cbind(
-  fst[[1]][,1:3],
-  BB = BBpbs,
-  VB = VBpbs,
-  PB = PBpbs,
-  SJ = SJpbs,
-  BNP = BNPpbs)
+pbs<-read.table("~/analysis/data/fst/allpbs5kb",header=FALSE)
+pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs","keep")
+colnames(pbs)<-pbsname
 
 npbs<-c()
-for (i in 1:112300){
-  npbs[i]<-rowSums((pbsalt[i,4:8])/5)
+for (i in 1:1026857){
+  npbs[i]<-rowSums((pbs[i,4:8])/5)
 }
 subw2<-npbs<0.02
 subw3<-subw+subw2

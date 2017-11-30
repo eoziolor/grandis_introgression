@@ -109,37 +109,8 @@ polygon(pbd,col="red",density=70)
 polygon(sjd,col="darkorange",density=70)
 polygon(bnpd,col="gold",density=70)
 
-###############################
-#ordering controlled by percent of total drive for each population
-BBtot<-sum(PBSout[,4])
-VBtot<-sum(PBSout[,6])
-PBtot<-sum(PBSout[,8])
-SJtot<-sum(PBSout[,10])
-BNPtot<-sum(PBSout[,12])
-
-interest2<-c()
-for (i in 1:2119){
-  interest2<-(PBSout[,4]/BBtot)*100+(PBSout[,6]/VBtot)*100+(PBSout[,8]/PBtot)*100+(PBSout[,10]/SJtot)*100+(PBSout[,12]/BNPtot)*100
-}
-
-ord<-order(interest2,decreasing=TRUE)
-ord2<-ord[1:100]
-
-par(mar=c(4.2,5,4,4))
-plot(PBSout[ord2,"BBsum"],col='black',pch=20,cex=3,ylim=c(0,500),ylab="Level of divergence",xlab="Region number",
-     cex.lab=2,cex.axis=2)
-points(PBSout[ord2,"VBsum"],col='grey',pch=20,cex=3)
-points(PBSout[ord2,"PBsum"],col='red',pch=20,cex=3)
-points(PBSout[ord2,"SJsum"],col='darkorange',pch=20,cex=3)
-points(PBSout[ord2,"BNPsum"],col="gold",pch=20,cex=3)
-
-legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red","darkorange2","gold"),
-       pch=20,cex=2.3,bty="n",y.intersp=.5,x.intersp=.5)
-
-size<-PBSout[,3]-PBSout[,2]
-quantile(size)
-sized<-density(size,na.rm=TRUE)
-plot(sized)
-polygon(sized,col='black',density=50)
-
-head(PBSout[ord2,],n=30)
+write.table(bb[,1:3],"~/analysis/data/fst/individual_pbs/bb_pbs.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(vb[,1:3],"~/analysis/data/fst/individual_pbs/vb_pbs.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(pb[,1:3],"~/analysis/data/fst/individual_pbs/pb_pbs.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(sj[,1:3],"~/analysis/data/fst/individual_pbs/sj_pbs.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(bnp[,1:3],"~/analysis/data/fst/individual_pbs/bnp_pbs.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)

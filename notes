@@ -32,3 +32,12 @@ grabbing the columns that are informative of the significant regions of divergen
 Figured out the admixture/sources with fstadmix
 
 working on using Noah's script to figure out zygocity of deletion in the /data/depth/...
+
+11-29-17
+
+Used awk to format neutral regions taken from 99% distribution of genomes:
+cat list_neutral | awk '{OFS=""}{s=":"}{p="-"}{print $1,s,$2,p,$3}' > list_neut_final.txt
+
+Used bedtoos multiinter (scripts/fst/overlap.sh) to find regions of overlap between all pops as well as unique regions in each pop.
+
+
