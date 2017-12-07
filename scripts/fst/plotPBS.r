@@ -42,3 +42,44 @@ plot(pbsc[subwc,8],pch=20,cex=1,col=ifelse((pbsc[subw,8]<col[5]),factor(pbsc[sub
      xlab="Chromosomes 1-24",ylab="BNP (PBS)",cex.lab=1.7,cex.axis=.8,bty="n",
      ylim=c(-.5,4))
 
+#####Plotting common regions
+
+all<-pbsc[subw,4]>col[1] & pbsc[subw,5]>col[2] & pbsc[subw,6]>col[3] & pbsc[subw,7]>col[4] & pbsc[subw,8]>col[5]
+res<-pbsc[subw,4]>col[1] & pbsc[subw,5]>col[2] & pbsc[subw,6]>col[3] & pbsc[subw,7]<col[4] & pbsc[subw,8]<col[5]
+interm<-pbsc[subw,4]<col[1] & pbsc[subw,5]<col[2] & pbsc[subw,6]<col[3] & pbsc[subw,7]>col[4] & pbsc[subw,8]>col[5]
+
+
+palette(c("black","grey","grey30","grey50"))
+par(mfrow=c(5,1),mar=c(0,5,0,0))
+plot(pbsc[subwc,4],pch=20,cex=.8,
+     col=ifelse((all),"red",
+                ifelse((res),"darkorange",
+                       ifelse((interm),"gold",factor(pbsc[subwc,1])))),
+     xlab="",xaxt='n',ylab="BB (PBS)",cex.lab=1.7,cex.axis=.8,bty="n",ylim=c(-.5,4))
+
+legend("topright",legend=c("Shared","Resistant only","Intermediate only"),
+       col=c("red","darkorange","gold"),pch=20,cex=1)
+
+plot(pbsc[subwc,5],pch=20,cex=.8,
+     col=ifelse((all),"red",
+                ifelse((res),"darkorange",
+                       ifelse((interm),"gold",factor(pbsc[subwc,1])))),
+     xlab="",xaxt='n',ylab="VB (PBS)",cex.lab=1.7,cex.axis=.8,bty="n",ylim=c(-.5,4))
+
+plot(pbsc[subwc,6],pch=20,cex=.8,
+     col=ifelse((all),"red",
+                ifelse((res),"darkorange",
+                       ifelse((interm),"gold",factor(pbsc[subwc,1])))),
+     xlab="",xaxt='n',ylab="PB (PBS)",cex.lab=1.7,cex.axis=.8,bty="n",ylim=c(-.5,4))
+
+plot(pbsc[subwc,7],pch=20,cex=.8,
+     col=ifelse((all),"red",
+                ifelse((res),"darkorange",
+                       ifelse((interm),"gold",factor(pbsc[subwc,1])))),
+     xlab="",xaxt='n',ylab="SJ (PBS)",cex.lab=1.7,cex.axis=.8,bty="n",ylim=c(-.5,4))
+
+plot(pbsc[subwc,8],pch=20,cex=.8,
+     col=ifelse((all),"red",
+                ifelse((res),"darkorange",
+                       ifelse((interm),"gold",factor(pbsc[subwc,1])))),
+     xlab="Chromosomes 1-24",ylab="BNP (PBS)",cex.lab=1.7,cex.axis=.8,bty="n",ylim=c(-.5,4))

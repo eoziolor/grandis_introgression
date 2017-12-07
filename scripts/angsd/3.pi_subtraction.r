@@ -68,7 +68,7 @@ colnam<-names(distsp)[4:8]
 distsp2<-cbind(seq=seq(1:1026857),distsp)
 distgb2<-cbind(seq=seq(1:1026857),distgb)
 
-total_dist<-cbind(pidiff[1:3],distsp2[colnam]+distgb2[match(distsp2$seq,distgb2$seq),colnam])
+total_dist<-cbind(pidiff[,1:3],distsp2[colnam]+distgb2[match(distsp2$seq,distgb2$seq),colnam])
 
 # pbs_dist<-matrix(nrow=1026857,ncol=5)
 # for (i in 1:5)
@@ -138,6 +138,30 @@ points(chr2[27000:28000,6],pch=20,cex=.5,col="red")
 points(chr2[27000:28000,7],pch=20,cex=.5,col="darkorange")
 points(chr2[27000:28000,8],pch=20,cex=.5,col="gold")
 
-legend("topright",y=c(.05,.1),c("BB","VB","PB","SJSP","BNP"),pch=20,cex=1.2,
+legend("topright",y=c(.05,.1),legend=c("BB","VB","PB","SJSP","BNP"),pch=20,cex=1.2,
        col=c("black","grey","red","darkorange","gold"), x.intersp=.3,y.intersp=.6)
 abline(h=0,col="purple",lty=2)
+
+
+###Chromosome 10 ARNT region
+chr10<-pbs_dist[grep("chr10\\b",pbs_dist$Scaf),]
+plot(chr10[,4],pch=20,cex=.5,col="black",ylim=c(-.05,.05),ylab="pi difference (lower means lower pi in resistant)",xlab="chromosome 10")
+points(chr10[,5],pch=20,cex=.5,col="grey")
+points(chr10[,6],pch=20,cex=.5,col="red")
+
+legend("topright",y=c(.05,.1),legend=c("BB","VB","PB"),pch=20,cex=1.2,
+       col=c("black","grey","red"), x.intersp=.8,y.intersp=.8)
+
+
+#Chromosome 18 AHR b's
+chr18<-pbs_dist[grep("chr18\\b",pbs_dist$Scaf),]
+plot(chr18[15000:20793,4],pch=20,cex=.5,col="black",ylim=c(-.05,.05),ylab="pi difference (lower means lower pi in resistant)",
+     xlab="tail end of chromosome 18")
+points(chr18[15000:20793,5],pch=20,cex=.5,col="grey")
+points(chr18[15000:20793,6],pch=20,cex=.5,col="red")
+points(chr18[15000:20793,7],pch=20,cex=.5,col="darkorange")
+points(chr18[15000:20793,8],pch=20,cex=.5,col="gold")
+
+legend("topleft",y=c(.05,.1),legend=c("BB","VB","PB","SJ","BNP"),pch=20,cex=1.2,
+       col=c("black","grey","red","darkorange","gold"), x.intersp=.8,y.intersp=.8)
+

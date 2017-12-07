@@ -91,6 +91,29 @@ legend("topright",y=c(.05,.1),c("BB","VB","PB","SJSP","BNP"),pch=20,cex=1.2,
        col=c("black","grey","red","darkorange","gold"), x.intersp=.3,y.intersp=.6)
 abline(h=0,col="purple",lty=2)
 
+###Chr10 arnt
+
+chr10<-pbs[grep("chr10\\b",pbs$Scaf),]
+plot(chr10[,4],pch=20,cex=.5,col="black",ylim=c(-1,1),ylab="PBS divergence stat",xlab="chromosome 10")
+points(chr10[,5],pch=20,cex=.5,col="grey",ylim=c(-1,1))
+points(chr10[,6],pch=20,cex=.5,col="red",ylim=c(-1,1))
+points(chr10[,7],pch=20,cex=.5,col="darkorange",ylim=c(-1,1))
+points(chr10[,8],pch=20,cex=.5,col="gold",ylim=c(-1,1))
+
+legend("topright",y=c(.05,.1),legend=c("BB","VB","PB","SJ","BNP"),pch=20,cex=1.2,
+       col=c("black","grey","red","darkorange","gold"), x.intersp=.8,y.intersp=.8)
+
+###Chr18 arnt
+
+chr18<-pbs[grep("chr18\\b",pbs$Scaf),]
+plot(chr18[15000:20793,4],pch=20,cex=.5,col="black",ylim=c(-1,1),ylab="PBS divergence stat",xlab="tail end of chromosome 18")
+points(chr18[15000:20793,5],pch=20,cex=.5,col="grey",ylim=c(-1,1))
+points(chr18[15000:20793,6],pch=20,cex=.5,col="red",ylim=c(-1,1))
+points(chr18[15000:20793,7],pch=20,cex=.5,col="darkorange",ylim=c(-1,1))
+points(chr18[15000:20793,8],pch=20,cex=.5,col="gold",ylim=c(-1,1))
+
+legend("topleft",y=c(.05,.1),legend=c("BB","VB","PB","SJ","BNP"),pch=20,cex=1.2,
+       col=c("black","grey","red","darkorange","gold"), x.intersp=.8,y.intersp=.8)
 
 ################################################AHR2a
 

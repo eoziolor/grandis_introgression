@@ -40,4 +40,8 @@ cat list_neutral | awk '{OFS=""}{s=":"}{p="-"}{print $1,s,$2,p,$3}' > list_neut_
 
 Used bedtoos multiinter (scripts/fst/overlap.sh) to find regions of overlap between all pops as well as unique regions in each pop.
 
+12-7-17
 
+Figured out a haploidizing function. Running that function with vcf created only from shared outlier regions between all populations.
+
+zcat zshared.vcf.bgz | haploidizing_mine.r | ~/programs/htslib/bgzip > zshared_haplo.vcf.bgz
