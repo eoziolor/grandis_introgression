@@ -14,42 +14,52 @@ axnames<-c("GB","SP","BNP", "SJ","PB","VB","BB")
 axis(side=1,at= ax, labels = axnames,tck=-.03)
 
 gb<-k2ord[0:48,]
-gbord<-order(gb[,2],decreasing=FALSE)
+gbord<-order(gb[,2],decreasing=TRUE)
 
 sp<-k2ord[49:96,]
-spord<-order(sp[,2],decreasing=FALSE)
+spord<-order(sp[,2],decreasing=TRUE)
 
 bnp<-k2ord[97:144,]
-bnpord<-order(bnp[,2],decreasing=FALSE)
+bnpord<-order(bnp[,2],decreasing=TRUE)
 
 sj<-k2ord[145:168,]
-sjord<-order(sj[,2],decreasing=FALSE)
+sjord<-order(sj[,2],decreasing=TRUE)
 
 pb<-k2ord[168:215,]
-pbord<-order(pb[,2],decreasing=FALSE)
+pbord<-order(pb[,2],decreasing=TRUE)
 
 vb<-k2ord[215:264,]
-vbord<-order(vb[,2],decreasing=FALSE)
+vbord<-order(vb[,2],decreasing=TRUE)
 
 bb<-k2ord[265:288,]
-bbord<-order(bb[,2],decreasing=FALSE)
+bbord<-order(bb[,2],decreasing=TRUE)
 
-kall<-rbind(gb[gbord,],sp[spord,],bnp[bnpord,],sj[sjord,],pb[pbord,],vb[vbord,],bb[bbord,])
+kall<-rbind(bb[bbord,],vb[vbord,],pb[pbord,],sj[sjord,],bnp[bnpord,],gb[gbord,],sp[spord,])
 
 kall<-na.omit(kall)
 
-par(mfrow=c(1,1))
-barplot(t(as.matrix(kall)),col=c("deepskyblue2","black"), ylab="Likelihood of belonging",
+par(mfrow=c(1,1),mar=c(4,5,1,1))
+barplot(t(as.matrix(kall)),col=c("cadetblue2","black"), ylab="Likelihood of ancestry",
         border=NA, xaxt="n",space=0,
         cex.lab=1.5,cex.axis=1.3)
 
-# abline(b=0,v=c(0,48,96,144,168,215,264,288),col="grey50",lwd=3)
-# abline(a=0,b=0,col="black",lwd=3)
-# abline(h=c(0.25,.5,.75),col="purple",lwd=1.5,lty=5)
-
-ax<-c(24,72,124,156,192,240,276)
-axnames<-c("GB","SP","BNP", "SJ","PB","VB","BB")
-axis(side=1,at= ax, labels = axnames,tck=-.03,cex=1.5)
+ax<-c(12,48,96,132,168,216,264)
+ax2<-c(0,120,121,192,193,288)
+axnames<-c("BB","VB","PB", "SJ","BNP","SP","GB")
+axcol<-c("black","firebrick2","cadetblue3")
+axis(side=1,at= ax[1:3], labels = axnames[1:3],tck=-.02,lwd=0,
+     col.axis=axcol[1],col=axcol[1],cex.axis=1.6)
+axis(side=1,at= ax[4:5], labels = axnames[4:5],tck=-.02,lwd=0,
+     col.axis=axcol[2],col=axcol[2],cex.axis=1.6)
+axis(side=1,at= ax[6:7], labels = axnames[6:7],tck=-.02,lwd=0,
+     col.axis=axcol[3],col=axcol[3],cex.axis=1.6)
+#Just the lines
+axis(side=1,at= ax2[1:2], labels=c("",""), tck=0,lwd=4,
+     col.axis=axcol[1],col=axcol[1],cex.axis=1.4)
+axis(side=1,at= ax2[3:4], labels = c("",""),tck=0,lwd=4,
+     col.axis=axcol[2],col=axcol[2],cex.axis=1.4)
+axis(side=1,at= ax2[5:6], labels = c("",""),tck=-0,lwd=4,
+     col.axis=axcol[3],col=axcol[3],cex.axis=1.4)
 
 ###histograms and densities
 
