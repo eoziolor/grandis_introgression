@@ -38,13 +38,13 @@ kall<-rbind(bb[bbord,],vb[vbord,],pb[pbord,],sj[sjord,],bnp[bnpord,],gb[gbord,],
 
 kall<-na.omit(kall)
 
-par(mfrow=c(1,1),mar=c(4,5,1,1))
-barplot(t(as.matrix(kall)),col=c("cadetblue2","black"), ylab="Likelihood of ancestry",
-        border=NA, xaxt="n",space=0,
-        cex.lab=1.5,cex.axis=1.3)
+par(mfrow=c(1,1),mar=c(3,3,1,1))
+barplot(t(as.matrix(kall)),col=c("cadetblue2","black"), border=NA, xaxt="n",space=0,
+        cex.lab=2,cex.axis=1.9)
 
 ax<-c(12,48,96,132,168,216,264)
 ax2<-c(0,120,121,192,193,288)
+vert<-c(24,74,121,144,192,240)
 axnames<-c("BB","VB","PB", "SJ","BNP","SP","GB")
 axcol<-c("black","firebrick2","cadetblue3")
 axis(side=1,at= ax[1:3], labels = axnames[1:3],tck=-.02,lwd=0,
@@ -60,6 +60,7 @@ axis(side=1,at= ax2[3:4], labels = c("",""),tck=0,lwd=4,
      col.axis=axcol[2],col=axcol[2],cex.axis=1.4)
 axis(side=1,at= ax2[5:6], labels = c("",""),tck=-0,lwd=4,
      col.axis=axcol[3],col=axcol[3],cex.axis=1.4)
+abline(v=vert,col="khaki2",lty=1,lwd=2.5)
 
 ###histograms and densities
 
