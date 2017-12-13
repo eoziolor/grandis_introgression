@@ -4,7 +4,7 @@ library(magrittr)
 library(Rphylip)
 library(ape)
 library(stringr)
-vcf<-read.table("~/analysis/data/dfst/outliers/zshared_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+vcf<-read.table("~/analysis/data/dfst/outliers/zres_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
 sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
 cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
@@ -59,5 +59,5 @@ par(mfrow=c(1,2))
 plot(tr,"unrooted",show.tip.label=FALSE)
 tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
 plot(mds,pch=20,col=popcol2)
-legend("bottomright",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
+legend("topright",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
 

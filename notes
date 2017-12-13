@@ -45,3 +45,12 @@ Used bedtoos multiinter (scripts/fst/overlap.sh) to find regions of overlap betw
 Figured out a haploidizing function. Running that function with vcf created only from shared outlier regions between all populations.
 
 zcat zshared.vcf.bgz | haploidizing_mine.r | ~/programs/htslib/bgzip > zshared_haplo.vcf.bgz
+
+12-12-17
+Using z regions - both shared by resistant and intermediate populations to look at distance between populations at those regions
+converting them with awk to tabix format, so I can read them with xargs and isolate VCF with only those regions. From zinterm/res_out_all to z_formatted
+'{OFS=""}{s=":"}{p="-"}{print $1,s,$2,p,$3}'
+
+using zcat file | haploidize_gran_mine.r | bgzip > z_haplo.vcf.bgz
+
+to haploidize the three groups of outliers

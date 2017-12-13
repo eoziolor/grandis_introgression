@@ -1,7 +1,7 @@
 ord_temp<-read.table("~/analysis/data/fastngs/order.txt",header=FALSE)
 ord<-unlist(ord_temp)
 
-k2<-read.table("~/analysis/data/fastngs/combined_all")
+k2<-read.table("~/analysis/data/fastngs/combined_probs_big")
 k2ord<-k2[ord,]
 barplot(t(as.matrix(k2ord)),col=c("deepskyblue2","black"), ylab="Ancestry",border=NA, xaxt="n",space=0,
         cex.lab=1.5,cex.axis=1.5)
@@ -13,7 +13,7 @@ ax<-c(24,72,124,156,192,240,276)
 axnames<-c("GB","SP","BNP", "SJ","PB","VB","BB")
 axis(side=1,at= ax, labels = axnames,tck=-.03)
 
-gb<-k2ord[0:48,]
+gb<-k2ord[1:48,]
 gbord<-order(gb[,2],decreasing=TRUE)
 
 sp<-k2ord[49:96,]
@@ -25,16 +25,16 @@ bnpord<-order(bnp[,2],decreasing=TRUE)
 sj<-k2ord[145:168,]
 sjord<-order(sj[,2],decreasing=TRUE)
 
-pb<-k2ord[168:215,]
+pb<-k2ord[169:215,]
 pbord<-order(pb[,2],decreasing=TRUE)
 
-vb<-k2ord[215:264,]
+vb<-k2ord[216:264,]
 vbord<-order(vb[,2],decreasing=TRUE)
 
 bb<-k2ord[265:288,]
 bbord<-order(bb[,2],decreasing=TRUE)
 
-kall<-rbind(bb[bbord,],vb[vbord,],pb[pbord,],sj[sjord,],bnp[bnpord,],gb[gbord,],sp[spord,])
+kall<-rbind(bb[bbord,],vb[vbord,],pb[pbord,],sj[sjord,],bnp[bnpord,],sp[spord,],gb[gbord,])
 
 kall<-na.omit(kall)
 
@@ -44,7 +44,7 @@ barplot(t(as.matrix(kall)),col=c("cadetblue2","black"), border=NA, xaxt="n",spac
 
 ax<-c(12,48,96,132,168,216,264)
 ax2<-c(0,120,121,192,193,288)
-vert<-c(24,74,121,144,192,240)
+vert<-c(24,73,120,143,191,239)
 axnames<-c("BB","VB","PB", "SJ","BNP","SP","GB")
 axcol<-c("black","firebrick2","cadetblue3")
 axis(side=1,at= ax[1:3], labels = axnames[1:3],tck=-.02,lwd=0,
