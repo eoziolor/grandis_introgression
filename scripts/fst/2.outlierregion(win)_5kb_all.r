@@ -32,13 +32,13 @@ cat FILE | awk '$9>0' | \
 grep -v NA | \
 awk '$4>q1 || $5>q2 || $6>q3 || $7>q4 || $8>q5'
 
-cat ~/analysis/fst/allpbs5kb | awk '$9>0' | \
+cat ~/analysis/data/fst/allpbs5kb | awk '$9>0' | \
 grep -v NA | \
 awk '$4>0.2533448 || $5>0.1461146  || $6>0.1765786 || $7>0.2164984 || $8>0.05471878' | \
-~/program/bedtools2/bin/bedtools merge -i stdin -d 5000 \
+~/program/bedtools2/bin/bedtools merge -i stdin -d 50000 \
 -c 4,4,5,5,6,6,7,7,8,8 \
--o sum,count,sum,count,sum,count,sum,count,sum,count \
--g <(cut -f 1-2 ~/analysis/genome/unsplit_merge.fasta.fai) > ~/analysis/fst/PBSoutliers_5kb_all.bed
+-o max,count,max,count,max,count,max,count,max,count \
+-g <(cut -f 1-2 ~/analysis/data/genome/unsplit_merge.fasta.fai) > ~/analysis/data/fst/PBSoutliers_5kb_all_max.bed
 
 
 ###pipe to bedtools to merge the windows

@@ -143,7 +143,7 @@ pbnum<-t(t(dep[del,pbo+2])/scalevec[pbo])%>%
     o}) %>%
   (gts[,pbo+1])[,.] %>%
   colnames() %>%
-  cbbnd(
+  cbind(
     .,
     c(rep(2,21),rep(1,22),rep(0,4))
   )
@@ -211,10 +211,10 @@ copies_per_ind[,1] <- as.numeric(copies_per_ind[,1])
 
 table(copies_per_ind[,c(1,2)]) %>% 
   (function(x){x[,c(3,6,2,5,4,7,1)]}) %>% 
-  (function(x){barplot(x,beside=TRUE,col=c("lightgrey","grey50","black"),ylab="Number of individuals",
-                       cex.axis = 1.5,cex.names = 1.5)})
+  (function(x){barplot(x,beside=TRUE,col=c("darkolivegreen1","chartreuse3","darkgreen"),
+                       ylab='',cex.axis = 2.5,cex.names = 1.5)})
 
-legend("topright",legend=c("wt","delHet","delHom"),pch=20,cex=1.2,col=c("lightgrey","grey50","black"),
+legend("topright",legend=c("wt","delHet","delHom"),pch=20,cex=1.2,col=c("blue","red","pink","green","lightgrey","grey50","black"),
        x.intersp = 0.4,y.intersp = .7)
 
 ###smoothing vector function
