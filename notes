@@ -54,3 +54,8 @@ converting them with awk to tabix format, so I can read them with xargs and isol
 using zcat file | haploidize_gran_mine.r | bgzip > z_haplo.vcf.bgz
 
 to haploidize the three groups of outliers
+
+12-15-17
+
+used bedtools to merge both pbs and z regions separately using the -o max,count option
+then I used those windows and asked if the highest peak of the outlier falls as 1% outlier in each population. colored fig2 genomics from those results.
