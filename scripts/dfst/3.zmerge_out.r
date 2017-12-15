@@ -187,6 +187,8 @@ plot(pbsc[,8],pch=20,cex=1.2,
      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),xaxs="i",yaxs="i")
 
 
+write.table(pbsc[allhit,1:3],"~/analysis/data/dfst/zregions_split5kb.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+
 # palette(c("grey50","grey70"))
 # par(mfrow=c(5,1),mar=c(0,3,0,0))
 # plot(pbsc[,4],pch=20,cex=1.2,
