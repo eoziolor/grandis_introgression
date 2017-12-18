@@ -59,3 +59,5 @@ to haploidize the three groups of outliers
 
 used bedtools to merge both pbs and z regions separately using the -o max,count option
 then I used those windows and asked if the highest peak of the outlier falls as 1% outlier in each population. colored fig2 genomics from those results.
+
+then I used 7 windows per peak in order to plot a mds plot without overrepresenting the huge region around AHR2a. plotted the shared regions.
