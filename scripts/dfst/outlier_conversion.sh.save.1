@@ -1,0 +1,11 @@
+#files
+my_table=~/analysis/data/genome/kfish2_genequal_evgncbi.txt
+my_shared=~/analysis/data/dfst/outlier_regions/zsharedall_genbank
+my_out=~/analysis/data/dfst/outlier_regions/zsharedall_funhenotation
+
+len=$(cat $my_shared | wc -l)
+
+for i in {1..$len}
+	do
+		grep -f $my_shared $my_table | awk '{print $1}' > $my_out
+done

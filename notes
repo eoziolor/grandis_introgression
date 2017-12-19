@@ -61,3 +61,16 @@ used bedtools to merge both pbs and z regions separately using the -o max,count 
 then I used those windows and asked if the highest peak of the outlier falls as 1% outlier in each population. colored fig2 genomics from those results.
 
 then I used 7 windows per peak in order to plot a mds plot without overrepresenting the huge region around AHR2a. plotted the shared regions.
+
+12-18-17
+I used a random set of regions the same size as the shared outliers for backgorund substructure (MDS).
+grabbed them from the 5kb1kb.bed file and sampled at random with R sample()
+converted to vcf, haploidized and plotted
+
+Also plotted intermediate (selected by region and not 5kb) outliers and plotted those to update the graph.
+
+Converted annotated outliers of shared regions with grep -f (file) (table) to get the Funhe nottation names
+
+12-19-17
+
+removed chr1 from analysis to see if mds distances are driven by it.
