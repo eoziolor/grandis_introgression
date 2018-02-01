@@ -19,7 +19,7 @@ write.table(orig[v,],"~/analysis/data/dfst/zshared_10perregion.bed",row.names = 
 
 ###grabbing all regions except chr1
 
-no1<-grep("chr1\\b",orig[,1],invert=TRUE)
+no1<-grep("chr1\\b|chr10\\b",orig[,1],invert=TRUE)
 orig2<-orig[no1,]
 regions2<-regions[-(grep("chr1\\b",orig[,1]))]
 
@@ -30,7 +30,7 @@ for(i in 7:69){
 }
 v<-sort(v)
 
-write.table(orig2[v,],"~/analysis/data/dfst/outlier_regions/zshared_10perregion_no1.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(orig2[v,],"~/analysis/data/dfst/outlier_regions/zshared_10perregion_no1or10.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
 
 ###Doing the same for random regions
 orig<-read.table("~/analysis/data/dfst/random/5kb1kb.bed",header=F)

@@ -209,13 +209,19 @@ copies_per_ind[gbnum[,1],1]<-gbnum[,2]
 copies_per_ind[,1] <- as.numeric(copies_per_ind[,1])
 
 
-table(copies_per_ind[,c(1,2)]) %>% 
-  (function(x){x[,c(3,6,2,5,4,7,1)]}) %>% 
-  (function(x){barplot(x,beside=TRUE,col=c("darkolivegreen1","chartreuse3","darkgreen"),
-                       ylab='',cex.axis = 2.5,cex.names = 1.5)})
+# table(copies_per_ind[,c(1,2)]) %>% 
+#   (function(x){as.array(x[,c(3,6,2,5,4,7,1)])}) %>% 
+#   (function(x){barplot(x,beside=TRUE,col=c("darkolivegreen1","chartreuse3","darkgreen"),
+#                        ylab='',cex.axis = 2.5,cex.names = 1.5)})
+par(mfrow=c(1,1),mar=c(2,4,2,4))
+copies<-as.array(table(copies_per_ind[,c(1,2)]) %>% 
+                (function(x){x[,c(3,6,2,5,4,7,1)]}) )
+copies.prop<-prop.table(copies,2)*100 
+barplot(copies.prop,beside=TRUE,col=c("darkolivegreen1","chartreuse3","darkgreen"),
+       ylab='',cex.axis = 2.2,cex.names = 1.5)
 
-legend("topright",legend=c("wt","delHet","delHom"),pch=20,cex=1.2,col=c("blue","red","pink","green","lightgrey","grey50","black"),
-       x.intersp = 0.4,y.intersp = .7)
+# legend("topright",legend=c("wt","delHet","delHom"),pch=20,cex=1.2,col=c("blue","red","pink","green","lightgrey","grey50","black"),
+#        x.intersp = 0.4,y.intersp = .7)
 
 ###smoothing vector function
 
@@ -386,7 +392,7 @@ points(dep[subl,2],subsmooth(dep[,ind3])/scalevec[ind3-2],pch=20,cex=.3,col="lig
 
 legend("topright",lty=2,legend=c("wt SP","hetDel GB","homDel BB"),col=c("lightgrey","grey50","black"),cex=1.2,
        x.intersp = .7,y.intersp = .8)
-abline(v=c(760000,800000),lty=2,col="red")
+abline(v=c(730000,805000),lty=2,col="red")
 
 
 

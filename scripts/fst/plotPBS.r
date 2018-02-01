@@ -117,48 +117,100 @@ pbsc[pbuhit,"pbu"]<-pbsc[pbuhit,"pbu"]+1
 pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
 pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
+install.packages('gtools')
+require('gtools')
 #plotting those results by using the pbs_out vector. Have to find a way to intersect it with a region
-palette(c("grey50","grey70"))
+palette(c("grey50","grey70","black","grey30"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 plot(pbsc[,4],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
                 ifelse(pbsc[,"res"]>0,"black",
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               ifelse(pbsc[,"bbu"]>0,"gold2",
-                                     ifelse(pbsc[,4]>col[1],"green2",sort(as.factor(pbsc[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),xaxs="i",yaxs="i")
+                                     ifelse(pbsc[,4]>col[1],"green2",as.factor(pbsc[,1])))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
 
 plot(pbsc[,5],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
                 ifelse(pbsc[,"res"]>0,"black",
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               ifelse(pbsc[,"vbu"]>0,"gold2",
-                                     ifelse(pbsc[,5]>col[2],"green2",sort(as.factor(pbsc[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),xaxs="i",yaxs="i")
+                                     ifelse(pbsc[,5]>col[2],"green2",as.factor(pbsc[,1])))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
 
 plot(pbsc[,6],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
                 ifelse(pbsc[,"res"]>0,"black",
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               ifelse(pbsc[,"pbu"]>0,"gold2",
-                                     ifelse(pbsc[,6]>col[3],"green2",sort(as.factor(pbsc[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),xaxs="i",yaxs="i")
+                                     ifelse(pbsc[,6]>col[3],"green2",as.factor(pbsc[,1])))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
 
 plot(pbsc[,7],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
                 ifelse(pbsc[,"res"]>0,"black",
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               ifelse(pbsc[,"sju"]>0,"gold2",
-                                     ifelse(pbsc[,7]>col[4],"green2",sort(as.factor(pbsc[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),xaxs="i",yaxs="i")
+                                     ifelse(pbsc[,7]>col[4],"green2",as.factor(pbsc[,1])))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
 
 plot(pbsc[,8],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
                 ifelse(pbsc[,"res"]>0,"black",
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               ifelse(pbsc[,"bnpu"]>0,"gold2",
-                                     ifelse(pbsc[,8]>col[5],"green2",sort(as.factor(pbsc[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),xaxs="i",yaxs="i")
+                                     ifelse(pbsc[,8]>col[5],"green2",as.factor(pbsc[,1])))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+###Plotting CHR1
+
+par(mfrow=c(5,1),mar=c(0,3,0,0))
+
+pbsc1<-pbsc %>% filter(str_detect(Scaf,"\\bchr1\\b"))
+plot(pbsc1[,4],pch=20,cex=1.2,
+     col=ifelse(pbsc1[,"all"]>0,"purple",
+                ifelse(pbsc1[,"res"]>0,"black",
+                       ifelse(pbsc1[,"interm"]>0,"firebrick2",
+                              ifelse(pbsc1[,"bbu"]>0,"gold2",
+                                     ifelse(pbsc1[,4]>col[1],"green2",sort(as.factor(pbsc1[,1]))))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+abline(v=c(547,555),lty=2,col="red")
+
+plot(pbsc1[,5],pch=20,cex=1.2,
+     col=ifelse(pbsc1[,"all"]>0,"purple",
+                ifelse(pbsc1[,"res"]>0,"black",
+                       ifelse(pbsc1[,"interm"]>0,"firebrick2",
+                              ifelse(pbsc1[,"vbu"]>0,"gold2",
+                                     ifelse(pbsc1[,5]>col[2],"green2",sort(as.factor(pbsc1[,1]))))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+abline(v=c(547,555),lty=2,col="red")
+
+plot(pbsc1[,6],pch=20,cex=1.2,
+     col=ifelse(pbsc1[,"all"]>0,"purple",
+                ifelse(pbsc1[,"res"]>0,"black",
+                       ifelse(pbsc1[,"interm"]>0,"firebrick2",
+                              ifelse(pbsc1[,"pbu"]>0,"gold2",
+                                     ifelse(pbsc1[,6]>col[3],"green2",sort(as.factor(pbsc1[,1]))))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+abline(v=c(547,555),lty=2,col="red")
+
+plot(pbsc1[,7],pch=20,cex=1.2,
+     col=ifelse(pbsc1[,"all"]>0,"purple",
+                ifelse(pbsc1[,"res"]>0,"black",
+                       ifelse(pbsc1[,"interm"]>0,"firebrick2",
+                              ifelse(pbsc1[,"sju"]>0,"gold2",
+                                     ifelse(pbsc1[,7]>col[4],"green2",sort(as.factor(pbsc1[,1]))))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+abline(v=c(547,555),lty=2,col="red")
+
+plot(pbsc1[,8],pch=20,cex=1.2,
+     col=ifelse(pbsc1[,"all"]>0,"purple",
+                ifelse(pbsc1[,"res"]>0,"black",
+                       ifelse(pbsc1[,"interm"]>0,"firebrick2",
+                              ifelse(pbsc1[,"bnpu"]>0,"gold2",
+                                     ifelse(pbsc1[,8]>col[5],"green2",sort(as.factor(pbsc1[,1]))))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+abline(v=c(547,555),lty=2,col="red")
 
 ###plotting in 5kb windows
 #####Plotting common regions
