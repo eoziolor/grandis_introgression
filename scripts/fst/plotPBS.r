@@ -117,8 +117,7 @@ pbsc[pbuhit,"pbu"]<-pbsc[pbuhit,"pbu"]+1
 pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
 pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
-install.packages('gtools')
-require('gtools')
+
 #plotting those results by using the pbs_out vector. Have to find a way to intersect it with a region
 palette(c("grey50","grey70","black","grey30"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
