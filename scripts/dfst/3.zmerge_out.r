@@ -86,7 +86,7 @@ write.table(pbs_out[bnpu,1:3],"~/analysis/data/dfst/pbs_regions_sharedbnpu.bed",
 
 # source("http://bioconductor.org/biocLite.R")
 # biocLite()
-# library("rtracklayer")
+library("rtracklayer")
 
 
 bed1=import("~/analysis/data/dfst/PBS_keep_5kb.bed")
@@ -144,7 +144,7 @@ pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
 pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
 #plotting those results by using the pbs_out vector. Have to find a way to intersect it with a region
-palette(c("grey50","grey70"))
+palette(c("grey50","grey70","black","grey30"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 plot(pbsc[,4],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
@@ -188,6 +188,166 @@ plot(pbsc[,8],pch=20,cex=1.2,
 
 
 write.table(pbsc[allhit,1:3],"~/analysis/data/dfst/zregions_split5kb.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+
+###Cleaner
+
+palette(c("grey40","grey60","grey80","grey20"))
+par(mfrow=c(5,1),mar=c(0,3,0,0))
+plot(pbsc[,4],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",sort(as.factor(pbsc[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
+
+plot(pbsc[,5],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",sort(as.factor(pbsc[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
+
+plot(pbsc[,6],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",sort(as.factor(pbsc[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
+
+plot(pbsc[,7],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",sort(as.factor(pbsc[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
+
+plot(pbsc[,8],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",sort(as.factor(pbsc[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
+
+###plotting distribution of outliers
+pbsc<-pbs_dist %>% filter(str_detect(Scaf,"chr"))
+pbsc<-cbind(pbsc,0,0,0,0,0,0,0,0)
+newn<-c("Scaf","start","end","BB","VB","PB","SJ","BNP","all","res","interm","bbu","vbu","pbu","sju","bnpu")
+colnames(pbsc)<-newn
+pbsc<-na.omit(pbsc)
+
+all<-pbsc[,4]>col[1] & pbsc[,5]>col[2] & pbsc[,6]>col[3] & pbsc[,7]>col[4] & pbsc[,8]>col[5]
+res<-pbsc[,4]>col[1] & pbsc[,5]>col[2] & pbsc[,6]>col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+interm<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]>col[4] & pbsc[,8]>col[5]
+bbu<-pbsc[,4]>col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+vbu<-pbsc[,4]<col[1] & pbsc[,5]>col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+pbu<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]>col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+sju<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]>col[4] & pbsc[,8]<col[5]
+bnpu<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]>col[5]
+
+write.table(pbsc[,1:3],"~/analysis/data/dfst/PBS_keep_5kb.bed",row.names = FALSE,col.names = FALSE,quote=FALSE)
+write.table(na.omit(pbsc[all,1:3]),"~/analysis/data/dfst/pbs_regions_sharedall.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(na.omit(pbsc[res,1:3]),"~/analysis/data/dfst/pbs_regions_sharedres.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(na.omit(pbsc[interm,1:3]),"~/analysis/data/dfst/pbs_regions_sharedinterm.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(na.omit(pbsc[bbu,1:3]),"~/analysis/data/dfst/pbs_regions_sharedbbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(na.omit(pbsc[vbu,1:3]),"~/analysis/data/dfst/pbs_regions_sharedvbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(na.omit(pbsc[pbu,1:3]),"~/analysis/data/dfst/pbs_regions_sharedpbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(na.omit(pbsc[sju,1:3]),"~/analysis/data/dfst/pbs_regions_sharedsju.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(na.omit(pbsc[bnpu,1:3]),"~/analysis/data/dfst/pbs_regions_sharedbnpu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+
+library("rtracklayer")
+
+
+bed1=import("~/analysis/data/dfst/PBS_keep_5kb.bed")
+
+bedall=import("~/analysis/data/dfst/pbs_regions_sharedall.bed")
+bed1overlall=bed1[bed1 %over% bedall]
+hitsall<-findOverlaps(bedall,bed1,type="equal")
+allhit<-subjectHits(hitsall)
+
+bedres=import("~/analysis/data/dfst/pbs_regions_sharedres.bed")
+bed1overlres=bed1[bed1 %over% bedres]
+hitsres<-findOverlaps(bedres,bed1,type="equal")
+reshit<-subjectHits(hitsres)
+
+bedinterm=import("~/analysis/data/dfst/pbs_regions_sharedinterm.bed")
+bed1overlinterm=bed1[bed1 %over% bedinterm]
+hitsinterm<-findOverlaps(bedinterm,bed1,type="equal")
+intermhit<-subjectHits(hitsinterm)
+
+bedbbu=import("~/analysis/data/dfst/pbs_regions_sharedbbu.bed")
+bed1overlbbu=bed1[bed1 %over% bedbbu]
+hitsbbu<-findOverlaps(bedbbu,bed1,type="equal")
+bbuhit<-subjectHits(hitsbbu)
+
+bedvbu=import("~/analysis/data/dfst/pbs_regions_sharedvbu.bed")
+bed1overlvbu=bed1[bed1 %over% bedvbu]
+hitsvbu<-findOverlaps(bedvbu,bed1,type="equal")
+vbuhit<-subjectHits(hitsvbu)
+
+bedpbu=import("~/analysis/data/dfst/pbs_regions_sharedpbu.bed")
+bed1overlpbu=bed1[bed1 %over% bedpbu]
+hitspbu<-findOverlaps(bedpbu,bed1,type="equal")
+pbuhit<-subjectHits(hitspbu)
+
+bedsju=import("~/analysis/data/dfst/pbs_regions_sharedsju.bed")
+bed1overlsju=bed1[bed1 %over% bedsju]
+hitssju<-findOverlaps(bedsju,bed1,type="equal")
+sjuhit<-subjectHits(hitssju)
+
+bedbnpu=import("~/analysis/data/dfst/pbs_regions_sharedbnpu.bed")
+bed1overlbnpu=bed1[bed1 %over% bedbnpu]
+hitsbnpu<-findOverlaps(bedbnpu,bed1,type="equal")
+bnpuhit<-subjectHits(hitsbnpu)
+
+pbsc<-cbind(pbsc,0,0,0,0,0,0,0,0)
+newn<-c("Scaf","start","end","BB","VB","PB","SJ","BNP","all","res","interm","bbu","vbu","pbu","sju","bnpu")
+colnames(pbsc)<-newn
+pbsc[allhit,"all"]<-pbsc[allhit,"all"]+1
+pbsc[reshit,"res"]<-pbsc[reshit,"res"]+1
+pbsc[intermhit,"interm"]<-pbsc[intermhit,"interm"]+1
+pbsc[bbuhit,"bbu"]<-pbsc[bbuhit,"bbu"]+1
+pbsc[vbuhit,"vbu"]<-pbsc[vbuhit,"vbu"]+1
+pbsc[pbuhit,"pbu"]<-pbsc[pbuhit,"pbu"]+1
+pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
+pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
+
+par(mfrow=c(2,3),mar=c(4,4,0,0))
+plot(pbsc[,"BB"],pbsc[,"VB"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="VB z values",ylab="BB z values")
+abline(h=0,v=0)
+
+plot(pbsc[,"BB"],pbsc[,"PB"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="PB z values",ylab="BB z values")
+abline(h=0,v=0)
+
+plot(pbsc[,"VB"],pbsc[,"PB"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="PB z values",ylab="VB z values")
+abline(h=0,v=0)
+
+plot(pbsc[,"BNP"],pbsc[,"PB"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="PB z values",ylab="BNP z values")
+abline(h=0,v=0)
+
+plot(pbsc[,"SJ"],pbsc[,"PB"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="PB z values",ylab="SJ z values")
+abline(h=0,v=0)
+
+plot(pbsc[,"BNP"],pbsc[,"SJ"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="SJ z values",ylab="BNP z values")
+abline(h=0,v=0)
 
 # palette(c("grey50","grey70"))
 # par(mfrow=c(5,1),mar=c(0,3,0,0))

@@ -1,7 +1,7 @@
 ord_temp<-read.table("~/analysis/data/fastngs/order.txt",header=FALSE)
 ord<-unlist(ord_temp)
 
-k2<-read.table("~/analysis/data/fastngs/combined_probs_big")
+k2<-read.table("~/analysis/data/fastngs/combined_probs.txt")
 k2ord<-k2[ord,]
 barplot(t(as.matrix(k2ord)),col=c("deepskyblue2","black"), ylab="Ancestry",border=NA, xaxt="n",space=0,
         cex.lab=1.5,cex.axis=1.5)
@@ -121,3 +121,17 @@ dip.test(sp[,1],simulate.p.value = TRUE,B=2000)
 #p=1
 dip.test(gb[,1],simulate.p.value = TRUE,B=2000)
 #p=1
+
+###Probs of admixture
+a<-matrix(nrow =1,ncol=7)
+a[,1]<-sum(bb[,2])/length(bb[,2])
+a[,2]<-sum(vb[,2])/length(vb[,2])
+a[,3]<-sum(pb[,2])/length(pb[,2])
+a[,4]<-sum(sj[,2])/length(sj[,2])
+a[,5]<-sum(bnp[,2])/length(bnp[,2])
+a[,6]<-sum(sp[,2])/length(sp[,2])
+a[,7]<-sum(gb[,2])/length(gb[,2])
+colnames(a)<-c("bb","vb","pb","sj","bnp","sp","gb")
+rownames(a)<-"alpha"
+
+write.table(a,"~/analysis/data/fastngs/alpha",quote=FALSE,row.names=FALSE)
