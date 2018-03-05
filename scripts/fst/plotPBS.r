@@ -1,3 +1,8 @@
+library(stringr)
+library(dplyr)
+library(gtools)
+
+#Reading in table and getting quantiles----
 pbs<-read.table("~/analysis/data/fst/allpbs5kb",header=FALSE,stringsAsFactors = FALSE)
 pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs","keep")
 colnames(pbs)<-pbsname
@@ -10,15 +15,11 @@ for (i in 1:5){
 nsnps <-pbs[,"keep"]
 subw<-nsnps>0
 #chr<-read.table("~/analysis/fst/scripts/chr_colors",stringsAsFactors=FALSE,sep="\t")
-
-library(stringr)
-library(dplyr)
-library(gtools)
-
 #plot(pbs[subw,4],pch=20,cex=.5,col=factor(pbs[subw,1]))
 #plot(pbs[subw,4],pch=20,cex=.5,col=chr[pbs[subw,1],2])
 #legend('topright',legend=levels(mixedsort(pbs[,1])),col=1:2,cex=.5,pch=1)
 
+#Subsampling into chromosome only------
 pbsct<-pbs %>% filter(str_detect(Scaf,"chr"))
 
 nsnps <-pbsct[,"keep"]
@@ -30,7 +31,7 @@ rownames(pbsc)<-seq(1:dim(pbsc[subwc,])[1])
 pbsc<-pbsc[,1:8]
 
 
-###Doing this on merged windows to avoid patchyness of peak coloration
+###Doing this on merged windows to avoid patchyness of peak coloration------
 
 pbs_out_temp<-read.table("~/analysis/data/fst/PBSoutliers_5kb_all_max.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
 names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount")
@@ -38,7 +39,7 @@ colnames(pbs_out_temp)<-names
 
 pbs_out<-pbs_out_temp %>% filter(str_detect(Scaf,"chr"))
 
-#checking for whether those are outliers in different groups
+#checking for whether those are outliers in different groups--------
 all<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
 res<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
 interm<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
@@ -48,18 +49,21 @@ pbu<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]>col[3] & pbs_out[,10]
 sju<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]>col[4] & pbs_out[,12]<col[5]
 bnpu<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]<col[4] & pbs_out[,12]>col[5]
 
-# write.table(pbsc[,1:3],"~/analysis/data/fst/PBS_keep_5kb.bed",row.names = FALSE,col.names = FALSE,quote=FALSE)
-# write.table(pbs_out[all,1:3],"~/analysis/data/fst/pbs_regions_sharedall.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
-# write.table(pbs_out[res,1:3],"~/analysis/data/fst/pbs_regions_sharedres.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
-# write.table(pbs_out[interm,1:3],"~/analysis/data/fst/pbs_regions_sharedinterm.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
-# write.table(pbs_out[bbu,1:3],"~/analysis/data/fst/pbs_regions_sharedbbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
-# write.table(pbs_out[vbu,1:3],"~/analysis/data/fst/pbs_regions_sharedvbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
-# write.table(pbs_out[pbu,1:3],"~/analysis/data/fst/pbs_regions_sharedpbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
-# write.table(pbs_out[sju,1:3],"~/analysis/data/fst/pbs_regions_sharedsju.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
-# write.table(pbs_out[bnpu,1:3],"~/analysis/data/fst/pbs_regions_sharedbnpu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
 
-source("http://bioconductor.org/biocLite.R")
-biocLite()
+write.table(pbsc[,1:3],"~/analysis/data/fst/PBS_keep_5kb.bed",row.names = FALSE,col.names = FALSE,quote=FALSE)
+write.table(pbs_out[all,1:3],"~/analysis/data/fst/pbs_regions_sharedall.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(pbs_out[res,1:3],"~/analysis/data/fst/pbs_regions_sharedres.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(pbs_out[interm,1:3],"~/analysis/data/fst/pbs_regions_sharedinterm.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(pbs_out[bbu,1:3],"~/analysis/data/fst/pbs_regions_sharedbbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(pbs_out[vbu,1:3],"~/analysis/data/fst/pbs_regions_sharedvbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(pbs_out[pbu,1:3],"~/analysis/data/fst/pbs_regions_sharedpbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(pbs_out[sju,1:3],"~/analysis/data/fst/pbs_regions_sharedsju.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+write.table(pbs_out[bnpu,1:3],"~/analysis/data/fst/pbs_regions_sharedbnpu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
+
+# source("http://bioconductor.org/biocLite.R")
+# biocLite()
+
+#Finding the overlaps in full data---------
 library("rtracklayer")
 
 bed1=import("~/analysis/data/fst/PBS_keep_5kb.bed")
@@ -117,7 +121,7 @@ pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
 pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
 
-#plotting those results by using the pbs_out vector. Have to find a way to intersect it with a region
+#plotting those results by using the pbs_out vector-------------
 palette(c("grey50","grey70","black","grey30"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 plot(pbsc[,4],pch=20,cex=1.2,
@@ -161,7 +165,7 @@ plot(pbsc[,8],pch=20,cex=1.2,
      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
 
 
-###Plotting outliers vs each other
+###Plotting outliers vs each other-----------
 pbsct<-pbs %>% filter(str_detect(Scaf,"chr"))
 
 nsnps <-pbsct[,"keep"]
@@ -293,8 +297,62 @@ plot(pbsc[,"BNP"],pbsc[,"SJ"],pch=20,cex=.7,
      xlab="SJ z values",ylab="BNP z values")
 abline(h=0,v=0)
 
+#Plotting outliers in ggplot----
+require(gridExtra)
+pbsw<-cbind(pbsc[,1:8],0)
+newn<-c("Scaf","start","end","BB","VB","PB","SJ","BNP","outliers")
+colnames(pbsw)<-newn
 
-###Plotting CHR1
+pbsw[allhit,"outliers"]<-"all"
+pbsw[reshit,"outliers"]<-"res"
+pbsw[intermhit,"outliers"]<-"int"
+
+pbsws<-subset(pbsw,outliers!=0)
+a<-ggplot(pbsws,
+       aes(BB,VB,col=outliers))+
+  geom_point() +
+  scale_color_manual(values=c("purple","firebrick2","black")) +
+  theme_classic()
+
+b<-ggplot(pbsws,
+          aes(BB,PB,col=outliers))+
+  geom_point() +
+  scale_color_manual(values=c("purple","firebrick2","black")) +
+  theme_classic()
+
+c<-ggplot(pbsws,
+       aes(VB,PB,col=outliers))+
+  geom_point() +
+  scale_color_manual(values=c("purple","firebrick2","black")) +
+  theme_classic()
+
+d<-ggplot(pbsws,
+          aes(SJ,BB,col=outliers))+
+  geom_point() +
+  scale_color_manual(values=c("purple","firebrick2","black")) +
+  theme_classic()
+
+e<-ggplot(pbsws,
+          aes(BNP,BB,col=outliers))+
+  geom_point() +
+  scale_color_manual(values=c("purple","firebrick2","black")) +
+  theme_classic()
+
+f<-ggplot(pbsws,
+          aes(BNP,SJ,col=outliers))+
+  geom_point() +
+  scale_color_manual(values=c("purple","firebrick2","black")) +
+  theme_classic()
+
+grid.arrange(a,b,c,d,e,f,ncol=3,nrow=2)
+
+# ggplot(pbsw,
+#        aes(SJ,BB,col=outliers))+
+#   geom_point() +
+#   scale_color_manual(values=c("grey","purple","firebrick2","black")) +
+#   theme_classic()
+
+###Plotting CHR1------------
 
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 
