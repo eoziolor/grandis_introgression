@@ -2,6 +2,7 @@ library(stringr)
 library(dplyr)
 library(gtools)
 
+#reading in z values table----
 z<-read.table("~/analysis/data/dfst/zmerge_fst_pi_5kb",stringsAsFactors = FALSE)
 
 names<- c("Scaf","start","end","bbvb","bbpb","bbsjsp","bbbnp","bbsp","bbgb",
@@ -12,7 +13,7 @@ names<- c("Scaf","start","end","bbvb","bbpb","bbsjsp","bbbnp","bbsp","bbgb",
           "spgb","keep")
 colnames(z)<-names
 
-###Calculating total distance from SP and GB for each pop for merged z statistic.
+###Calculating total distance from SP and GB for each pop for merged z statistic----
 subw<-z[,25]>1
 distsp<-cbind(z[subw,1:3],z[subw,8],z[subw,13],z[subw,17],z[subw,20],z[subw,22])
 distgb<-cbind(z[subw,1:3],z[subw,9],z[subw,14],z[subw,18],z[subw,21],z[subw,23])
@@ -43,7 +44,7 @@ for (i in 1:5){
 
 write.table(pbs_dist,"~/analysis/data/dfst/zpbs_5kb.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t")
 
-###Overall outliers
+###Overall outliers----
 
 all<-pbs_dist[,4]>col[1] & pbs_dist[,5]>col[2] & pbs_dist[,6]>col[3] & pbs_dist[,7]>col[4] & pbs_dist[,8]>col[5]
 res<-pbs_dist[,4]>col[1] & pbs_dist[,5]>col[2] & pbs_dist[,6]>col[3] & pbs_dist[,7]<col[4] & pbs_dist[,8]<col[5]
@@ -54,7 +55,7 @@ write.table(na.omit(pbs_dist[all,1:3]),"~/analysis/data/dfst/zshared_outliers_al
 write.table(na.omit(pbs_dist[res,1:3]),"~/analysis/data/dfst/zres_outliers_all",row.names=FALSE,col.names=FALSE,quote=FALSE)
 write.table(na.omit(pbs_dist[interm,1:3]),"~/analysis/data/dfst/zinterm_outliers_all",row.names=FALSE,col.names=FALSE,quote=FALSE)
 
-####Chr arranged outliers
+####Chr arranged outliers----
 
 pbs_out_temp<-read.table("~/analysis/data/dfst/zregions_max.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
 names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount")
@@ -83,6 +84,7 @@ write.table(pbs_out[pbu,1:3],"~/analysis/data/dfst/pbs_regions_sharedpbu.bed",ro
 write.table(pbs_out[sju,1:3],"~/analysis/data/dfst/pbs_regions_sharedsju.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
 write.table(pbs_out[bnpu,1:3],"~/analysis/data/dfst/pbs_regions_sharedbnpu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
 
+#Finding regions of overlap----
 
 # source("http://bioconductor.org/biocLite.R")
 # biocLite()
@@ -131,6 +133,7 @@ bed1overlbnpu=bed1[bed1 %over% bedbnpu]
 hitsbnpu<-findOverlaps(bedbnpu,bed1)
 bnpuhit<-subjectHits(hitsbnpu)
 
+#putting those regions into a dataframe----
 pbsc<-cbind(pbsc,0,0,0,0,0,0,0,0)
 newn<-c("Scaf","start","end","BB","VB","PB","SJ","BNP","all","res","interm","bbu","vbu","pbu","sju","bnpu")
 colnames(pbsc)<-newn
@@ -143,7 +146,7 @@ pbsc[pbuhit,"pbu"]<-pbsc[pbuhit,"pbu"]+1
 pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
 pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
-#plotting those results by using the pbs_out vector. Have to find a way to intersect it with a region
+#plotting those results by using the pbs_out vector. Have to find a way to intersect it with a region----
 palette(c("grey50","grey70","black","grey30"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 plot(pbsc[,4],pch=20,cex=1.2,
@@ -189,7 +192,7 @@ plot(pbsc[,8],pch=20,cex=1.2,
 
 write.table(pbsc[allhit,1:3],"~/analysis/data/dfst/zregions_split5kb.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
 
-###Cleaner
+###Cleaner, by removing local regions----
 
 palette(c("grey40","grey60","grey80","grey20"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
@@ -223,7 +226,7 @@ plot(pbsc[,8],pch=20,cex=1.2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",sort(as.factor(pbsc[,1]))))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
 
-###plotting distribution of outliers
+###plotting distribution of outliers----
 pbsc<-pbs_dist %>% filter(str_detect(Scaf,"chr"))
 pbsc<-cbind(pbsc,0,0,0,0,0,0,0,0)
 newn<-c("Scaf","start","end","BB","VB","PB","SJ","BNP","all","res","interm","bbu","vbu","pbu","sju","bnpu")
@@ -348,6 +351,41 @@ plot(pbsc[,"BNP"],pbsc[,"SJ"],pch=20,cex=.7,
                        ifelse(pbsc[,"res"],"black",NA))),bty='l',
      xlab="SJ z values",ylab="BNP z values")
 abline(h=0,v=0)
+
+###Trying to figure out if this can be attributed to a real increase in z for resistant pops----
+
+intermeans<-c()
+for(i in 1:5){
+  intermeans[i]<-mean(pbsc[interm,i+3])
+}
+
+resmeans<-c()
+for(i in 1:5){
+  resmeans[i]<-mean(pbsc[res,i+3])
+}
+
+allmeans<-c()
+for(i in 1:5){
+  allmeans[i]<-mean(pbsc[all,i+3])
+}
+
+rmeans<-c()
+b<-c()
+for(i in 1:5){
+  for(j in 1:1000){
+    b[j]<-mean(sample(pbsc[,i+3],size=388,replace=FALSE))
+  }
+  rmeans<-cbind(rmeans,b)
+}
+
+nam<-c("BB","VB","PB","SJ","BNP")
+colnames(rmeans)<-nam
+
+par(mfrow=c(2,3))
+for(i in 1:length(nam)){
+  hist(rmeans[,i],main='')
+  abline(v=intermeans[i],lwd=3,col="firebrick2")
+}
 
 # palette(c("grey50","grey70"))
 # par(mfrow=c(5,1),mar=c(0,3,0,0))
