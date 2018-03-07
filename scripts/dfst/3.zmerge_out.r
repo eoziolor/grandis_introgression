@@ -369,23 +369,71 @@ for(i in 1:5){
   allmeans[i]<-mean(pbsc[all,i+3])
 }
 
-rmeans<-c()
+#plotting histogram for intermediate regions----
+rimeans<-c()
 b<-c()
 for(i in 1:5){
   for(j in 1:1000){
     b[j]<-mean(sample(pbsc[,i+3],size=388,replace=FALSE))
   }
-  rmeans<-cbind(rmeans,b)
+  rimeans<-cbind(rimeans,b)
 }
 
 nam<-c("BB","VB","PB","SJ","BNP")
-colnames(rmeans)<-nam
+colnames(rimeans)<-nam
+cols<-c("black","black","black","firebrick2","firebrick2")
 
 par(mfrow=c(2,3))
 for(i in 1:length(nam)){
-  hist(rmeans[,i],main='')
-  abline(v=intermeans[i],lwd=3,col="firebrick2")
+  hist(rimeans[,i],main='',breaks=30,xlim=c(range(rimeans[,1])[[1]],intermeans[i]+.5),
+       bty='l',col=cols[i],border=cols[i],xlab=nam[i])
+  abline(v=intermeans[i],lwd=3,col="green")
 }
+
+#plotting histogram for resistant only regions----
+
+rrmeans<-c()
+b<-c()
+for(i in 1:5){
+  for(j in 1:1000){
+    b[j]<-mean(sample(pbsc[,i+3],size=2435,replace=FALSE))
+  }
+  rrmeans<-cbind(rrmeans,b)
+}
+
+nam<-c("BB","VB","PB","SJ","BNP")
+colnames(rrmeans)<-nam
+cols<-c("black","black","black","firebrick2","firebrick2")
+
+par(mfrow=c(2,3))
+for(i in 1:length(nam)){
+  hist(rrmeans[,i],main='',breaks=30,xlim=c(range(rrmeans[,1])[[1]],resmeans[i]+.5),
+       bty='l',col=cols[i],border=cols[i],xlab=nam[i])
+  abline(v=resmeans[i],lwd=3,col="green")
+}
+
+###plotting histogram for shared regions----
+
+rameans<-c()
+b<-c()
+for(i in 1:5){
+  for(j in 1:1000){
+    b[j]<-mean(sample(pbsc[,i+3],size=252,replace=FALSE))
+  }
+  rameans<-cbind(rameans,b)
+}
+
+nam<-c("BB","VB","PB","SJ","BNP")
+colnames(rameans)<-nam
+cols<-c("black","black","black","firebrick2","firebrick2")
+
+par(mfrow=c(2,3))
+for(i in 1:length(nam)){
+  hist(rameans[,i],main='',breaks=30,xlim=c(range(rameans[,1])[[1]],allmeans[i]+.5),
+       bty='l',col=cols[i],border=cols[i],xlab=nam[i])
+  abline(v=allmeans[i],lwd=3,col="green")
+}
+
 
 # palette(c("grey50","grey70"))
 # par(mfrow=c(5,1),mar=c(0,3,0,0))
