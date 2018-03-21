@@ -1,3 +1,7 @@
+# install.packages('stringr')
+# install.packages('dplyr')
+# install.packages('ggplot2')
+#install.packages('gtools')
 library(stringr)
 library(dplyr)
 library(gtools)

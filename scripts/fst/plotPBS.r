@@ -1,3 +1,10 @@
+# install.packages('stringr')
+# install.packages('dplyr')
+# install.packages('gtools')
+#install.packages('magrittr')
+#install.packages("XML")
+library(XML)
+library(magrittr)
 library(stringr)
 library(dplyr)
 library(gtools)
@@ -60,8 +67,9 @@ write.table(pbs_out[pbu,1:3],"~/analysis/data/fst/pbs_regions_sharedpbu.bed",row
 write.table(pbs_out[sju,1:3],"~/analysis/data/fst/pbs_regions_sharedsju.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
 write.table(pbs_out[bnpu,1:3],"~/analysis/data/fst/pbs_regions_sharedbnpu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
 
-# source("http://bioconductor.org/biocLite.R")
-# biocLite()
+#source("http://bioconductor.org/biocLite.R")
+#biocLite()
+#biocLite('rtracklayer')
 
 #Finding the overlaps in full data---------
 library("rtracklayer")
@@ -122,7 +130,7 @@ pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
 
 #plotting those results by using the pbs_out vector-------------
-palette(c("grey50","grey70","black","grey30"))
+palette(c("grey40","grey60","grey80","grey20"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 plot(pbsc[,4],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
