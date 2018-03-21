@@ -1,4 +1,3 @@
-install.packages("dplyr")
 library(viridis)
 library(dplyr)
 library(magrittr)

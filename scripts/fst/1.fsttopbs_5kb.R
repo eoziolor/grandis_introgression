@@ -1,4 +1,9 @@
-fs <- list.files("~/analysis/fst/raw/", "*5kb1kb.bed",full.names=TRUE)
+install.packages("RColorBrewer")
+library("RColorBrewer")
+library("lattice")
+library("gplots")
+#Loaidng list of fst files into a list object ----
+fs <- list.files("~/analysis/data/fst/raw/", "*5kb1kb.bed",full.names=TRUE)
 
 fst <- list()
 
@@ -6,11 +11,12 @@ for (i in 1:21){
 	fst[[i]] <- read.table(fs[i],stringsAsFactors=FALSE)
 	fst[[i]][,4] <- as.numeric(fst[[i]][,4])
 }
-print("done reading files")
+
 nfs <- gsub(".*\\/","",fs)
 nfs <- gsub(".fst.*","",nfs)
 names(fst)<-nfs
 
+#loading the pbs function----
 pbs <- function(t1,t2,c12){
   
   t1 <- -log(1-t1)
@@ -21,6 +27,7 @@ pbs <- function(t1,t2,c12){
   return(stat)
 }
 
+#selecting sites that ahave a minimum representation of 200 snps per region----
 nsnps <-fst[[1]][,5]
 
 for (i in 2:21){
@@ -32,6 +39,31 @@ nsnps <- nsnps/21
 
 subw <- nsnps > 20
 
+#calculating FST for all
+
+fstl<-c()
+for(i in 1:21){
+  fstl[i]<-mean(fst[[i]][subw,4],na.rm=TRUE)
+}
+
+fsth<-matrix(nrow = 7,ncol=7)
+colnames(fsth)<-c("BB","VB","PB","SJ","BNP","SP","GB")
+rownames(fsth)<-c("BB","VB","PB","SJ","BNP","SP","GB")
+fsth[1,]<-c(0,fstl["BB.VB"],fstl["BB.PB"],fstl["BB.SJ"],fstl["BB.BNP"],fstl["BB.SP"],fstl["BB.GB"])
+fsth[2,]<-c(fstl["BB.VB"],0,fstl["VB.PB"],fstl["VB.SJ"],fstl["VB.BNP"],fstl["VB.SP"],fstl["VB.GB"])
+fsth[3,]<-c(fstl["BB.PB"],fstl["VB.PB"],0,fstl["PB.SJ"],fstl["PB.BNP"],fstl["PB.SP"],fstl["PB.GB"])
+fsth[4,]<-c(fstl["BB.SJ"],fstl["VB.SJ"],fstl["PB.SJ"],0,fstl["SJ.BNP"],fstl["SJ.SP"],fstl["SJ.GB"])
+fsth[5,]<-c(fstl["BB.BNP"],fstl["VB.BNP"],fstl["PB.BNP"],fstl["SJ.BNP"],0,fstl["BNP.SP"],fstl["BNP.GB"])
+fsth[6,]<-c(fstl["BB.SP"],fstl["VB.SP"],fstl["PB.SP"],fstl["SJ.SP"],fstl["BNP.SP"],0,fstl["GB.SP"])
+fsth[7,]<-c(fstl["BB.GB"],fstl["VB.GB"],fstl["PB.GB"],fstl["SJ.GB"],fstl["BNP.GB"],fstl["GB.SP"],0)
+
+
+heatfst<-heatmap.2(fsth,Rowv=NA,Colv=NA,scale="none",margins=c(5,10),col=brewer.pal(9,"Greens"),
+                   density.info="none", trace="none")
+levelplot(fsth,aspect="iso",col.regions=brewer.pal(9,"YlOrRd"),scale=list(x=list(rot=45)),cuts=8)
+
+#Doing pbs on all pops----
+
 BBpbs <- pbs(fst[["BB.GB"]][,4],fst[["BB.SP"]][,4],fst[["GB.SP"]][,4])
 
 VBpbs <- pbs(fst[["VB.GB"]][,4],fst[["VB.SP"]][,4],fst[["GB.SP"]][,4])
@@ -41,7 +73,7 @@ PBpbs <- pbs(fst[["PB.GB"]][,4],fst[["PB.SP"]][,4],fst[["GB.SP"]][,4])
 SJpbs <- pbs(fst[["SJ.GB"]][,4],fst[["SJ.SP"]][,4],fst[["GB.SP"]][,4])
 
 BNPpbs <- pbs(fst[["BNP.GB"]][,4],fst[["BNP.SP"]][,4],fst[["GB.SP"]][,4])
-print("done reading files2")
+
 
 Allpbs <- cbind(
   fst[[1]][,1:3],
@@ -117,7 +149,7 @@ legend("topleft",y=c(.05,.1),legend=c("BB","VB","PB","SJ","BNP"),pch=20,cex=1.2,
 
 ################################################AHR2a
 
-###finding neutral regions to do admixture on
+###finding neutral regions to do admixture on----
 
 pbs<-read.table("~/analysis/data/fst/allpbs5kb",header=FALSE)
 pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs","keep")
