@@ -34,6 +34,7 @@ tiplabels(pch=as.numeric(popsym),col=popcol,bg=popcol2,cex=1.5)
 #plotting MDS
 plot(mds,col=popcol,cex=2,cex.axis=2,pch=as.numeric(popsym),
      bg=popcol2,bty='n')
+box(bty='l',lwd=5)
 
 #Plotting with ER standing out
 #popcol<-ifelse(grepl("ER",names),"seagreen1",

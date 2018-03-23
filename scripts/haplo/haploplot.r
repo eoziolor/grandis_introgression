@@ -1,10 +1,11 @@
+#install.packages("Rphylip")
 library(viridis)
 library(dplyr)
 library(magrittr)
 library(Rphylip)
 library(ape)
 library(stringr)
-vcf<-read.table("~/analysis/data/dfst/outlier_regions/zshared_10_no1or10_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+vcf<-read.table("~/analysis/data/dfst/outlier_regions/zinterm_regions_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
 sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
 cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
@@ -61,7 +62,8 @@ legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
 #plotting mds
 par(mfrow=c(1,1),mar=c(3,3,0,0))
 plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
-     bg=popfill2,bty='n')
+     bg=popfill2,bty='l')
+box(bty='l',lwd=5)
 
 legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),
        pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))

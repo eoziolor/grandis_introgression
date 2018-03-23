@@ -19,6 +19,94 @@ pops<-c("BB","VB","PB","SJ","BNP","SP","GB")
 names(pimean)<-pops
 names(pimedian)<-pops
 
+
+##ggplot pi----
+library(ggplot2)
+library(reshape2)
+
+mpi<-melt(pi[,1:10],id=c("scaf","start","end"))
+
+ggplot(mpi,
+       aes(x=variable,y=value,fill=variable,color=variable))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(0,.017))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+
+mtaj<-melt(taj[,1:10],id=c("scaf","start","end"))
+
+ggplot(mtaj,
+       aes(x=variable,y=value,fill=variable,color=variable))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(-.15,.3))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+
+#visualizing pi distribution----
+
+bbp<-density(pi[,4],na.rm=TRUE)
+vbp<-density(pi[,5],na.rm=TRUE)
+pbp<-density(pi[,6],na.rm=TRUE)
+sjp<-density(pi[,7],na.rm=TRUE)
+bnpp<-density(pi[,8],na.rm=TRUE)
+spp<-density(pi[,9],na.rm=TRUE)
+gbp<-density(pi[,10],na.rm=TRUE)
+
+par(mfrow=c(2,1),mar=c(4,5,2,2),mgp=c(3,2,0))
+
+plot(bnpp,xlim=c(0.001,.025),col="firebrick2",bty="l",ylim=c(0,450),cex.lab=2,xlab="",ylab="",lwd=3,main="",cex.axis=4)
+polygon(bnpp,col="lightpink",density=100,border=NA)
+lines(sjp,xlim=c(0.001,.025),col="firebrick2",lwd=3)
+polygon(sjp,col="red",density=100,border=NA)
+lines(pbp,xlim=c(0.001,.025),col="black",lwd=3)
+polygon(pbp,col="grey80",density=100,border=NA)
+lines(vbp,xlim=c(0.001,.025),col="black",lwd=3)
+polygon(vbp,col="grey40",density=100,border=NA)
+lines(bbp,xlim=c(0.001,.025),col="black",lwd=3)
+polygon(bbp,col="black",density=100,border=NA)
+polygon(spp,col="cadetblue3",density=100,border=NA)
+lines(spp,xlim=c(0.001,.025),col="cadetblue3",lwd=3)
+lines(gbp,xlim=c(0.001,.025),col="cadetblue3",lwd=3)
+polygon(gbp,col="cadetblue1",density=100,border=NA)
+
+box(lwd=7,bty="l")
+
+#visualizing tajima's D distribution----
+
+bbtaj<-density(taj[,4],na.rm=TRUE)
+vbtaj<-density(taj[,5],na.rm=TRUE)
+pbtaj<-density(taj[,6],na.rm=TRUE)
+sjtaj<-density(taj[,7],na.rm=TRUE)
+bnptaj<-density(taj[,8],na.rm=TRUE)
+sptaj<-density(taj[,9],na.rm=TRUE)
+gbtaj<-density(taj[,10],na.rm=TRUE)
+
+#par(mfrow=c(1,1),mgp=c(3,2,0))
+plot(bnptaj,xlim=c(-.15,.3),col="firebrick2",bty="l",ylim=c(0,10.5),xlab="",ylab="",main="",lwd=3,cex.axis=4)
+polygon(bnptaj,col="lightpink",density=100,border=NA)
+lines(sjtaj,xlim=c(-.15,.3),col="firebrick2",lwd=3)
+polygon(sjtaj,col="red",density=100,border=NA)
+lines(pbtaj,xlim=c(-.15,.3),col="black",lwd=3)
+polygon(pbtaj,col="grey80",density=100,border=NA)
+lines(vbtaj,xlim=c(-.15,.3),col="black",lwd=3)
+polygon(vbtaj,col="grey40",density=100,border=NA)
+lines(bbtaj,xlim=c(-.15,.3),col="black",lwd=3)
+polygon(bbtaj,col="black",density=100,border=NA)
+polygon(sptaj,col="cadetblue3",density=100,border=NA)
+lines(sptaj,xlim=c(-.15,.3),col="cadetblue3",lwd=3)
+lines(gbtaj,xlim=c(-.15,.3),col="cadetblue3",lwd=3)
+polygon(gbtaj,col="cadetblue1",density=100,border=NA)
+
+box(lwd=7,bty="l")
+
 #visualizing theta distribution----
 bbt<-density(theta[,4],na.rm=TRUE)
 vbt<-density(theta[,5],na.rm=TRUE)
@@ -43,64 +131,6 @@ lines(vbt,xlim=c(0,.025),col="black",lwd=3)
 polygon(vbt,col="grey40",density=100,border=NA)
 lines(bbt,xlim=c(0,.025),col="black",lwd=3)
 polygon(bbt,col="black",density=100,border=NA)
-
-
-#visualizing pi distribution----
-
-bbp<-density(pi[,4],na.rm=TRUE)
-vbp<-density(pi[,5],na.rm=TRUE)
-pbp<-density(pi[,6],na.rm=TRUE)
-sjp<-density(pi[,7],na.rm=TRUE)
-bnpp<-density(pi[,8],na.rm=TRUE)
-spp<-density(pi[,9],na.rm=TRUE)
-gbp<-density(pi[,10],na.rm=TRUE)
-
-par(mfrow=c(2,1),mar=c(4,5,2,2),mgp=c(3,2,0))
-
-plot(spp,xlim=c(0.001,.025),col="cadetblue3",bty="l",ylim=c(0,450),cex.lab=2,xlab="",ylab="",lwd=3,main="",cex.axis=4)
-polygon(spp,col="cadetblue3",density=100,border=NA)
-lines(gbp,xlim=c(0.001,.025),col="cadetblue3",lwd=3)
-polygon(gbp,col="cadetblue1",density=100,border=NA)
-lines(bnpp,xlim=c(0.001,.025),col="firebrick2",lwd=3)
-polygon(bnpp,col="lightpink",density=100,border=NA)
-lines(sjp,xlim=c(0.001,.025),col="firebrick2",lwd=3)
-polygon(sjp,col="red",density=100,border=NA)
-lines(pbp,xlim=c(0.001,.025),col="black",lwd=3)
-polygon(pbp,col="grey80",density=100,border=NA)
-lines(vbp,xlim=c(0.001,.025),col="black",lwd=3)
-polygon(vbp,col="grey40",density=100,border=NA)
-lines(bbp,xlim=c(0.001,.025),col="black",lwd=3)
-polygon(bbp,col="black",density=100,border=NA)
-
-box(lwd=7,bty="l")
-
-#visualizing tajima's D distribution----
-
-bbtaj<-density(taj[,4],na.rm=TRUE)
-vbtaj<-density(taj[,5],na.rm=TRUE)
-pbtaj<-density(taj[,6],na.rm=TRUE)
-sjtaj<-density(taj[,7],na.rm=TRUE)
-bnptaj<-density(taj[,8],na.rm=TRUE)
-sptaj<-density(taj[,9],na.rm=TRUE)
-gbtaj<-density(taj[,10],na.rm=TRUE)
-
-#par(mfrow=c(1,1),mgp=c(3,2,0))
-plot(sptaj,xlim=c(-.15,.3),col="cadetblue3",bty="l",ylim=c(0,10.5),xlab="",ylab="",main="",lwd=3,cex.axis=4)
-polygon(sptaj,col="cadetblue3",density=100,border=NA)
-lines(gbtaj,xlim=c(-.15,.3),col="cadetblue3",lwd=3)
-polygon(gbtaj,col="cadetblue1",density=100,border=NA)
-lines(bnptaj,xlim=c(-.15,.3),col="firebrick2",lwd=3)
-polygon(bnptaj,col="lightpink",density=100,border=NA)
-lines(sjtaj,xlim=c(-.15,.3),col="firebrick2",lwd=3)
-polygon(sjtaj,col="red",density=100,border=NA)
-lines(pbtaj,xlim=c(-.15,.3),col="black",lwd=3)
-polygon(pbtaj,col="grey80",density=100,border=NA)
-lines(vbtaj,xlim=c(-.15,.3),col="black",lwd=3)
-polygon(vbtaj,col="grey40",density=100,border=NA)
-lines(bbtaj,xlim=c(-.15,.3),col="black",lwd=3)
-polygon(bbtaj,col="black",density=100,border=NA)
-
-box(lwd=7,bty="l")
 
 
 #####Plotting theta vs pi----
