@@ -160,8 +160,13 @@ pbsc[pbuhit,"pbu"]<-pbsc[pbuhit,"pbu"]+1
 pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
 pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
+#SUPER IMPORTANT STEP - change factor levels----
+pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24"))
+
 #plotting those results by using the pbs_out vector. Have to find a way to intersect it with a region----
-palette(c("grey50","grey70","black","grey30"))
+palette(c("grey40","grey80"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 plot(pbsc[,4],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
@@ -169,7 +174,7 @@ plot(pbsc[,4],pch=20,cex=1.2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               ifelse(pbsc[,"bbu"]>0,"gold2",
                                      ifelse(pbsc[,4]>col[1],"green2",sort(as.factor(pbsc[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),xaxs="i",yaxs="i")
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
 
 plot(pbsc[,5],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
@@ -177,7 +182,7 @@ plot(pbsc[,5],pch=20,cex=1.2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               ifelse(pbsc[,"vbu"]>0,"gold2",
                                      ifelse(pbsc[,5]>col[2],"green2",sort(as.factor(pbsc[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),xaxs="i",yaxs="i")
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
 
 plot(pbsc[,6],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
@@ -185,7 +190,7 @@ plot(pbsc[,6],pch=20,cex=1.2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               ifelse(pbsc[,"pbu"]>0,"gold2",
                                      ifelse(pbsc[,6]>col[3],"green2",sort(as.factor(pbsc[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),xaxs="i",yaxs="i")
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
 
 plot(pbsc[,7],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
@@ -193,7 +198,7 @@ plot(pbsc[,7],pch=20,cex=1.2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               ifelse(pbsc[,"sju"]>0,"gold2",
                                      ifelse(pbsc[,7]>col[4],"green2",sort(as.factor(pbsc[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),xaxs="i",yaxs="i")
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
 
 plot(pbsc[,8],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
@@ -201,14 +206,14 @@ plot(pbsc[,8],pch=20,cex=1.2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               ifelse(pbsc[,"bnpu"]>0,"gold2",
                                      ifelse(pbsc[,8]>col[5],"green2",sort(as.factor(pbsc[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),xaxs="i",yaxs="i")
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-16,23),yaxs="i")
 
 
 write.table(pbsc[allhit,1:3],"~/analysis/data/dfst/zregions_split5kb.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
 
 ###Cleaner, by removing local regions----
 
-palette(c("grey40","grey60","grey80","grey20"))
+palette(c("grey40","grey80"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 plot(pbsc[,4],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",

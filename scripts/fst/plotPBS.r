@@ -140,7 +140,10 @@ pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
 
 #plotting those results by using the pbs_out vector-------------
-palette(c("grey40","grey60","grey80","grey20"))
+pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24"))
+palette(c("grey40","grey80"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 plot(pbsc[,4],pch=20,cex=1.2,
      col=ifelse(pbsc[,"all"]>0,"purple",
