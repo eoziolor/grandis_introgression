@@ -355,7 +355,7 @@ t(t(depsub[,m+2])/scalevec[m]) %>%
 ####representative graphs
 #make representative coverage figures for three individuals,yes/het/no duplication
 #264 - homozygous BB
-#48 - heterozygous GB
+#277 - heterozygous SJ
 #19 - no deletion SP
 par(mfrow=c(3,1),mar=c(2,2,1.5,0.5))
 
@@ -365,7 +365,7 @@ plot(dep[subl,2],dep[subl,ind]/scalevec[ind-2],pch=20,cex=.2,ylim=c(0,3))
 abline(h=seq(from=0.5,to=2.5,by=0.5),col="darkgray",lwd=2)
 points(dep[subl,2],subsmooth(dep[,ind])/scalevec[ind-2],pch=20,cex=.2,col="red")
 
-ind <- 48
+ind <- 277
 subl <- seq(from=10,to=177830,by=10)
 plot(dep[subl,2],dep[subl,ind]/scalevec[ind-2],pch=20,cex=.2,ylim=c(0,3))
 abline(h=seq(from=0.5,to=2.5,by=0.5),col="darkgray",lwd=2)
@@ -380,19 +380,19 @@ points(dep[subl,2],subsmooth(dep[,ind])/scalevec[ind-2],pch=20,cex=.2,col="red")
 
 ##Alternative plot
 ind1 <- 264
-ind2 <- 48
+ind2 <- 277
 ind3 <- 19
 par(mfrow=c(1,1),mar=c(4,4,1.5,0.5))
 subl <- seq(from=10,to=177830,by=10)
 plot(dep[subl,2],subsmooth(dep[,ind1])/scalevec[ind1-2],pch=20,cex=.3,col="black",ylim=c(0,2.2),
      ylab="Smoothed region coverage",xlab="Location on chromosome1")
 abline(h=seq(from=0.5,to=2.5,by=0.5),col="darkgray",lwd=2)
-points(dep[subl,2],subsmooth(dep[,ind2])/scalevec[ind2-2],pch=20,cex=.3,col="grey50")
-points(dep[subl,2],subsmooth(dep[,ind3])/scalevec[ind3-2],pch=20,cex=.3,col="lightgrey")
+points(dep[subl,2],subsmooth(dep[,ind2])/scalevec[ind2-2],pch=20,cex=.3,col="firebrick2")
+points(dep[subl,2],subsmooth(dep[,ind3])/scalevec[ind3-2],pch=20,cex=.3,col="cadetblue3")
 
-legend("topright",lty=2,legend=c("wt SP","hetDel GB","homDel BB"),col=c("lightgrey","grey50","black"),cex=1.2,
-       x.intersp = .7,y.intersp = .8)
-abline(v=c(730000,805000),lty=2,col="red")
+legend("bottomright",lty=2,lwd=2,legend=c("wt/wt S2","del/wt IH1","del/del R1"),col=c("cadetblue3","firebrick2","black"),cex=1.4,
+       x.intersp = .7,y.intersp = 1)
+abline(v=c(730000,805000),lty=2,lwd=2,col="purple")
 
 
 
