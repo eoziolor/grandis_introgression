@@ -1,4 +1,3 @@
-install.packages("RColorBrewer")
 library("RColorBrewer")
 library("lattice")
 library("gplots")
@@ -46,6 +45,8 @@ for(i in 1:21){
   fstl[i]<-mean(fst[[i]][subw,4],na.rm=TRUE)
 }
 
+names(fstl)<-names(fst)
+
 fsth<-matrix(nrow = 7,ncol=7)
 colnames(fsth)<-c("BB","VB","PB","SJ","BNP","SP","GB")
 rownames(fsth)<-c("BB","VB","PB","SJ","BNP","SP","GB")
@@ -58,7 +59,7 @@ fsth[6,]<-c(fstl["BB.SP"],fstl["VB.SP"],fstl["PB.SP"],fstl["SJ.SP"],fstl["BNP.SP
 fsth[7,]<-c(fstl["BB.GB"],fstl["VB.GB"],fstl["PB.GB"],fstl["SJ.GB"],fstl["BNP.GB"],fstl["GB.SP"],0)
 
 
-heatfst<-heatmap.2(fsth,Rowv=NA,Colv=NA,scale="none",margins=c(5,10),col=brewer.pal(9,"Greens"),
+heatfst<-heatmap.2(fsth,Rowv=NA,Colv=NA,scale="none",margins=c(5,10),col=brewer.pal(9,"YlOrRd"),
                    density.info="none", trace="none")
 levelplot(fsth,aspect="iso",col.regions=brewer.pal(9,"YlOrRd"),scale=list(x=list(rot=45)),cuts=8)
 

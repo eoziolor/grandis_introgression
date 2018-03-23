@@ -33,10 +33,20 @@ nsnps <-pbsct[,"keep"]
 subwc<-nsnps>0
 
 
-pbsc<-pbsct[subwc,]
-rownames(pbsc)<-seq(1:dim(pbsc[subwc,])[1])
-pbsc<-pbsc[,1:8]
+pbsctt<-pbsct[subwc,]
+rownames(pbsctt)<-seq(1:dim(pbsctt[subwc,])[1])
+pbsctt<-pbsctt[,1:8]
 
+#removing the crappy scaffold that has the first 141 windows of chromosome 16 (mismapped from chr1); this is discovered in dxy.r script in introgression folder
+chr16<-str_detect(pbsctt$Scaf,"chr16") #grab chr16
+ord<-order(pbsctt[chr16,"BBpbs"],decreasing=TRUE)
+pbsc16<-pbsctt[chr16,]
+pbsc16[ord,]
+chr16rows<-as.numeric(rownames(pbsctt[chr16,])) #grab rownames for it
+crappyrows<-chr16rows[1:300] #get the first 141 rows which contain scaffold "crappy"
+pbsc<-pbsctt[-c(crappyrows),] #remove thos rows from total
+chr16.2<-str_detect(pbsc$Scaf,"chr16")
+head(pbsc[chr16,])
 
 ###Doing this on merged windows to avoid patchyness of peak coloration------
 
@@ -44,7 +54,7 @@ pbs_out_temp<-read.table("~/analysis/data/fst/PBSoutliers_5kb_all_max.bed",strin
 names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount")
 colnames(pbs_out_temp)<-names
 
-pbs_out<-pbs_out_temp %>% filter(str_detect(Scaf,"chr"))
+pbs_out<-pbs_out_temp %>% filter(str_detect(Scaf,"chr")) #selecting only chromosome mapped scaffolds
 
 #checking for whether those are outliers in different groups--------
 all<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
@@ -360,55 +370,218 @@ grid.arrange(a,b,c,d,e,f,ncol=3,nrow=2)
 #   scale_color_manual(values=c("grey","purple","firebrick2","black")) +
 #   theme_classic()
 
-###Plotting CHR1------------
+###Trying to figure out if this can be attributed to a real increase in z for resistant pops----
 
-par(mfrow=c(5,1),mar=c(0,3,0,0))
+intermeans<-c()
+for(i in 1:5){
+  intermeans[i]<-mean(pbsc[interm,i+3],na.rm=TRUE)
+}
 
+resmeans<-c()
+for(i in 1:5){
+  resmeans[i]<-mean(pbsc[res,i+3],na.rm=TRUE)
+}
+
+allmeans<-c()
+for(i in 1:5){
+  allmeans[i]<-mean(pbsc[all,i+3],na.rm=TRUE)
+}
+
+#plotting histogram for intermediate regions----
+rimeans<-c()
+b<-c()
+for(i in 1:5){
+  for(j in 1:1000){
+    b[j]<-mean(sample(pbsc[,i+3],size=124,replace=FALSE))
+  }
+  rimeans<-cbind(rimeans,b)
+}
+
+nam<-c("BB","VB","PB","SJ","BNP")
+colnames(rimeans)<-nam
+cols<-c("black","black","black","firebrick2","firebrick2")
+
+par(mfrow=c(2,3),mar=c(4,4,2,2))
+for(i in 1:length(nam)){
+  hist(rimeans[,i],main='',breaks=30,xlim=c(range(rimeans[,i]-.1,na.rm=TRUE)[[1]],intermeans[i]+.5),
+       bty='l',col=cols[i],border=cols[i],xlab=nam[i],cex.axis=3,ylab='')
+  abline(v=intermeans[i],lwd=3,col="green")
+  box(bty='l',lwd=3)
+}
+
+#plotting histogram for resistant only regions----
+
+rrmeans<-c()
+b<-c()
+for(i in 1:5){
+  for(j in 1:1000){
+    b[j]<-mean(sample(pbsc[,i+3],size=2549,replace=FALSE))
+  }
+  rrmeans<-cbind(rrmeans,b)
+}
+
+nam<-c("BB","VB","PB","SJ","BNP")
+colnames(rrmeans)<-nam
+cols<-c("black","black","black","firebrick2","firebrick2")
+
+par(mfrow=c(2,3))
+for(i in 1:length(nam)){
+  hist(rrmeans[,i],main='',breaks=30,xlim=c(range(rrmeans[,i]-.1,na.rm=TRUE)[[1]],resmeans[i]+.5),
+       bty='l',col=cols[i],border=cols[i],xlab=nam[i])
+  abline(v=resmeans[i],lwd=3,col="green")
+}
+
+###plotting histogram for shared regions----
+
+rameans<-c()
+b<-c()
+for(i in 1:5){
+  for(j in 1:1000){
+    b[j]<-mean(sample(pbsc[,i+3],size=259,replace=FALSE))
+  }
+  rameans<-cbind(rameans,b)
+}
+
+nam<-c("BB","VB","PB","SJ","BNP")
+colnames(rameans)<-nam
+cols<-c("black","black","black","firebrick2","firebrick2")
+
+par(mfrow=c(2,3))
+for(i in 1:length(nam)){
+  hist(rameans[,i],main='',breaks=30,xlim=c(range(rameans[,i]-.1,na.rm=TRUE)[[1]],allmeans[i]+.5),
+       bty='l',col=cols[i],border=cols[i],xlab=nam[i])
+  abline(v=allmeans[i],lwd=3,col="green")
+}
+
+#smoothing funciton----
+subsmooth <- function(vec,by=10,width=11){
+  
+  len <- length(vec)
+  subl <- seq(from=by,to=len,by=by)
+  submax <- length(subl)
+  width <- width/2
+  test <- vec[subl]
+  
+  for(i in 1:submax){
+    
+    j <- i - width
+    k <- i + width
+    if(j < 1) {j <- 1}
+    if(k > submax) {k <- submax}
+    test[i] <- mean(test[j:k],na.rm=TRUE)
+  }
+  
+  return(test)
+  
+}
+
+
+###Plotting CHR1/AHR region------------
 pbsc1<-pbsc %>% filter(str_detect(Scaf,"\\bchr1\\b"))
-plot(pbsc1[,4],pch=20,cex=1.2,
-     col=ifelse(pbsc1[,"all"]>0,"purple",
-                ifelse(pbsc1[,"res"]>0,"black",
-                       ifelse(pbsc1[,"interm"]>0,"firebrick2",
-                              ifelse(pbsc1[,"bbu"]>0,"gold2",
-                                     ifelse(pbsc1[,4]>col[1],"green2",sort(as.factor(pbsc1[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
-abline(v=c(547,555),lty=2,col="red")
 
-plot(pbsc1[,5],pch=20,cex=1.2,
-     col=ifelse(pbsc1[,"all"]>0,"purple",
-                ifelse(pbsc1[,"res"]>0,"black",
-                       ifelse(pbsc1[,"interm"]>0,"firebrick2",
-                              ifelse(pbsc1[,"vbu"]>0,"gold2",
-                                     ifelse(pbsc1[,5]>col[2],"green2",sort(as.factor(pbsc1[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
-abline(v=c(547,555),lty=2,col="red")
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
 
-plot(pbsc1[,6],pch=20,cex=1.2,
-     col=ifelse(pbsc1[,"all"]>0,"purple",
-                ifelse(pbsc1[,"res"]>0,"black",
-                       ifelse(pbsc1[,"interm"]>0,"firebrick2",
-                              ifelse(pbsc1[,"pbu"]>0,"gold2",
-                                     ifelse(pbsc1[,6]>col[3],"green2",sort(as.factor(pbsc1[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
-abline(v=c(547,555),lty=2,col="red")
+for(i in 1:5){
+  plot(subsmooth(pbsc1[1:5000,i+3]),pch=20,cex=.5,ylim=c(0,1.8),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(50,60),col="red",lty=2,lwd=1.5)
+}
 
-plot(pbsc1[,7],pch=20,cex=1.2,
-     col=ifelse(pbsc1[,"all"]>0,"purple",
-                ifelse(pbsc1[,"res"]>0,"black",
-                       ifelse(pbsc1[,"interm"]>0,"firebrick2",
-                              ifelse(pbsc1[,"sju"]>0,"gold2",
-                                     ifelse(pbsc1[,7]>col[4],"green2",sort(as.factor(pbsc1[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
-abline(v=c(547,555),lty=2,col="red")
+#plotting ARNT chr8----
+pbsc8<-pbsc %>% filter(str_detect(Scaf,"\\bchr8\\b"))
 
-plot(pbsc1[,8],pch=20,cex=1.2,
-     col=ifelse(pbsc1[,"all"]>0,"purple",
-                ifelse(pbsc1[,"res"]>0,"black",
-                       ifelse(pbsc1[,"interm"]>0,"firebrick2",
-                              ifelse(pbsc1[,"bnpu"]>0,"gold2",
-                                     ifelse(pbsc1[,8]>col[5],"green2",sort(as.factor(pbsc1[,1]))))))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
-abline(v=c(547,555),lty=2,col="red")
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(subsmooth(pbsc8[14000:18000,i+3]),pch=20,cex=.5,ylim=c(0,.5),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(170,173),col="red",lty=2,lwd=1.5)
+}
+
+
+#plotting AIP chr2----
+pbsc2<-pbsc %>% filter(str_detect(Scaf,"\\bchr2\\b"))
+
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(subsmooth(pbsc2[23000:26000,i+3]),pch=20,cex=.5,ylim=c(0,.4),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(140,142),col="red",lty=2,lwd=1.5)
+}
+
+#plotting AQP3
+
+pbsc24<-pbsc %>% filter(str_detect(Scaf,"\\bchr24\\b"))
+
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(subsmooth(pbsc24[22000:26000,i+3]),pch=20,cex=.5,ylim=c(0,.5),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(159,162),col="red",lty=2,lwd=1.5)
+}
+
+#plotting AQP3
+
+pbsc11<-pbsc %>% filter(str_detect(Scaf,"\\bchr11\\b"))
+
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(subsmooth(pbsc11[27000:28940,i+3]),pch=20,cex=.5,ylim=c(0,.5),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(181,188),col="red",lty=2,lwd=1.5)
+}
+
+
+# #old chr1 plotting----
+# 
+# plot(pbsc1[,4],pch=20,cex=1.2,
+#      col=ifelse(pbsc1[,"all"]>0,"purple",
+#                 ifelse(pbsc1[,"res"]>0,"black",
+#                        ifelse(pbsc1[,"interm"]>0,"firebrick2",
+#                               ifelse(pbsc1[,"bbu"]>0,"gold2",
+#                                      ifelse(pbsc1[,4]>col[1],"green2",sort(as.factor(pbsc1[,1]))))))),
+#      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+# abline(v=c(547,555),lty=2,col="red")
+# 
+# plot(pbsc1[,5],pch=20,cex=1.2,
+#      col=ifelse(pbsc1[,"all"]>0,"purple",
+#                 ifelse(pbsc1[,"res"]>0,"black",
+#                        ifelse(pbsc1[,"interm"]>0,"firebrick2",
+#                               ifelse(pbsc1[,"vbu"]>0,"gold2",
+#                                      ifelse(pbsc1[,5]>col[2],"green2",sort(as.factor(pbsc1[,1]))))))),
+#      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+# abline(v=c(547,555),lty=2,col="red")
+# 
+# plot(pbsc1[,6],pch=20,cex=1.2,
+#      col=ifelse(pbsc1[,"all"]>0,"purple",
+#                 ifelse(pbsc1[,"res"]>0,"black",
+#                        ifelse(pbsc1[,"interm"]>0,"firebrick2",
+#                               ifelse(pbsc1[,"pbu"]>0,"gold2",
+#                                      ifelse(pbsc1[,6]>col[3],"green2",sort(as.factor(pbsc1[,1]))))))),
+#      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+# abline(v=c(547,555),lty=2,col="red")
+# 
+# plot(pbsc1[,7],pch=20,cex=1.2,
+#      col=ifelse(pbsc1[,"all"]>0,"purple",
+#                 ifelse(pbsc1[,"res"]>0,"black",
+#                        ifelse(pbsc1[,"interm"]>0,"firebrick2",
+#                               ifelse(pbsc1[,"sju"]>0,"gold2",
+#                                      ifelse(pbsc1[,7]>col[4],"green2",sort(as.factor(pbsc1[,1]))))))),
+#      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+# abline(v=c(547,555),lty=2,col="red")
+# 
+# plot(pbsc1[,8],pch=20,cex=1.2,
+#      col=ifelse(pbsc1[,"all"]>0,"purple",
+#                 ifelse(pbsc1[,"res"]>0,"black",
+#                        ifelse(pbsc1[,"interm"]>0,"firebrick2",
+#                               ifelse(pbsc1[,"bnpu"]>0,"gold2",
+#                                      ifelse(pbsc1[,8]>col[5],"green2",sort(as.factor(pbsc1[,1]))))))),
+#      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+# abline(v=c(547,555),lty=2,col="red")
+# 
 
 ###plotting in 5kb windows
 #####Plotting common regions

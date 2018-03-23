@@ -178,8 +178,10 @@ par(mar=c(4,4,2,2))
 plot(efr[,1],ylim=c(-.2,.4),type='n',xaxt='n',
      ylab="Deviation from expected allele frequencies due to admixture",bty='l')
 for(i in 1:dim(efr)[[2]]){
-  lines(efr[,i],ylim=c(0,.5),lwd=ifelse(zn[i,1]=="chr1",2.5,0.8)
-        ,col=ifelse(zn[i,1]=="chr1","red","black"))
+  lines(efr[,i],ylim=c(0,.5),lwd=ifelse(zn[i,1]=="chr1",3,
+                                        ifelse(zn[i,1]=="chr8",3,0.8))
+        ,col=ifelse(zn[i,1]=="chr1","blue",
+                    ifelse(zn[i,1]=="chr8","green","black")))
 }
 axis(side=1,at=1:7,labels=c(rownames(efr)))
 abline(h=1,lwd=3,lty=2,col="black")

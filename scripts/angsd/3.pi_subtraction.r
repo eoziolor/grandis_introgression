@@ -147,8 +147,8 @@ write.table(pbs_out[pbu,1:3],"~/analysis/data/angsd/pbs_regions_sharedpbu.bed",r
 write.table(pbs_out[sju,1:3],"~/analysis/data/angsd/pbs_regions_sharedsju.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
 write.table(pbs_out[bnpu,1:3],"~/analysis/data/angsd/pbs_regions_sharedbnpu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE)
 
-source("http://bioconductor.org/biocLite.R")
-biocLite()
+#source("http://bioconductor.org/biocLite.R")
+#biocLite()
 library("rtracklayer")
 
 bed1=import("~/analysis/data/angsd/PBS_keep_5kb.bed")
@@ -253,6 +253,33 @@ abline(h=c(collow),col=c("black","grey","red","darkorange","gold"),lwd=3,lty=3)
 
 legend(x=c(300000,350000),y=c(.05,.1),c("BB","VB","PB","SJSP","BNP"),pch=20,cex=1.2,
        col=c("black","grey","red","darkorange","gold"), x.intersp=.3,y.intersp=.6)
+
+###Plotting CHR1/AHR region------------
+pbsc1<-pbs_dist %>% filter(str_detect(Scaf,"\\bchr1\\b"))
+
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(pbsc1[200:1000,i+3],pch=20,cex=.5,ylim=c(-.1,.1),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(370,450),col="red",lty=2,lwd=1.5)
+}
+
+
+#plotting ARNT chr8----
+pbsc8<-pbs_dist %>% filter(str_detect(Scaf,"\\bchr8\\b"))
+
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(pbsc8[,i+3],pch=20,cex=.5,ylim=c(-.1,.1),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(170,173),col="red",lty=2,lwd=1.5)
+}
+
+
+
+
 
 #chr1 pi
 plot(pi[grep("chr1\\b",pi$scaf),4],pch=20,cex=.5,col="black",ylim=c(-.1,.4))

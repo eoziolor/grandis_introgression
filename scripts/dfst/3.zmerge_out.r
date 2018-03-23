@@ -59,6 +59,18 @@ write.table(na.omit(pbs_dist[all,1:3]),"~/analysis/data/dfst/zshared_outliers_al
 write.table(na.omit(pbs_dist[res,1:3]),"~/analysis/data/dfst/zres_outliers_all",row.names=FALSE,col.names=FALSE,quote=FALSE)
 write.table(na.omit(pbs_dist[interm,1:3]),"~/analysis/data/dfst/zinterm_outliers_all",row.names=FALSE,col.names=FALSE,quote=FALSE)
 
+###selecting for the proper regions----
+#includes removing crappy portion of chromosome 16 
+pbsct<-pbs_dist %>% filter(str_detect(Scaf,"chr"))
+chr16<-str_detect(pbsct$Scaf,"chr16") #grab chr16
+ord<-order(pbsct[chr16,"bb"],decreasing=TRUE)
+pbsc16<-pbsctt[chr16,]
+pbsc16[ord,]
+chr16rows<-as.numeric(rownames(pbsct[chr16,])) #grab rownames for it
+crappyrows<-chr16rows[1:300] #get the first 141 rows which contain scaffold "crappy"
+pbsc<-pbsct[-c(crappyrows),] #remove thos rows from total
+chr16.2<-str_detect(pbsc$Scaf,"chr16")
+head(pbsc[chr16,])
 ####Chr arranged outliers----
 
 pbs_out_temp<-read.table("~/analysis/data/dfst/zregions_max.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
@@ -66,8 +78,6 @@ names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcou
 colnames(pbs_out_temp)<-names
 
 pbs_out<-pbs_out_temp %>% filter(str_detect(Scaf,"chr"))
-
-pbsc<-pbs_dist %>% filter(str_detect(Scaf,"chr"))
 
 all<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
 res<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
@@ -377,7 +387,7 @@ for(i in 1:5){
 rimeans<-c()
 b<-c()
 for(i in 1:5){
-  for(j in 1:1000){
+  for(j in 1:10000){
     b[j]<-mean(sample(pbsc[,i+3],size=388,replace=FALSE))
   }
   rimeans<-cbind(rimeans,b)
@@ -387,11 +397,12 @@ nam<-c("BB","VB","PB","SJ","BNP")
 colnames(rimeans)<-nam
 cols<-c("black","black","black","firebrick2","firebrick2")
 
-par(mfrow=c(2,3))
+par(mfrow=c(2,3),mar=c(4,4,2,2))
 for(i in 1:length(nam)){
   hist(rimeans[,i],main='',breaks=30,xlim=c(range(rimeans[,1])[[1]],intermeans[i]+.5),
-       bty='l',col=cols[i],border=cols[i],xlab=nam[i])
+       bty='l',col=cols[i],border=cols[i],xlab=nam[i],cex.axis=3,ylab='')
   abline(v=intermeans[i],lwd=3,col="green")
+  box(bty='l',lwd=3)
 }
 
 #plotting histogram for resistant only regions----
