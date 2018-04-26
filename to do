@@ -1,10 +1,5 @@
-structure
-mixed effects model assosiation
-ipa on genes under selection
+for genome-wide estimation of pi use
 
-haplotype blocks in selected regions
-
-chemistry paper
-whale paper
-
-review; review
+sum(sp[,6],na.rm=TRUE)/sum(sp[,7],na.rm=TRUE)
+maybe include subw to remove locations with few sites
+gives you a better estimate of genome wide pi with giving different weight to regions with different amount of sites considered for the statistic

@@ -1,0 +1,151 @@
+---
+title: "Statistics compared"
+author: "E. Oziolor"
+date: "April 25, 2018"
+output: html_document
+---
+#Comparisons
+* I am comparing fst data calculated with Weir&Cockerham 1984 (with correction for sample size) to one calculated from pi
+* Comparing pi calculated by comparing individual snps to one calculated by SFS in ANGSD
+
+
+##Fst statistic
+
+* Weir & Cockerham Fst estimation includes correction for sample size
+    + that has given some odd substructuring paterns for BB and SJ, which Noah has noticed are not present when Fst is calculated from pi (0.5*(pi1+pi2)/dxy)
+    
+* Let's take Noah's data where pi and dxy are calculated on a per SNP basis and take global and local Fst plots from that.
+
+
+###### scp -P 2022 farm:/home/nreid/noah_stats.RData ~/analysis/data/comparison/noah_stats.RData
+
+```{r}
+load("~/analysis/data/comparison/noah_stats.RData")
+```
+
+* starting with the PBS statistic comparisons
+    + grabbing my data and plotting outlier windows
+    
+```{r}
+library(XML)
+library(magrittr)
+library(stringr)
+library(dplyr)
+library(gtools)
+library(naturalsort)
+library(stringr)
+library(dplyr)
+library(gtools)
+
+#Reading in table and getting quantiles----
+pbs<-read.table("~/analysis/data/fst/allpbs5kb",header=FALSE,stringsAsFactors = FALSE)
+pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs","keep")
+colnames(pbs)<-pbsname
+
+pbsc<-pbs %>% 
+  filter(str_detect(Scaf,"chr"))
+
+
+#Reorder Noah's data by chromosome
+pbst<-cbind(lift[,1:3],pbstat[,4:10])
+ord<-mixedorder(pbst$V1)
+pbsn<-pbst[ord,]
+#Plotting a regression against the PBS statistics calculated by Noah
+
+pbsnc<-pbsn %>% 
+  filter(str_detect(V1,"chr"))
+
+
+pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24"))
+
+pbsnc$V1<-factor(pbsnc$V1,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24"))
+
+palette(c("grey40","grey80"))
+par(mfrow=c(2,1))
+plot(pbsc[,"BBpbs"],pch=20,cex=.2,col=as.factor(pbs[,1]))
+plot(pbsnc[,"BB"],pch=20,cex=.2,col=as.factor(pbsn[,1]))
+
+par(mfrow=c(2,1))
+plot(pbsc[,"VBpbs"],pch=20,cex=.2,col=as.factor(pbs[,1]))
+plot(pbsnc[,"VB"],pch=20,cex=.2,col=as.factor(pbsn[,1]))
+
+par(mfrow=c(2,1))
+plot(pbsc[,"PBpbs"],pch=20,cex=.2,col=as.factor(pbs[,1]))
+plot(pbsnc[,"PB"],pch=20,cex=.2,col=as.factor(pbsn[,1]))
+
+par(mfrow=c(2,1))
+plot(pbsc[,"SJpbs"],pch=20,cex=.2,col=as.factor(pbs[,1]))
+plot(pbsnc[,"SJSP"],pch=20,cex=.2,col=as.factor(pbsn[,1]))
+
+par(mfrow=c(2,1))
+plot(pbsc[,"BNPpbs"],pch=20,cex=.2,col=as.factor(pbs[,1]))
+plot(pbsnc[,"BNP"],pch=20,cex=.2,col=as.factor(pbsn[,1]))
+```
+    
+```{r}
+library("RColorBrewer")
+library("lattice")
+library("gplots")
+#Loaidng list of fst files into a list object ----
+fs <- list.files("~/analysis/data/fst/raw/", "*5kb1kb.bed",full.names=TRUE) # listing all the files for Fst calculated with W&C fst statistic
+
+fst <- list()
+
+for (i in 1:21){
+	fst[[i]] <- read.table(fs[i],stringsAsFactors=FALSE)
+	fst[[i]][,4] <- as.numeric(fst[[i]][,4])
+} #reading in those files
+
+nfs <- gsub(".*\\/","",fs) #renaming the columns by removing the "." in the names
+nfs <- gsub(".fst.*","",nfs) #renaming by removing ".fst.*" from the name
+names(fst)<-nfs
+
+#selecting sites that ahave a minimum representation of 200 snps per region----
+nsnps <-fst[[1]][,5]
+
+for (i in 2:21){
+  
+  nsnps <- nsnps + fst[[i]][,5]
+}
+
+nsnps <- nsnps/21
+
+subw <- nsnps > 20
+
+#calculating FST for all
+
+fstl<-c()
+for(i in 1:21){
+  fstl[i]<-mean(fst[[i]][subw,4],na.rm=TRUE)
+} #global fst calculation for each pair
+
+names(fstl)<-names(fst)
+
+fsth<-matrix(nrow = 7,ncol=7) #creating matrix to hold fst data
+colnames(fsth)<-c("BB","VB","PB","SJ","BNP","SP","GB")
+rownames(fsth)<-c("BB","VB","PB","SJ","BNP","SP","GB")
+fsth[1,]<-c(0,fstl["BB.VB"],fstl["BB.PB"],fstl["BB.SJ"],fstl["BB.BNP"],fstl["BB.SP"],fstl["BB.GB"]) #stupid, stupid way of doing this. I should automate, but oh well.
+fsth[2,]<-c(fstl["BB.VB"],0,fstl["VB.PB"],fstl["VB.SJ"],fstl["VB.BNP"],fstl["VB.SP"],fstl["VB.GB"])
+fsth[3,]<-c(fstl["BB.PB"],fstl["VB.PB"],0,fstl["PB.SJ"],fstl["PB.BNP"],fstl["PB.SP"],fstl["PB.GB"])
+fsth[4,]<-c(fstl["BB.SJ"],fstl["VB.SJ"],fstl["PB.SJ"],0,fstl["SJ.BNP"],fstl["SJ.SP"],fstl["SJ.GB"])
+fsth[5,]<-c(fstl["BB.BNP"],fstl["VB.BNP"],fstl["PB.BNP"],fstl["SJ.BNP"],0,fstl["BNP.SP"],fstl["BNP.GB"])
+fsth[6,]<-c(fstl["BB.SP"],fstl["VB.SP"],fstl["PB.SP"],fstl["SJ.SP"],fstl["BNP.SP"],0,fstl["GB.SP"])
+fsth[7,]<-c(fstl["BB.GB"],fstl["VB.GB"],fstl["PB.GB"],fstl["SJ.GB"],fstl["BNP.GB"],fstl["GB.SP"],0)
+
+
+#heatfst<-heatmap.2(fsth,Rowv=NA,Colv=NA,scale="none",margins=c(5,10),col=brewer.pal(9,"YlOrRd"),
+                   #density.info="none", trace="none")
+levelplot(fsth,aspect="iso",col.regions=brewer.pal(9,"YlOrRd"),scale=list(x=list(rot=45)),cuts=8) #Better plot than above
+```
+
+
+
+##Neutrality statistics
+* Pi and Theta were calculated with SFS as prior for ANGSD
+    + priors look a bit messed up (clumpy), suggesting they are not the best
+
+* The purpose here is to compare
