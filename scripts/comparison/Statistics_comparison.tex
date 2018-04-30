@@ -1,0 +1,544 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={Statistics compared},
+            pdfauthor={E. Oziolor},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+  \title{Statistics compared}
+  \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+  \author{E. Oziolor}
+  \preauthor{\centering\large\emph}
+  \postauthor{\par}
+  \predate{\centering\large\emph}
+  \postdate{\par}
+  \date{April 25, 2018}
+
+
+\begin{document}
+\maketitle
+
+\section{Comparisons}\label{comparisons}
+
+\begin{itemize}
+\tightlist
+\item
+  I am comparing fst data calculated with Weir\&Cockerham 1984 (with
+  correction for sample size) to one calculated from pi
+\item
+  Comparing pi calculated by comparing individual snps to one calculated
+  by SFS in ANGSD
+\end{itemize}
+
+\subsection{Fst statistic}\label{fst-statistic}
+
+\begin{itemize}
+\tightlist
+\item
+  Weir \& Cockerham Fst estimation includes correction for sample size
+
+  \begin{itemize}
+  \tightlist
+  \item
+    that has given some odd substructuring paterns for BB and SJ, which
+    Noah has noticed are not present when Fst is calculated from pi
+    (0.5*(pi1+pi2)/dxy)
+  \end{itemize}
+\item
+  Let's take Noah's data where pi and dxy are calculated on a per SNP
+  basis and take global and local Fst plots from that.
+\end{itemize}
+
+scp -P 2022 farm:/home/nreid/noah\_stats.RData
+\textasciitilde{}/analysis/data/comparison/noah\_stats.RData
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{load}\NormalTok{(}\StringTok{"~/analysis/data/comparison/noah_stats.RData"}\NormalTok{)}
+\KeywordTok{write.table}\NormalTok{(lift,}\StringTok{"~/analysis/data/fst/noah.1kb.bed"}\NormalTok{,}\DataTypeTok{row.names =} \OtherTok{FALSE}\NormalTok{,}\DataTypeTok{col.names =} \OtherTok{FALSE}\NormalTok{,}\DataTypeTok{quote =} \OtherTok{FALSE}\NormalTok{,}\DataTypeTok{sep=}\StringTok{'}\CharTok{\textbackslash{}t}\StringTok{'}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{itemize}
+\tightlist
+\item
+  starting with the PBS statistic comparisons
+
+  \begin{itemize}
+  \tightlist
+  \item
+    grabbing my data and plotting outlier windows
+  \end{itemize}
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(XML)}
+\KeywordTok{library}\NormalTok{(magrittr)}
+\KeywordTok{library}\NormalTok{(stringr)}
+\KeywordTok{library}\NormalTok{(dplyr)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Attaching package: 'dplyr'
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(gtools)}
+\KeywordTok{library}\NormalTok{(naturalsort)}
+\KeywordTok{library}\NormalTok{(stringr)}
+\KeywordTok{library}\NormalTok{(dplyr)}
+\KeywordTok{library}\NormalTok{(gtools)}
+
+\CommentTok{#Reading in table and getting quantiles----}
+\NormalTok{pbs<-}\KeywordTok{read.table}\NormalTok{(}\StringTok{"~/analysis/data/fst/allpbs1kb"}\NormalTok{,}\DataTypeTok{header=}\OtherTok{FALSE}\NormalTok{,}\DataTypeTok{stringsAsFactors =} \OtherTok{FALSE}\NormalTok{)}
+\NormalTok{pbsname<-}\KeywordTok{c}\NormalTok{(}\StringTok{"Scaf"}\NormalTok{,}\StringTok{"start"}\NormalTok{,}\StringTok{"end"}\NormalTok{,}\StringTok{"BBpbs"}\NormalTok{,}\StringTok{"VBpbs"}\NormalTok{,}\StringTok{"PBpbs"}\NormalTok{,}\StringTok{"SJpbs"}\NormalTok{,}\StringTok{"BNPpbs"}\NormalTok{,}\StringTok{"keep"}\NormalTok{)}
+\KeywordTok{colnames}\NormalTok{(pbs)<-pbsname}
+
+\NormalTok{pbsc<-pbs }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{filter}\NormalTok{(}\KeywordTok{str_detect}\NormalTok{(Scaf,}\StringTok{"chr"}\NormalTok{))}
+\NormalTok{subw<-pbsc[,}\DecValTok{9}\NormalTok{]}\OperatorTok{>}\DecValTok{0}
+
+\CommentTok{#Reorder Noah's data by chromosome}
+\NormalTok{pbst<-}\KeywordTok{cbind}\NormalTok{(lift[,}\DecValTok{1}\OperatorTok{:}\DecValTok{3}\NormalTok{],pbstat[,}\DecValTok{4}\OperatorTok{:}\DecValTok{9}\NormalTok{])}
+\NormalTok{ord<-}\KeywordTok{mixedorder}\NormalTok{(pbst}\OperatorTok{$}\NormalTok{V1)}
+\NormalTok{pbsn<-pbst[ord,]}
+\CommentTok{#Plotting a regression against the PBS statistics calculated by Noah}
+
+\NormalTok{pbsnc<-pbsn }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{filter}\NormalTok{(}\KeywordTok{str_detect}\NormalTok{(V1,}\StringTok{"chr"}\NormalTok{))}
+
+
+\NormalTok{pbsc}\OperatorTok{$}\NormalTok{Scaf<-}\KeywordTok{factor}\NormalTok{(pbsc}\OperatorTok{$}\NormalTok{Scaf,}\DataTypeTok{levels=}\KeywordTok{c}\NormalTok{(}\StringTok{"chr1"}\NormalTok{,}\StringTok{"chr2"}\NormalTok{,}\StringTok{"chr3"}\NormalTok{,}\StringTok{"chr4"}\NormalTok{,}\StringTok{"chr5"}\NormalTok{,}\StringTok{"chr6"}\NormalTok{,}\StringTok{"chr7"}\NormalTok{,}\StringTok{"chr8"}\NormalTok{,}\StringTok{"chr9"}\NormalTok{,}\StringTok{"chr10"}\NormalTok{,}
+                                     \StringTok{"chr11"}\NormalTok{,}\StringTok{"chr12"}\NormalTok{,}\StringTok{"chr13"}\NormalTok{,}\StringTok{"chr14"}\NormalTok{,}\StringTok{"chr15"}\NormalTok{,}\StringTok{"chr16"}\NormalTok{,}\StringTok{"chr17"}\NormalTok{,}\StringTok{"chr18"}\NormalTok{,}\StringTok{"chr19"}\NormalTok{,}
+                                     \StringTok{"chr20"}\NormalTok{,}\StringTok{"chr21"}\NormalTok{,}\StringTok{"chr22"}\NormalTok{,}\StringTok{"chr23"}\NormalTok{,}\StringTok{"chr24"}\NormalTok{))}
+
+\NormalTok{pbsnc}\OperatorTok{$}\NormalTok{V1<-}\KeywordTok{factor}\NormalTok{(pbsnc}\OperatorTok{$}\NormalTok{V1,}\DataTypeTok{levels=}\KeywordTok{c}\NormalTok{(}\StringTok{"chr1"}\NormalTok{,}\StringTok{"chr2"}\NormalTok{,}\StringTok{"chr3"}\NormalTok{,}\StringTok{"chr4"}\NormalTok{,}\StringTok{"chr5"}\NormalTok{,}\StringTok{"chr6"}\NormalTok{,}\StringTok{"chr7"}\NormalTok{,}\StringTok{"chr8"}\NormalTok{,}\StringTok{"chr9"}\NormalTok{,}\StringTok{"chr10"}\NormalTok{,}
+                                     \StringTok{"chr11"}\NormalTok{,}\StringTok{"chr12"}\NormalTok{,}\StringTok{"chr13"}\NormalTok{,}\StringTok{"chr14"}\NormalTok{,}\StringTok{"chr15"}\NormalTok{,}\StringTok{"chr16"}\NormalTok{,}\StringTok{"chr17"}\NormalTok{,}\StringTok{"chr18"}\NormalTok{,}\StringTok{"chr19"}\NormalTok{,}
+                                     \StringTok{"chr20"}\NormalTok{,}\StringTok{"chr21"}\NormalTok{,}\StringTok{"chr22"}\NormalTok{,}\StringTok{"chr23"}\NormalTok{,}\StringTok{"chr24"}\NormalTok{))}
+
+\KeywordTok{palette}\NormalTok{(}\KeywordTok{c}\NormalTok{(}\StringTok{"grey40"}\NormalTok{,}\StringTok{"grey80"}\NormalTok{))}
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mfrow=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{1}\NormalTok{),}\DataTypeTok{mar=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsc[subw,}\StringTok{"BBpbs"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{as.factor}\NormalTok{(pbsc[subw,}\DecValTok{1}\NormalTok{]),}\DataTypeTok{bty=}\StringTok{'l'}\NormalTok{,}\DataTypeTok{ylim=}\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.5}\NormalTok{,}\FloatTok{3.5}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsnc[subw,}\StringTok{"BB"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{as.factor}\NormalTok{(pbsnc[subw,}\DecValTok{1}\NormalTok{]),}\DataTypeTok{bty=}\StringTok{'l'}\NormalTok{,}\DataTypeTok{ylim=}\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.5}\NormalTok{,}\FloatTok{3.5}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Statistics_comparison_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mfrow=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{1}\NormalTok{),}\DataTypeTok{mar=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsc[subw,}\StringTok{"VBpbs"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{as.factor}\NormalTok{(pbsc[subw,}\DecValTok{1}\NormalTok{]),}\DataTypeTok{bty=}\StringTok{'l'}\NormalTok{,}\DataTypeTok{ylim=}\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.5}\NormalTok{,}\FloatTok{3.5}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsnc[subw,}\StringTok{"VB"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{as.factor}\NormalTok{(pbsnc[subw,}\DecValTok{1}\NormalTok{]),}\DataTypeTok{bty=}\StringTok{'l'}\NormalTok{,}\DataTypeTok{ylim=}\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.5}\NormalTok{,}\FloatTok{3.5}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Statistics_comparison_files/figure-latex/unnamed-chunk-2-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mfrow=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{1}\NormalTok{),}\DataTypeTok{mar=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsc[subw,}\StringTok{"PBpbs"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{as.factor}\NormalTok{(pbsc[subw,}\DecValTok{1}\NormalTok{]),}\DataTypeTok{bty=}\StringTok{'l'}\NormalTok{,}\DataTypeTok{ylim=}\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.5}\NormalTok{,}\FloatTok{3.5}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsnc[subw,}\StringTok{"PB"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{as.factor}\NormalTok{(pbsnc[subw,}\DecValTok{1}\NormalTok{]),}\DataTypeTok{bty=}\StringTok{'l'}\NormalTok{,}\DataTypeTok{ylim=}\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.5}\NormalTok{,}\FloatTok{3.5}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Statistics_comparison_files/figure-latex/unnamed-chunk-2-3.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mfrow=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{1}\NormalTok{),}\DataTypeTok{mar=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsc[subw,}\StringTok{"SJpbs"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{as.factor}\NormalTok{(pbsc[subw,}\DecValTok{1}\NormalTok{]),}\DataTypeTok{bty=}\StringTok{'l'}\NormalTok{,}\DataTypeTok{ylim=}\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.5}\NormalTok{,}\FloatTok{3.5}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsnc[subw,}\StringTok{"SJSP"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{as.factor}\NormalTok{(pbsnc[subw,}\DecValTok{1}\NormalTok{]),}\DataTypeTok{bty=}\StringTok{'l'}\NormalTok{,}\DataTypeTok{ylim=}\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.5}\NormalTok{,}\FloatTok{3.5}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Statistics_comparison_files/figure-latex/unnamed-chunk-2-4.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mfrow=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{1}\NormalTok{),}\DataTypeTok{mar=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsc[subw,}\StringTok{"BNPpbs"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{as.factor}\NormalTok{(pbsc[subw,}\DecValTok{1}\NormalTok{]),}\DataTypeTok{bty=}\StringTok{'l'}\NormalTok{,}\DataTypeTok{ylim=}\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.5}\NormalTok{,}\FloatTok{3.5}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsnc[subw,}\StringTok{"BNP"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{,}\DataTypeTok{col=}\KeywordTok{as.factor}\NormalTok{(pbsnc[subw,}\DecValTok{1}\NormalTok{]),}\DataTypeTok{bty=}\StringTok{'l'}\NormalTok{,}\DataTypeTok{ylim=}\KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.5}\NormalTok{,}\FloatTok{3.5}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Statistics_comparison_files/figure-latex/unnamed-chunk-2-5.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mfrow=}\KeywordTok{c}\NormalTok{(}\DecValTok{3}\NormalTok{,}\DecValTok{2}\NormalTok{),}\DataTypeTok{mar=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(pbsc[subw,}\StringTok{"BBpbs"}\NormalTok{],pbsnc[subw,}\StringTok{"BB"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{)}
+\KeywordTok{plot}\NormalTok{(pbsc[subw,}\StringTok{"VBpbs"}\NormalTok{],pbsnc[subw,}\StringTok{"VB"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{)}
+\KeywordTok{plot}\NormalTok{(pbsc[subw,}\StringTok{"PBpbs"}\NormalTok{],pbsnc[subw,}\StringTok{"PB"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{)}
+\KeywordTok{plot}\NormalTok{(pbsc[subw,}\StringTok{"SJpbs"}\NormalTok{],pbsnc[subw,}\StringTok{"SJSP"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{)}
+\KeywordTok{plot}\NormalTok{(pbsc[subw,}\StringTok{"BNPpbs"}\NormalTok{],pbsnc[subw,}\StringTok{"BNP"}\NormalTok{],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{cex=}\NormalTok{.}\DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Statistics_comparison_files/figure-latex/unnamed-chunk-2-6.pdf}
+
+\subsubsection{Calculating Genome-wide Fst and
+comparing}\label{calculating-genome-wide-fst-and-comparing}
+
+\begin{itemize}
+\tightlist
+\item
+  Will use 2 ways of calculating genome wide Fst
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Averaging Fst statistics from Weir \& Cockerham windowed estimates
+    of 1kb windows over the genome
+  \item
+    Averaging Fst statistics with Hudson estimator from Noah's pi and
+    dxy
+  \end{itemize}
+\item
+  Starting with my 1kb estimates of genome-wide Fst (Weir\&Cockerham)
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(}\StringTok{"RColorBrewer"}\NormalTok{)}
+\KeywordTok{library}\NormalTok{(}\StringTok{"lattice"}\NormalTok{)}
+\KeywordTok{library}\NormalTok{(}\StringTok{"gplots"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Attaching package: 'gplots'
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:stats':
+## 
+##     lowess
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#Loaidng list of fst files into a list object ----}
+\NormalTok{fs <-}\StringTok{ }\KeywordTok{list.files}\NormalTok{(}\StringTok{"~/analysis/data/fst/raw/"}\NormalTok{, }\StringTok{"*fst.1kb.bed"}\NormalTok{,}\DataTypeTok{full.names=}\OtherTok{TRUE}\NormalTok{) }\CommentTok{# listing all the files for Fst calculated with W&C fst statistic}
+
+\NormalTok{fst <-}\StringTok{ }\KeywordTok{list}\NormalTok{()}
+
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\DecValTok{21}\NormalTok{)\{}
+\NormalTok{    fst[[i]] <-}\StringTok{ }\KeywordTok{read.table}\NormalTok{(fs[i],}\DataTypeTok{stringsAsFactors=}\OtherTok{FALSE}\NormalTok{)}
+\NormalTok{    fst[[i]][,}\DecValTok{4}\NormalTok{] <-}\StringTok{ }\KeywordTok{as.numeric}\NormalTok{(fst[[i]][,}\DecValTok{4}\NormalTok{])}
+\NormalTok{\} }\CommentTok{#reading in those files}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+
+## Warning: NAs introduced by coercion
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{nfs <-}\StringTok{ }\KeywordTok{gsub}\NormalTok{(}\StringTok{".*}\CharTok{\textbackslash{}\textbackslash{}}\StringTok{/"}\NormalTok{,}\StringTok{""}\NormalTok{,fs) }\CommentTok{#renaming the columns by removing the "." in the names}
+\NormalTok{nfs <-}\StringTok{ }\KeywordTok{gsub}\NormalTok{(}\StringTok{".fst.*"}\NormalTok{,}\StringTok{""}\NormalTok{,nfs) }\CommentTok{#renaming by removing ".fst.*" from the name}
+\KeywordTok{names}\NormalTok{(fst)<-nfs}
+
+\CommentTok{#selecting sites that ahave a minimum representation of 200 snps per region----}
+\NormalTok{nsnps <-fst[[}\DecValTok{1}\NormalTok{]][,}\DecValTok{5}\NormalTok{]}
+
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{2}\OperatorTok{:}\DecValTok{21}\NormalTok{)\{}
+  
+\NormalTok{  nsnps <-}\StringTok{ }\NormalTok{nsnps }\OperatorTok{+}\StringTok{ }\NormalTok{fst[[i]][,}\DecValTok{5}\NormalTok{]}
+\NormalTok{\}}
+
+\NormalTok{nsnps <-}\StringTok{ }\NormalTok{nsnps}\OperatorTok{/}\DecValTok{21}
+
+\NormalTok{subw <-}\StringTok{ }\NormalTok{nsnps }\OperatorTok{>}\StringTok{ }\DecValTok{20}
+
+\CommentTok{#calculating FST for all}
+
+\NormalTok{fstl<-}\KeywordTok{c}\NormalTok{()}
+\ControlFlowTok{for}\NormalTok{(i }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\DecValTok{21}\NormalTok{)\{}
+\NormalTok{  fstl[i]<-}\KeywordTok{mean}\NormalTok{(fst[[i]][subw,}\DecValTok{4}\NormalTok{],}\DataTypeTok{na.rm=}\OtherTok{TRUE}\NormalTok{)}
+\NormalTok{\} }\CommentTok{#global fst calculation for each pair}
+
+\KeywordTok{names}\NormalTok{(fstl)<-}\KeywordTok{names}\NormalTok{(fst)}
+
+\NormalTok{fsth<-}\KeywordTok{matrix}\NormalTok{(}\DataTypeTok{nrow =} \DecValTok{7}\NormalTok{,}\DataTypeTok{ncol=}\DecValTok{7}\NormalTok{) }\CommentTok{#creating matrix to hold fst data}
+\KeywordTok{colnames}\NormalTok{(fsth)<-}\KeywordTok{c}\NormalTok{(}\StringTok{"BB"}\NormalTok{,}\StringTok{"VB"}\NormalTok{,}\StringTok{"PB"}\NormalTok{,}\StringTok{"SJ"}\NormalTok{,}\StringTok{"BNP"}\NormalTok{,}\StringTok{"SP"}\NormalTok{,}\StringTok{"GB"}\NormalTok{)}
+\KeywordTok{rownames}\NormalTok{(fsth)<-}\KeywordTok{c}\NormalTok{(}\StringTok{"BB"}\NormalTok{,}\StringTok{"VB"}\NormalTok{,}\StringTok{"PB"}\NormalTok{,}\StringTok{"SJ"}\NormalTok{,}\StringTok{"BNP"}\NormalTok{,}\StringTok{"SP"}\NormalTok{,}\StringTok{"GB"}\NormalTok{)}
+\NormalTok{fsth[}\DecValTok{1}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,fstl[}\StringTok{"BB.VB"}\NormalTok{],fstl[}\StringTok{"BB.PB"}\NormalTok{],fstl[}\StringTok{"BB.SJ"}\NormalTok{],fstl[}\StringTok{"BB.BNP"}\NormalTok{],fstl[}\StringTok{"BB.SP"}\NormalTok{],fstl[}\StringTok{"BB.GB"}\NormalTok{]) }\CommentTok{#stupid, stupid way of doing this. I should automate, but oh well.}
+\NormalTok{fsth[}\DecValTok{2}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fstl[}\StringTok{"BB.VB"}\NormalTok{],}\DecValTok{0}\NormalTok{,fstl[}\StringTok{"VB.PB"}\NormalTok{],fstl[}\StringTok{"VB.SJ"}\NormalTok{],fstl[}\StringTok{"VB.BNP"}\NormalTok{],fstl[}\StringTok{"VB.SP"}\NormalTok{],fstl[}\StringTok{"VB.GB"}\NormalTok{])}
+\NormalTok{fsth[}\DecValTok{3}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fstl[}\StringTok{"BB.PB"}\NormalTok{],fstl[}\StringTok{"VB.PB"}\NormalTok{],}\DecValTok{0}\NormalTok{,fstl[}\StringTok{"PB.SJ"}\NormalTok{],fstl[}\StringTok{"PB.BNP"}\NormalTok{],fstl[}\StringTok{"PB.SP"}\NormalTok{],fstl[}\StringTok{"PB.GB"}\NormalTok{])}
+\NormalTok{fsth[}\DecValTok{4}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fstl[}\StringTok{"BB.SJ"}\NormalTok{],fstl[}\StringTok{"VB.SJ"}\NormalTok{],fstl[}\StringTok{"PB.SJ"}\NormalTok{],}\DecValTok{0}\NormalTok{,fstl[}\StringTok{"SJ.BNP"}\NormalTok{],fstl[}\StringTok{"SJ.SP"}\NormalTok{],fstl[}\StringTok{"SJ.GB"}\NormalTok{])}
+\NormalTok{fsth[}\DecValTok{5}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fstl[}\StringTok{"BB.BNP"}\NormalTok{],fstl[}\StringTok{"VB.BNP"}\NormalTok{],fstl[}\StringTok{"PB.BNP"}\NormalTok{],fstl[}\StringTok{"SJ.BNP"}\NormalTok{],}\DecValTok{0}\NormalTok{,fstl[}\StringTok{"BNP.SP"}\NormalTok{],fstl[}\StringTok{"BNP.GB"}\NormalTok{])}
+\NormalTok{fsth[}\DecValTok{6}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fstl[}\StringTok{"BB.SP"}\NormalTok{],fstl[}\StringTok{"VB.SP"}\NormalTok{],fstl[}\StringTok{"PB.SP"}\NormalTok{],fstl[}\StringTok{"SJ.SP"}\NormalTok{],fstl[}\StringTok{"BNP.SP"}\NormalTok{],}\DecValTok{0}\NormalTok{,fstl[}\StringTok{"GB.SP"}\NormalTok{])}
+\NormalTok{fsth[}\DecValTok{7}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fstl[}\StringTok{"BB.GB"}\NormalTok{],fstl[}\StringTok{"VB.GB"}\NormalTok{],fstl[}\StringTok{"PB.GB"}\NormalTok{],fstl[}\StringTok{"SJ.GB"}\NormalTok{],fstl[}\StringTok{"BNP.GB"}\NormalTok{],fstl[}\StringTok{"GB.SP"}\NormalTok{],}\DecValTok{0}\NormalTok{)}
+
+
+\CommentTok{#heatfst<-heatmap.2(fsth,Rowv=NA,Colv=NA,scale="none",margins=c(5,10),col=brewer.pal(9,"YlOrRd"),}
+                   \CommentTok{#density.info="none", trace="none")}
+\KeywordTok{levelplot}\NormalTok{(fsth,}\DataTypeTok{aspect=}\StringTok{"iso"}\NormalTok{,}\DataTypeTok{col.regions=}\KeywordTok{brewer.pal}\NormalTok{(}\DecValTok{9}\NormalTok{,}\StringTok{"YlOrRd"}\NormalTok{),}\DataTypeTok{scale=}\KeywordTok{list}\NormalTok{(}\DataTypeTok{x=}\KeywordTok{list}\NormalTok{(}\DataTypeTok{rot=}\DecValTok{45}\NormalTok{)),}\DataTypeTok{cuts=}\DecValTok{8}\NormalTok{) }\CommentTok{#Better plot than above}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Statistics_comparison_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+\begin{itemize}
+\tightlist
+\item
+  Calculating Noah's genome wide Hudson statistic
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{load}\NormalTok{(}\StringTok{"~/analysis/data/comparison/noah_stats.RData"}\NormalTok{)}
+\NormalTok{subw<-val[,}\DecValTok{4}\NormalTok{]}\OperatorTok{>}\DecValTok{0}
+\NormalTok{neutsum<-}\KeywordTok{colSums}\NormalTok{(fst[subw,}\DecValTok{4}\OperatorTok{:}\DecValTok{94}\NormalTok{],}\DataTypeTok{na.rm=}\OtherTok{TRUE}\NormalTok{) }\CommentTok{#summing up columns of pi and dxy statistics}
+\NormalTok{snpsum<-}\KeywordTok{sum}\NormalTok{(val[subw,}\DecValTok{4}\NormalTok{])}
+\NormalTok{neutbase<-neutsum}\OperatorTok{/}\NormalTok{snpsum}
+
+\NormalTok{pi<-neutbase[}\KeywordTok{c}\NormalTok{(}\StringTok{"BB"}\NormalTok{,}\StringTok{"VB"}\NormalTok{,}\StringTok{"PB"}\NormalTok{,}\StringTok{"SJSP"}\NormalTok{,}\StringTok{"BNP"}\NormalTok{,}\StringTok{"SP"}\NormalTok{,}\StringTok{"GB"}\NormalTok{)]}
+\NormalTok{dxy<-neutbase[}\KeywordTok{c}\NormalTok{(}\StringTok{"BB.VB"}\NormalTok{,}\StringTok{"BB.PB"}\NormalTok{,}\StringTok{"BB.SJSP"}\NormalTok{,}\StringTok{"BB.BNP"}\NormalTok{,}\StringTok{"BB.SP"}\NormalTok{,}\StringTok{"BB.GB"}\NormalTok{,}
+                \StringTok{"PB.VB"}\NormalTok{,}\StringTok{"SJSP.VB"}\NormalTok{,}\StringTok{"BNP.VB"}\NormalTok{,}\StringTok{"SP.VB"}\NormalTok{,}\StringTok{"GB.VB"}\NormalTok{,}
+                \StringTok{"PB.SJSP"}\NormalTok{,}\StringTok{"BNP.PB"}\NormalTok{,}\StringTok{"PB.SP"}\NormalTok{,}\StringTok{"GB.PB"}\NormalTok{,}
+                \StringTok{"BNP.SJSP"}\NormalTok{,}\StringTok{"SJSP.SP"}\NormalTok{,}\StringTok{"GB.SJSP"}\NormalTok{,}
+                \StringTok{"BNP.SP"}\NormalTok{,}\StringTok{"BNP.GB"}\NormalTok{,}
+                \StringTok{"GB.SP"}\NormalTok{)]}
+
+\NormalTok{fsthud<-}\KeywordTok{c}\NormalTok{()}
+\NormalTok{k<-}\DecValTok{1}
+\NormalTok{ii<-}\DecValTok{1}
+\ControlFlowTok{for}\NormalTok{(i }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\DecValTok{6}\NormalTok{)\{}
+\NormalTok{  ii=i}\OperatorTok{+}\DecValTok{1}
+  \ControlFlowTok{for}\NormalTok{(j }\ControlFlowTok{in}\NormalTok{ ii}\OperatorTok{:}\DecValTok{7}\NormalTok{)\{}
+\NormalTok{  fsthud[k]<-}\DecValTok{1}\OperatorTok{-}\NormalTok{(}\KeywordTok{mean}\NormalTok{(pi[i],pi[ii])}\OperatorTok{/}\NormalTok{dxy[k])}
+\NormalTok{  k=k}\OperatorTok{+}\DecValTok{1}
+\NormalTok{\}}
+\NormalTok{\}}
+
+\KeywordTok{names}\NormalTok{(fsthud)<-}\KeywordTok{names}\NormalTok{(dxy)}
+
+\NormalTok{fsth<-}\KeywordTok{matrix}\NormalTok{(}\DataTypeTok{nrow =} \DecValTok{7}\NormalTok{,}\DataTypeTok{ncol=}\DecValTok{7}\NormalTok{) }\CommentTok{#creating matrix to hold fst data}
+\KeywordTok{colnames}\NormalTok{(fsth)<-}\KeywordTok{c}\NormalTok{(}\StringTok{"BB"}\NormalTok{,}\StringTok{"VB"}\NormalTok{,}\StringTok{"PB"}\NormalTok{,}\StringTok{"SJ"}\NormalTok{,}\StringTok{"BNP"}\NormalTok{,}\StringTok{"SP"}\NormalTok{,}\StringTok{"GB"}\NormalTok{)}
+\KeywordTok{rownames}\NormalTok{(fsth)<-}\KeywordTok{c}\NormalTok{(}\StringTok{"BB"}\NormalTok{,}\StringTok{"VB"}\NormalTok{,}\StringTok{"PB"}\NormalTok{,}\StringTok{"SJ"}\NormalTok{,}\StringTok{"BNP"}\NormalTok{,}\StringTok{"SP"}\NormalTok{,}\StringTok{"GB"}\NormalTok{)}
+\NormalTok{fsth[}\DecValTok{1}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,fsthud[}\StringTok{"BB.VB"}\NormalTok{],fsthud[}\StringTok{"BB.PB"}\NormalTok{],fsthud[}\StringTok{"BB.SJSP"}\NormalTok{],fsthud[}\StringTok{"BB.BNP"}\NormalTok{],fsthud[}\StringTok{"BB.SP"}\NormalTok{],fsthud[}\StringTok{"BB.GB"}\NormalTok{]) }\CommentTok{#stupid, stupid way of doing this. I should automate, but oh well.}
+\NormalTok{fsth[}\DecValTok{2}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fsthud[}\StringTok{"BB.VB"}\NormalTok{],}\DecValTok{0}\NormalTok{,fsthud[}\StringTok{"PB.VB"}\NormalTok{],fsthud[}\StringTok{"SJSP.VB"}\NormalTok{],fsthud[}\StringTok{"BNP.VB"}\NormalTok{],fsthud[}\StringTok{"SP.VB"}\NormalTok{],fsthud[}\StringTok{"GB.VB"}\NormalTok{])}
+\NormalTok{fsth[}\DecValTok{3}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fsthud[}\StringTok{"BB.PB"}\NormalTok{],fsthud[}\StringTok{"PB.VB"}\NormalTok{],}\DecValTok{0}\NormalTok{,fsthud[}\StringTok{"PB.SJSP"}\NormalTok{],fsthud[}\StringTok{"BNP.PB"}\NormalTok{],fsthud[}\StringTok{"PB.SP"}\NormalTok{],fsthud[}\StringTok{"GB.PB"}\NormalTok{])}
+\NormalTok{fsth[}\DecValTok{4}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fsthud[}\StringTok{"BB.SJSP"}\NormalTok{],fsthud[}\StringTok{"SJSP.VB"}\NormalTok{],fsthud[}\StringTok{"PB.SJSP"}\NormalTok{],}\DecValTok{0}\NormalTok{,fsthud[}\StringTok{"BNP.SJSP"}\NormalTok{],fsthud[}\StringTok{"SJSP.SP"}\NormalTok{],fsthud[}\StringTok{"GB.SJSP"}\NormalTok{])}
+\NormalTok{fsth[}\DecValTok{5}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fsthud[}\StringTok{"BB.BNP"}\NormalTok{],fsthud[}\StringTok{"BNP.VB"}\NormalTok{],fsthud[}\StringTok{"BNP.PB"}\NormalTok{],fsthud[}\StringTok{"BNP.SJSP"}\NormalTok{],}\DecValTok{0}\NormalTok{,fsthud[}\StringTok{"BNP.SP"}\NormalTok{],fsthud[}\StringTok{"BNP.GB"}\NormalTok{])}
+\NormalTok{fsth[}\DecValTok{6}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fsthud[}\StringTok{"BB.SP"}\NormalTok{],fsthud[}\StringTok{"SP.VB"}\NormalTok{],fsthud[}\StringTok{"PB.SP"}\NormalTok{],fsthud[}\StringTok{"SJSP.SP"}\NormalTok{],fsthud[}\StringTok{"BNP.SP"}\NormalTok{],}\DecValTok{0}\NormalTok{,fsthud[}\StringTok{"GB.SP"}\NormalTok{])}
+\NormalTok{fsth[}\DecValTok{7}\NormalTok{,]<-}\KeywordTok{c}\NormalTok{(fsthud[}\StringTok{"BB.GB"}\NormalTok{],fsthud[}\StringTok{"GB.VB"}\NormalTok{],fsthud[}\StringTok{"GB.PB"}\NormalTok{],fsthud[}\StringTok{"GB.SJSP"}\NormalTok{],fsthud[}\StringTok{"BNP.GB"}\NormalTok{],fsthud[}\StringTok{"GB.SP"}\NormalTok{],}\DecValTok{0}\NormalTok{)}
+
+\KeywordTok{levelplot}\NormalTok{(fsth,}\DataTypeTok{aspect=}\StringTok{"iso"}\NormalTok{,}\DataTypeTok{col.regions=}\KeywordTok{brewer.pal}\NormalTok{(}\DecValTok{9}\NormalTok{,}\StringTok{"YlOrRd"}\NormalTok{),}\DataTypeTok{scale=}\KeywordTok{list}\NormalTok{(}\DataTypeTok{x=}\KeywordTok{list}\NormalTok{(}\DataTypeTok{rot=}\DecValTok{45}\NormalTok{)),}\DataTypeTok{cuts=}\DecValTok{8}\NormalTok{) }\CommentTok{#Better plot than above}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Statistics_comparison_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\subsection{Neutrality statistics}\label{neutrality-statistics}
+
+\begin{itemize}
+\tightlist
+\item
+  Pi and Theta were calculated with SFS as prior for ANGSD
+
+  \begin{itemize}
+  \tightlist
+  \item
+    priors look a bit messed up (clumpy), suggesting they are not the
+    best
+  \end{itemize}
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sf<-}\KeywordTok{list.files}\NormalTok{(}\StringTok{"~/analysis/data/angsd/raw/"}\NormalTok{,}\StringTok{"*.sfs"}\NormalTok{,}\DataTypeTok{full.names=}\OtherTok{TRUE}\NormalTok{)}
+\NormalTok{cols<-}\KeywordTok{c}\NormalTok{(}\StringTok{"black"}\NormalTok{,}\StringTok{"grey40"}\NormalTok{,}\StringTok{"grey80"}\NormalTok{,}\StringTok{"firebrick2"}\NormalTok{,}\StringTok{"lightpink"}\NormalTok{,}\StringTok{"cadetblue1"}\NormalTok{,}\StringTok{"cadetblue3"}\NormalTok{)}
+\NormalTok{pop<-}\KeywordTok{list}\NormalTok{(}\StringTok{"bb"}\NormalTok{,}\StringTok{"vb"}\NormalTok{,}\StringTok{"pb"}\NormalTok{,}\StringTok{"sj"}\NormalTok{,}\StringTok{"bnp"}\NormalTok{,}\StringTok{"sp"}\NormalTok{,}\StringTok{"gb"}\NormalTok{)}
+
+\ControlFlowTok{for}\NormalTok{(i }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\DecValTok{7}\NormalTok{)\{}
+\NormalTok{  pop[[i]]<-}\KeywordTok{scan}\NormalTok{(sf[[i]])}
+\NormalTok{\}}
+
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mfrow=}\KeywordTok{c}\NormalTok{(}\DecValTok{3}\NormalTok{,}\DecValTok{3}\NormalTok{),}\DataTypeTok{mar=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\ControlFlowTok{for}\NormalTok{(i }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\DecValTok{7}\NormalTok{)\{}
+  \KeywordTok{plot}\NormalTok{(}\KeywordTok{log}\NormalTok{(pop[[i]]),}\DataTypeTok{col=}\NormalTok{cols[i],}\DataTypeTok{pch=}\DecValTok{20}\NormalTok{,}\DataTypeTok{lwd=}\DecValTok{3}\NormalTok{)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Statistics_comparison_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\begin{itemize}
+\tightlist
+\item
+  The purpose here is to compare
+\end{itemize}
+
+
+\end{document}

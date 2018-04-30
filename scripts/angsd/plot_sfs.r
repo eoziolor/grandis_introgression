@@ -1,5 +1,5 @@
 sf<-list.files("~/analysis/data/angsd/raw/","*.sfs",full.names=TRUE)
-
+cols<-c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3")
 pop<-list("bb","vb","pb","sj","bnp","sp","gb")
 
 for(i in 1:7){

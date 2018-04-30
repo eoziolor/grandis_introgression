@@ -2,7 +2,9 @@
 title: "Statistics compared"
 author: "E. Oziolor"
 date: "April 25, 2018"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 #Comparisons
 * I am comparing fst data calculated with Weir&Cockerham 1984 (with correction for sample size) to one calculated from pi
@@ -21,6 +23,7 @@ output: html_document
 
 ```{r}
 load("~/analysis/data/comparison/noah_stats.RData")
+write.table(lift,"~/analysis/data/fst/noah.1kb.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
 ```
 
 * starting with the PBS statistic comparisons
@@ -44,10 +47,10 @@ colnames(pbs)<-pbsname
 
 pbsc<-pbs %>% 
   filter(str_detect(Scaf,"chr"))
-
+subw<-pbsc[,9]>0
 
 #Reorder Noah's data by chromosome
-pbst<-cbind(lift[,1:3],pbstat[,4:10])
+pbst<-cbind(lift[,1:3],pbstat[,4:9])
 ord<-mixedorder(pbst$V1)
 pbsn<-pbst[ord,]
 #Plotting a regression against the PBS statistics calculated by Noah
@@ -65,33 +68,50 @@ pbsnc$V1<-factor(pbsnc$V1,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","ch
                                      "chr20","chr21","chr22","chr23","chr24"))
 
 palette(c("grey40","grey80"))
-par(mfrow=c(2,1))
-plot(pbsc[,"BBpbs"],pch=20,cex=.2,col=as.factor(pbs[,1]))
-plot(pbsnc[,"BB"],pch=20,cex=.2,col=as.factor(pbsn[,1]))
+par(mfrow=c(2,1),mar=c(2,2,0,0))
+plot(pbsc[subw,"BBpbs"],pch=20,cex=.2,col=as.factor(pbsc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+plot(pbsnc[subw,"BB"],pch=20,cex=.2,col=as.factor(pbsnc[subw,1]),bty='l',ylim=c(-0.5,3.5))
 
-par(mfrow=c(2,1))
-plot(pbsc[,"VBpbs"],pch=20,cex=.2,col=as.factor(pbs[,1]))
-plot(pbsnc[,"VB"],pch=20,cex=.2,col=as.factor(pbsn[,1]))
+par(mfrow=c(2,1),mar=c(2,2,0,0))
+plot(pbsc[subw,"VBpbs"],pch=20,cex=.2,col=as.factor(pbsc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+plot(pbsnc[subw,"VB"],pch=20,cex=.2,col=as.factor(pbsnc[subw,1]),bty='l',ylim=c(-0.5,3.5))
 
-par(mfrow=c(2,1))
-plot(pbsc[,"PBpbs"],pch=20,cex=.2,col=as.factor(pbs[,1]))
-plot(pbsnc[,"PB"],pch=20,cex=.2,col=as.factor(pbsn[,1]))
+par(mfrow=c(2,1),mar=c(2,2,0,0))
+plot(pbsc[subw,"PBpbs"],pch=20,cex=.2,col=as.factor(pbsc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+plot(pbsnc[subw,"PB"],pch=20,cex=.2,col=as.factor(pbsnc[subw,1]),bty='l',ylim=c(-0.5,3.5))
 
-par(mfrow=c(2,1))
-plot(pbsc[,"SJpbs"],pch=20,cex=.2,col=as.factor(pbs[,1]))
-plot(pbsnc[,"SJSP"],pch=20,cex=.2,col=as.factor(pbsn[,1]))
+par(mfrow=c(2,1),mar=c(2,2,0,0))
+plot(pbsc[subw,"SJpbs"],pch=20,cex=.2,col=as.factor(pbsc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+plot(pbsnc[subw,"SJSP"],pch=20,cex=.2,col=as.factor(pbsnc[subw,1]),bty='l',ylim=c(-0.5,3.5))
 
-par(mfrow=c(2,1))
-plot(pbsc[,"BNPpbs"],pch=20,cex=.2,col=as.factor(pbs[,1]))
-plot(pbsnc[,"BNP"],pch=20,cex=.2,col=as.factor(pbsn[,1]))
+par(mfrow=c(2,1),mar=c(2,2,0,0))
+plot(pbsc[subw,"BNPpbs"],pch=20,cex=.2,col=as.factor(pbsc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+plot(pbsnc[subw,"BNP"],pch=20,cex=.2,col=as.factor(pbsnc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+
+#Only works if you call the 1kb windows
+# par(mfrow=c(3,2),mar=c(2,2,0,0))
+# plot(pbsc[subw,"BBpbs"],pbsnc[subw,"BB"],pch=20,cex=.2)
+# plot(pbsc[subw,"VBpbs"],pbsnc[subw,"VB"],pch=20,cex=.2)
+# plot(pbsc[subw,"PBpbs"],pbsnc[subw,"PB"],pch=20,cex=.2)
+# plot(pbsc[subw,"SJpbs"],pbsnc[subw,"SJSP"],pch=20,cex=.2)
+# plot(pbsc[subw,"BNPpbs"],pbsnc[subw,"BNP"],pch=20,cex=.2)
+
 ```
     
+###Calculating Genome-wide Fst and comparing
+
+* Will use 2 ways of calculating genome wide Fst
+    + Averaging Fst statistics from Weir & Cockerham windowed estimates of 1kb windows over the genome
+    + Averaging Fst statistics with Hudson estimator from Noah's pi and dxy
+    
+* Starting with my 1kb estimates of genome-wide Fst (Weir&Cockerham)
+
 ```{r}
 library("RColorBrewer")
 library("lattice")
 library("gplots")
 #Loaidng list of fst files into a list object ----
-fs <- list.files("~/analysis/data/fst/raw/", "*5kb1kb.bed",full.names=TRUE) # listing all the files for Fst calculated with W&C fst statistic
+fs <- list.files("~/analysis/data/fst/raw/", "*fst.1kb.bed",full.names=TRUE) # listing all the files for Fst calculated with W&C fst statistic
 
 fst <- list()
 
@@ -118,34 +138,78 @@ subw <- nsnps > 20
 
 #calculating FST for all
 
-fstl<-c()
-for(i in 1:21){
-  fstl[i]<-mean(fst[[i]][subw,4],na.rm=TRUE)
-} #global fst calculation for each pair
-
-names(fstl)<-names(fst)
-
+pops<-c("BB","VB","PB","SJ","BNP","GB","SP")
 fsth<-matrix(nrow = 7,ncol=7) #creating matrix to hold fst data
-colnames(fsth)<-c("BB","VB","PB","SJ","BNP","SP","GB")
-rownames(fsth)<-c("BB","VB","PB","SJ","BNP","SP","GB")
-fsth[1,]<-c(0,fstl["BB.VB"],fstl["BB.PB"],fstl["BB.SJ"],fstl["BB.BNP"],fstl["BB.SP"],fstl["BB.GB"]) #stupid, stupid way of doing this. I should automate, but oh well.
-fsth[2,]<-c(fstl["BB.VB"],0,fstl["VB.PB"],fstl["VB.SJ"],fstl["VB.BNP"],fstl["VB.SP"],fstl["VB.GB"])
-fsth[3,]<-c(fstl["BB.PB"],fstl["VB.PB"],0,fstl["PB.SJ"],fstl["PB.BNP"],fstl["PB.SP"],fstl["PB.GB"])
-fsth[4,]<-c(fstl["BB.SJ"],fstl["VB.SJ"],fstl["PB.SJ"],0,fstl["SJ.BNP"],fstl["SJ.SP"],fstl["SJ.GB"])
-fsth[5,]<-c(fstl["BB.BNP"],fstl["VB.BNP"],fstl["PB.BNP"],fstl["SJ.BNP"],0,fstl["BNP.SP"],fstl["BNP.GB"])
-fsth[6,]<-c(fstl["BB.SP"],fstl["VB.SP"],fstl["PB.SP"],fstl["SJ.SP"],fstl["BNP.SP"],0,fstl["GB.SP"])
-fsth[7,]<-c(fstl["BB.GB"],fstl["VB.GB"],fstl["PB.GB"],fstl["SJ.GB"],fstl["BNP.GB"],fstl["GB.SP"],0)
+colnames(fsth)<-pops
+rownames(fsth)<-pops
 
+for(i in pops){
+  for(j in pops){
+    if(i==j){next()}
+    if(which(pops %in% i) < which(pops %in% j)){
+      fsth[i,j]<-mean(fst[[paste(unique(c(i,j)),collapse=".")]][subw,4],na.rm=TRUE)
+    } else{
+      fsth[i,j]<-mean(fst[[paste(unique(c(j,i)),collapse=".")]][subw,4],na.rm=TRUE)
+    }
+  }
+} #global fst calculation for each pair
 
 #heatfst<-heatmap.2(fsth,Rowv=NA,Colv=NA,scale="none",margins=c(5,10),col=brewer.pal(9,"YlOrRd"),
                    #density.info="none", trace="none")
 levelplot(fsth,aspect="iso",col.regions=brewer.pal(9,"YlOrRd"),scale=list(x=list(rot=45)),cuts=8) #Better plot than above
 ```
 
+* Calculating Noah's genome wide Hudson statistic
 
+```{r}
+load("~/analysis/data/comparison/noah_stats.RData")
+subw<-val[,4]>0
+neutsum<-colSums(fst[subw,4:94],na.rm=TRUE) #summing up columns of pi and dxy statistics
+snpsum<-sum(val[subw,4])
+neutbase<-neutsum/snpsum
+
+pops<-c("BB","VB","PB","SJSP","BNP","SP","GB")
+# dxy<-neutbase[c("BB.VB","BB.PB","BB.SJSP","BB.BNP","BB.SP","BB.GB",
+#                 "PB.VB","SJSP.VB","BNP.VB","SP.VB","GB.VB",
+#                 "PB.SJSP","BNP.PB","PB.SP","GB.PB",
+#                 "BNP.SJSP","SJSP.SP","GB.SJSP",
+#                 "BNP.SP","BNP.GB",
+#                 "GB.SP")]
+
+fsth<-matrix(nrow = 7,ncol=7) #creating matrix to hold fst data
+rownames(fsth)<- pops
+colnames(fsth)<- pops
+
+for(i in pops){
+  for(j in pops){
+    if(i==j){next()}
+    fsth[i,j]<-1-((neutbase[i]+neutbase[j])/2)/neutbase[paste(sort(unique(c(i,j))),collapse=".")]
+  }
+}
+
+
+levelplot(fsth,aspect="iso",col.regions=brewer.pal(9,"YlOrRd"),scale=list(x=list(rot=45)),cuts=8) #Better plot than above
+
+```
 
 ##Neutrality statistics
 * Pi and Theta were calculated with SFS as prior for ANGSD
     + priors look a bit messed up (clumpy), suggesting they are not the best
+
+```{r}
+sf<-list.files("~/analysis/data/angsd/raw/","*.sfs",full.names=TRUE)
+cols<-c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3")
+pop<-list("bb","vb","pb","sj","bnp","sp","gb")
+
+for(i in 1:7){
+  pop[[i]]<-scan(sf[[i]])
+}
+
+par(mfrow=c(3,3),mar=c(2,2,2,2))
+for(i in 1:7){
+  plot(log(pop[[i]]),col=cols[i],pch=20,lwd=3)
+}
+
+```
 
 * The purpose here is to compare

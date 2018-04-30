@@ -83,3 +83,8 @@ Did PBS on intermediates, comparing both with BB/GB and VB/SP. Nuthin! Good!
 
 Added analysis of outliers vs each other. Interesting!
 Both z values and PBS values.
+
+4-26-18
+
+re-subdividing wcfst into 1kb regions to have a direct comparison with the 1kb windows that noah calculated for Fst
+
