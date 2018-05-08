@@ -15,8 +15,8 @@ library(stringr)
 source("~/analysis/scripts/depth/pullgenos.r")
 source("~/analysis/scripts/depth/pullgenos.phased.r")
 
-gts<-pullgenos("chr1:700000-900000")
-hap<-pullgenos.phased("chr1:700000-900000")
+gts<-pullgenos("chr1:650000-900000")
+hap<-pullgenos.phased("chr1:650000-900000")
 colnames(gts)[1] <- "pos"
 dep<-read.table("~/analysis/data/depth/coverage_ahr.txt.gz",stringsAsFactors=FALSE)
 sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
@@ -392,8 +392,8 @@ points(dep[subl,2],subsmooth(dep[,ind3])/scalevec[ind3-2],pch=20,cex=.3,col="cad
 
 legend("bottomright",lty=2,lwd=2,legend=c("wt/wt S2","del/wt IH1","del/del R1"),col=c("cadetblue3","firebrick2","black"),cex=1.4,
        x.intersp = .7,y.intersp = 1)
-abline(v=c(730000,805000),lty=2,lwd=2,col="purple")
-
+abline(v=c(729500,806000),lty=2,lwd=2,col="purple")
+abline(v=c(728500,730500,765000,767000,805000,807000),lty=2,lwd=2,col="purple")
 
 
 ###returns population frequency given pop,sex,data

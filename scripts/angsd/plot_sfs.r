@@ -1,6 +1,6 @@
-sf<-list.files("~/analysis/data/angsd/raw/","*.sfs",full.names=TRUE)
-cols<-c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3")
-pop<-list("bb","vb","pb","sj","bnp","sp","gb")
+sf<-list.files("~/analysis/data/angsd/subsample/","*.sfs",full.names=TRUE)
+cols<-c("black","lightpink","cadetblue3","grey80","firebrick2","cadetblue1","grey40")
+pop<-list("bb","bnp","gb","pb","sj","sp","vb")
 
 for(i in 1:7){
   pop[[i]]<-scan(sf[[i]])

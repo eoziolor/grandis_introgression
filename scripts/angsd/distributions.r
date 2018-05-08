@@ -1,19 +1,25 @@
+library('tidyr')
+library('tibble')
+library('magrittr')
+library('dplyr')
+
 #loading neutrality stats----
 
-theta<-read.table("~/analysis/data/angsd/thetas_neut_5kb",header=TRUE, sep=',')
-pi<-read.table("~/analysis/data/angsd/pi_neut_5kb", header=TRUE, sep=',')
-taj<-read.table("~/analysis/data/angsd/taj",header=TRUE, sep=',')
+theta<-read.table("~/analysis/data/angsd/thetas_sub",header=TRUE, sep=',')
+pi<-read.table("~/analysis/data/angsd/pi_sub", header=TRUE, sep=',')
+taj<-read.table("~/analysis/data/angsd/taj_sub",header=TRUE, sep=',')
 
+subw<-pi[,"keep"]>0
 
 #calculating mean and median pi----
 pimean<-c()
 for(i in 1:7){
-  pimean[i]<-mean(pi[,i+3],na.rm=TRUE)
+  pimean[i]<-mean(pi[subw,i+3],na.rm=TRUE)
 }
 
 pimedian<-c()
 for(i in 1:7){
-  pimedian[i]<-median(pi[,i+3],na.rm=TRUE)
+  pimedian[i]<-median(pi[subw,i+3],na.rm=TRUE)
 }
 pops<-c("BB","VB","PB","SJ","BNP","SP","GB")
 names(pimean)<-pops
@@ -52,17 +58,18 @@ ggplot(mtaj,
 
 #visualizing pi distribution----
 
-bbp<-density(pi[,4],na.rm=TRUE)
-vbp<-density(pi[,5],na.rm=TRUE)
-pbp<-density(pi[,6],na.rm=TRUE)
-sjp<-density(pi[,7],na.rm=TRUE)
-bnpp<-density(pi[,8],na.rm=TRUE)
-spp<-density(pi[,9],na.rm=TRUE)
-gbp<-density(pi[,10],na.rm=TRUE)
+bbp<-density(pi[subw,4],na.rm=TRUE)
+vbp<-density(pi[subw,5],na.rm=TRUE)
+pbp<-density(pi[subw,6],na.rm=TRUE)
+sjp<-density(pi[subw,7],na.rm=TRUE)
+bnpp<-density(pi[subw,8],na.rm=TRUE)
+spp<-density(pi[subw,9],na.rm=TRUE)
+gbp<-density(pi[subw,10],na.rm=TRUE)
 
 par(mfrow=c(2,1),mar=c(4,5,2,2),mgp=c(3,2,0))
 
-plot(bnpp,xlim=c(0.001,.025),col="firebrick2",bty="l",ylim=c(0,450),cex.lab=2,xlab="",ylab="",lwd=3,main="",cex.axis=4)
+plot(bnpp,xlim=c(0.0001,.025),col="firebrick2",bty="l",ylim=c(0,450),
+     cex.lab=2,xlab="",ylab="",lwd=3,main="",cex.axis=4)
 polygon(bnpp,col="lightpink",density=100,border=NA)
 lines(sjp,xlim=c(0.001,.025),col="firebrick2",lwd=3)
 polygon(sjp,col="red",density=100,border=NA)
@@ -81,16 +88,17 @@ box(lwd=7,bty="l")
 
 #visualizing tajima's D distribution----
 
-bbtaj<-density(taj[,4],na.rm=TRUE)
-vbtaj<-density(taj[,5],na.rm=TRUE)
-pbtaj<-density(taj[,6],na.rm=TRUE)
-sjtaj<-density(taj[,7],na.rm=TRUE)
-bnptaj<-density(taj[,8],na.rm=TRUE)
-sptaj<-density(taj[,9],na.rm=TRUE)
-gbtaj<-density(taj[,10],na.rm=TRUE)
+bbtaj<-density(taj[subw,4],na.rm=TRUE)
+vbtaj<-density(taj[subw,5],na.rm=TRUE)
+pbtaj<-density(taj[subw,6],na.rm=TRUE)
+sjtaj<-density(taj[subw,7],na.rm=TRUE)
+bnptaj<-density(taj[subw,8],na.rm=TRUE)
+sptaj<-density(taj[subw,9],na.rm=TRUE)
+gbtaj<-density(taj[subw,10],na.rm=TRUE)
 
 #par(mfrow=c(1,1),mgp=c(3,2,0))
-plot(bnptaj,xlim=c(-.15,.3),col="firebrick2",bty="l",ylim=c(0,10.5),xlab="",ylab="",main="",lwd=3,cex.axis=4)
+plot(bnptaj,xlim=c(-.3,.3),col="firebrick2",bty="l",
+     ylim=c(0,20),xlab="",ylab="",main="",lwd=3,cex.axis=4)
 polygon(bnptaj,col="lightpink",density=100,border=NA)
 lines(sjtaj,xlim=c(-.15,.3),col="firebrick2",lwd=3)
 polygon(sjtaj,col="red",density=100,border=NA)
