@@ -163,7 +163,7 @@ awk '{OFS="\t"}{s=$2+1}{print $1,s,$3}' > /data/oziolore//fhet/data/angsd2/keep5
 ## fixing up lists of all populations .bam files so they can be plugged into ANGSD
 
 ```{bash}
-cat BB2.txt | sed 's/home/data/' | sed 's/restoreFromData\///'
+cat BB2.txt | sed 's/home/data/' | sed 's/restoreFromData\///' | uniq > BB2_new.txt
 ```
 
 ## Starting site allele frequency estimation on a 50Mb subsample for each population (to create SFS)
@@ -204,6 +204,7 @@ $my_angsd \
 
 ```{bash}
 
+
 #!/bin/bash
 
 #PBS -l nodes=1:ppn=8
@@ -215,14 +216,15 @@ one=$(echo $pops | cut -f $PBS_ARRAY_INDEX -d ' ')
 
 
 #program and file
-my_sfs=/data/oziolore/program/angsd/misc/realSFS
-in_saf=/data/oziolore/fhet/data/angsd2/$one\.saf.idx
+my_sfs=/data/oziolore/program/angsd_norm/misc/realSFS
+in_saf=/data/oziolore/fhet/data/angsd2/$one\_small.saf.idx
 outdir=/data/oziolore/fhet/data/angsd2
 out_sfs=$one\.sfs
 
 #code
 
 $my_sfs $in_saf -maxIter 100 -P 8 -nSites 50000000 > $outdir/$out_sfs
+
 
 ```
 
@@ -258,3 +260,52 @@ $my_angsd \
 -out $outfile
 ```
 
+##Once saf and sfs are created, take sfs to R to look at distribution
+
+```{bash}
+scp kodiak:/data/oziolore/fhet/data/angsd2/*.sfs /home/elias/analysis/data/angsd/raw/
+```
+
+##Plot SFS in R
+
+```{r}
+sf<-list.files("~/analysis/data/angsd/raw/","*.sfs",full.names=TRUE)
+cols<-c("black","lightpink","cadetblue3","grey80","firebrick2","cadetblue1","grey40")
+pop<-list("bb","bnp","gb","pb","sj","sp","vb")
+
+for(i in 1:7){
+  pop[[i]]<-scan(sf[[i]])
+}
+
+par(mfrow=c(3,3),mar=c(2,2,2,2))
+for(i in 1:7){
+  plot(log(pop[[i]]),col=cols[i],pch=20,lwd=3)
+}
+```
+
+##-doThetas seqfault error again
+* that has been throwing segfaults left and right for different people.
+* fix is to change lines in abcSaf.cpp that have:
+r->pLikes[myCounter] =new float[numInds+1]
+to
+r->pLikes[myCounter] =new float[2*numInds+1]
+* will only use for folded frequency spectra estimations. For unfolded, leave original in /program/angsd_norm/angsd
+
+##Everything works fine on -doSaf unfolded spectra
+
+##Re-do of SFS for 1 pop (looks like crap)
+
+```{bash}
+#!/bin/bash
+
+#program and file
+my_sfs=/data/oziolore/program/angsd_norm/misc/realSFS
+in_saf=/data/oziolore/fhet/data/angsd2/BB_small.saf.idx
+outdir=/data/oziolore/fhet/data/angsd2
+out_sfs=BB.sfs
+
+#code
+
+$my_sfs $in_saf -maxIter 100 -P 8 -nSites 50000000 > $outdir/$out_sfs
+
+```
