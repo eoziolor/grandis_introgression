@@ -158,5 +158,70 @@ awk '{OFS="\t"}{s=$2+1}{print $1,s,$3}' > /data/oziolore//fhet/data/angsd2/keep5
 ```{bash}
 /data/oziolore/program/angsd/angsd sites index /data/oziolore/fhet/data/angsd2/keepsites2.file
 /data/oziolore/program/angsd/angsd sites index /data/oziolore/fhet/data/angsd2/keep50Mb.file
+```
+
+* fixing up lists of all populations .bam files so they can be plugged into ANGSD
+
+```{bash}
+cat BB2.txt | sed 's/home/data/' | sed 's/restoreFromData\///'
+```
+
+* Starting site allele frequency estimation on a 50Mb subsample for each population (to create SFS)
+
+```{bash}
+
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8
+#PBS -J 1-7
+
+pops=BB\ VB\ PB\ SJ\ BNP\ SP\ GB
+
+one=$(echo $pops | cut -f $PBS_ARRAY_INDEX -d ' ')
+
+#files
+list=/data/oziolore/fhet/data/list2/$one\2_new.txt
+genome=/data/oziolore/fhet/data/genome2/unsplit_merge.fasta
+keep=/data/oziolore/fhet/data/angsd2/keep50Mb.file
+outfile=/data/oziolore/fhet/data/angsd2/$one\_small
+my_angsd=/data/oziolore/program/angsd/angsd
+
+$my_angsd \
+-bam $list \
+-doSaf 1 \
+-fold 1 \
+-anc $genome \
+-GL 2 \
+-minMapQ 30 \
+-minQ 20 \
+-minind 10 \
+-sites $keep \
+-out $outfile
+
+```
+
+* Using the subsampled .saf to create site frequency spectra
+
+```{bash}
+
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8
+#PBS -J 1-7
+
+pops=BB\ VB\ PB\ SJ\ BNP\ SP\ GB
+
+one=$(echo $pops | cut -f $PBS_ARRAY_INDEX -d ' ')
+
+
+#program and file
+my_sfs=/data/oziolore/program/angsd/misc/realSFS
+in_saf=/data/oziolore/fhet/data/angsd2/$one\.saf.idx
+outdir=/data/oziolore/fhet/data/angsd2
+out_sfs=$one\.sfs
+
+#code
+
+$my_sfs $in_saf -maxIter 100 -P 8 -nSites 50000000 > $outdir/$out_sfs
 
 ```
