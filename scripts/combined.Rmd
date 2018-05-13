@@ -23,7 +23,7 @@ cd ..
 
 ```
 
-* Took 10Mb of random regions throughout the genome and plotted coverage over them to decide what is an over-represented site threshold
+## Took 10Mb of random regions throughout the genome and plotted coverage over them to decide what is an over-represented site threshold
 
 ```{bash}
 #Getting coverage over all bases in the genome [cluster]
@@ -55,7 +55,7 @@ awk -v OFS='\t' {'print $1,$2'} $fai > $genome
 
 ```
 
-* Downloading that to personal computer to use r and make decision on the threshold for high coverage
+## Downloading that to personal computer to use r and make decision on the threshold for high coverage
 
 ```{bash}
 #downloading from cluster
@@ -79,7 +79,7 @@ summary(cov[subw,"coverage"])
 
 ```
 
-* applying filter for high coverage sites to genome file in order to only keep normal coverage ones
+## applying filter for high coverage sites to genome file in order to only keep normal coverage ones
 
 ```{bash}
 #using awk and bedtools merge, I am using
@@ -99,7 +99,7 @@ sum(hi[,4])
 #Threw out 52Mb of data => 5% of the genome
 ```
 
-* Creating a keepsites file with all bases that have below 200x coverage
+## Creating a keepsites file with all bases that have below 200x coverage
 
 ```{bash}
 #[cluster]
@@ -119,7 +119,7 @@ scp kodiak:/data/oziolore/fhet/data/angsd2/keepsites2.bed ~/analysis/data/angsd/
 
 ```
 
-* Script to pick up 50Mb at random from the keepsites file in order to run SAF and SFS on those for bayesian priors
+## Script to pick up 50Mb at random from the keepsites file in order to run SAF and SFS on those for bayesian priors
 
 ```{r}
 
@@ -139,34 +139,34 @@ sum(orig[v,3]-orig[v,2]) #checking the total size of bases
 write.table(orig[v,], file="~/analysis/data/angsd/keep50Mb.bed",row.names=FALSE,col.names=FALSE,quote=FALSE)
 ```
 
-* putting that data back into [cluster]
+## putting that data back into [cluster]
 
 ```{bash}
 scp /home/elias/analysis/data/angsd/keep50Mb.bed kodiak:/data/oziolore/fhet/data/angsd2/
 
 ```
 
-* Converting that to a .file
+## Converting that to a .file
 
 ```{bash}
 cat /data/oziolore/fhet/data/angsd2/keep50Mb.bed | \
 awk '{OFS="\t"}{s=$2+1}{print $1,s,$3}' > /data/oziolore//fhet/data/angsd2/keep50Mb.file
 ```
 
-* indexing all of those files with ANGSD
+## indexing all of those files with ANGSD
 
 ```{bash}
 /data/oziolore/program/angsd/angsd sites index /data/oziolore/fhet/data/angsd2/keepsites2.file
 /data/oziolore/program/angsd/angsd sites index /data/oziolore/fhet/data/angsd2/keep50Mb.file
 ```
 
-* fixing up lists of all populations .bam files so they can be plugged into ANGSD
+## fixing up lists of all populations .bam files so they can be plugged into ANGSD
 
 ```{bash}
 cat BB2.txt | sed 's/home/data/' | sed 's/restoreFromData\///'
 ```
 
-* Starting site allele frequency estimation on a 50Mb subsample for each population (to create SFS)
+## Starting site allele frequency estimation on a 50Mb subsample for each population (to create SFS)
 
 ```{bash}
 
@@ -200,7 +200,7 @@ $my_angsd \
 
 ```
 
-* Using the subsampled .saf to create site frequency spectra
+## Using the subsampled .saf to create site frequency spectra
 
 ```{bash}
 
@@ -225,3 +225,36 @@ out_sfs=$one\.sfs
 $my_sfs $in_saf -maxIter 100 -P 8 -nSites 50000000 > $outdir/$out_sfs
 
 ```
+
+##Creating site allele frequencies for full genome of each population
+
+```{bash}
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8
+#PBS -J 1-7
+
+pops=BB\ VB\ PB\ SJ\ BNP\ SP\ GB
+
+one=$(echo $pops | cut -f $PBS_ARRAY_INDEX -d ' ')
+
+#files
+list=/data/oziolore/fhet/data/list2/$one\2_new.txt
+genome=/data/oziolore/fhet/data/genome2/unsplit_merge.fasta
+keep=/data/oziolore/fhet/data/angsd2/keepsites2.file
+outfile=/data/oziolore/fhet/data/angsd2/$one\_full
+my_angsd=/data/oziolore/program/angsd/angsd
+
+$my_angsd \
+-bam $list \
+-doSaf 1 \
+-fold 1 \
+-anc $genome \
+-GL 2 \
+-minMapQ 30 \
+-minQ 20 \
+-minind 10 \
+-sites $keep \
+-out $outfile
+```
+
