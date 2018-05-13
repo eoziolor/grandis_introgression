@@ -1,5 +1,5 @@
-setwd("~/")
-cov<-read.table("~/cov_10Mbrand.txt.gz",header=F)
+setwd("~/analysis/data/admixture/")
+cov<-read.table("~/analysis/data/angsd/cov_10Mbrand.txt.gz",header=F)
 names<-c("chrom","pos","cov")
 
 hist(cov$cov,breaks=1000)

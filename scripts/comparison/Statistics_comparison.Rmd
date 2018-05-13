@@ -170,12 +170,6 @@ snpsum<-sum(val[subw,4])
 neutbase<-neutsum/snpsum
 
 pops<-c("BB","VB","PB","SJSP","BNP","SP","GB")
-# dxy<-neutbase[c("BB.VB","BB.PB","BB.SJSP","BB.BNP","BB.SP","BB.GB",
-#                 "PB.VB","SJSP.VB","BNP.VB","SP.VB","GB.VB",
-#                 "PB.SJSP","BNP.PB","PB.SP","GB.PB",
-#                 "BNP.SJSP","SJSP.SP","GB.SJSP",
-#                 "BNP.SP","BNP.GB",
-#                 "GB.SP")]
 
 fsth<-matrix(nrow = 7,ncol=7) #creating matrix to hold fst data
 rownames(fsth)<- pops
@@ -260,7 +254,7 @@ levelplot(fsth,aspect="iso",col.regions=brewer.pal(9,"YlOrRd"),scale=list(x=list
     + priors look a bit messed up (clumpy), suggesting they are not the best
 
 ```{r}
-sf<-list.files("~/analysis/data/angsd/raw/","*.sfs",full.names=TRUE)
+sf<-list.files("~/analysis/data/angsd/subsample/","*.sfs",full.names=TRUE)
 cols<-c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3")
 pop<-list("bb","vb","pb","sj","bnp","sp","gb")
 

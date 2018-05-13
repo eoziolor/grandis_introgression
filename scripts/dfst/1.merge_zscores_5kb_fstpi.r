@@ -28,14 +28,6 @@ zpi2<-cbind(seq=seq(1:1026857),zpi)
 colnam<-names(zfst)[4:24]
 zmerge_temp<-cbind(zfst2[1:3],zfst2[colnam]-zpi2[match(zfst2$seq,zpi2$seq),colnam])
 
-# zmerge_temp<-zfst[1:24]
-# 
-# for (i in 4:5){
-#   for (j in 1:1026857){
-#     zmerge_temp[j,i]<-zfst[j,i]-zpi[j,i]
-#   }h
-# }
-
 zkeep<-zfst[,25]+zpi[,25]
 
 zmerge<-cbind(zfst[,1:3],zmerge_temp[4:24],zkeep)

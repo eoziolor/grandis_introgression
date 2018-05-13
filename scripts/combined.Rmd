@@ -1,0 +1,162 @@
+---
+title: "Fgrandis_ad/intr"
+author: "Elias"
+date: "May 11, 2018"
+output: html_document
+---
+
+#Fundulus grandis adapting to contamination
+
+##installing ANGSD
+* low coverage data neutral statistics
+
+```{bash}
+#[cluster]:/data/oziolore/program/
+#Installing angsd
+
+wget http://popgen.dk/software/download/angsd/angsd0.920.tar.gz
+tar xf angsd0.920.tar.gz
+cd htslib;make;cd ..
+cd angsd
+make HTSSRC=../htslib
+cd ..
+
+```
+
+* Took 10Mb of random regions throughout the genome and plotted coverage over them to decide what is an over-represented site threshold
+
+```{bash}
+#Getting coverage over all bases in the genome [cluster]
+#starting with a merged bam of all individuals
+
+samtools depth \
+-d 10000 /home/oziolore/restoreFromData/fhet/data/align/all_merged.bam |\
+gzip > /home/oziolore/restoreFromData/fhet/data/coverage/coverage_allbases.txt.gz
+
+#Converting the high coverage data to bed file format [cluster]
+
+zcat /home/oziolore/restoreFromData/fhet/data/coverage/coverage_allbases.txt.gz | \
+awk '{OFS="\t"}{s=$2-1}{print $1,s,$2,$3}' | \
+awk '{OFS="\t"}{if($4>300){print}}' | \
+bedtools merge -i - -d 10 -c 4 -o count > /home/oziolore/restoreFromData/fhet/data/coverage/hicov.bed
+
+#Getting 10Mb of random regions to makea decision on [cluster]
+
+#!/bin/bash
+dir=/home/oziolore/restoreFromData/fhet/data/coverage
+
+zcat $dir/coverage_allbases.txt.gz | \
+sort -R | \
+head -n 10000000 | \
+gzip > $dir/cov_10Mbrand.txt.gz
+
+#used the following line to create a genome file in the /genome2/ subfolder
+awk -v OFS='\t' {'print $1,$2'} $fai > $genome
+
+```
+
+* Downloading that to personal computer to use r and make decision on the threshold for high coverage
+
+```{bash}
+#downloading from cluster
+scp kodiak:/data/oziolore/fhet/data/coverage/cov_10Mbrand.txt.gz /home/elias/analysis/data/angsd/
+```
+
+```{r}
+setwd("~/analysis/data/admixture/")
+cov<-read.table("~/analysis/data/angsd/cov_10Mbrand.txt.gz",header=F) #reading in output of 10Mb random bases selected
+colnames(cov)<-c("chrom","pos","coverage") #assigning names to columns of data
+
+hist(cov$coverage,breaks=1000)
+hist(cov$coverage,breaks=1000,xlim=c(0,300))
+
+subw<-cov$cov<200
+hist(cov[subw,"coverage"],breaks=1000)
+summary(cov$cov)
+summary(cov[subw,"coverage"])
+
+#Qualitatively I will throw out sites above 200x coverage
+
+```
+
+* applying filter for high coverage sites to genome file in order to only keep normal coverage ones
+
+```{bash}
+#using awk and bedtools merge, I am using
+zcat /data/oziolore/fhet/data/coverage2/coverage_allbases2.txt.gz | \
+awk '{OFS="\t"}{s=$2-1}{print $1,s,$2,$3}' | \
+awk '{OFS="\t"}{if($4>200){print}}' | \
+/data/oziolore/program/bedtools2/bin/bedtools merge -i - -d 10 -c 4 -o count > /data/oziolore/fhet/data/coverage2/hicov.bed
+
+#Downloading data to look at how much of the genome I threw out
+scp kodiak:/data/oziolore/fhet/data/coverage2/hicov.bed /home/elias/analysis/data/angsd/
+```
+
+```{r}
+hi<-read.table("~/analysis/data/angsd/hicov.bed",header=FALSE)
+sum(hi[,4])
+
+#Threw out 52Mb of data => 5% of the genome
+```
+
+* Creating a keepsites file with all bases that have below 200x coverage
+
+```{bash}
+#[cluster]
+
+zcat /data/oziolore/fhet/data/coverage2/coverage_allbases2.txt.gz | \
+awk '{OFS="\t"}{s=$2-1}{print $1,s,$2,$3}' | \
+awk '{OFS="\t"}{if($4<200){print}}' | \
+bedtools merge -i - -d 10 > /data/oziolore/fhet/data/angsd2/keepsites2.bed
+
+#Converting those to a .file format for ANGSD to deal with
+cat /data/oziolore/fhet/data/angsd2/keepsites2.bed | \
+awk '{OFS="\t"}{s=$2+1}{print $1,s,$3}' > /data/oziolore/fhet/data/angsd2/keepsites2.file
+
+#Downloading the .bed file to make a script with 50Mb randomly selected to create expectation for SFS
+
+scp kodiak:/data/oziolore/fhet/data/angsd2/keepsites2.bed ~/analysis/data/angsd/
+
+```
+
+* Script to pick up 50Mb at random from the keepsites file in order to run SAF and SFS on those for bayesian priors
+
+```{r}
+
+orig<-read.table("~/analysis/data/angsd/keepsites2.bed", header=F) #reading in the keepsites file
+
+p<-(orig[,3]-orig[,2])/(sum(orig[,3]-orig[,2])) #creating probability vector so that I don't oversample large chunks
+
+p<-unlist(p) #unlisting the vector
+
+z<-p<0 #removing any negative probabilities for 0 values
+p<-p[!z] #applying that to vector
+
+v<-sample(x=length(p),size=11500,prob=p) #sampling 11500 chunks with probability to get out ~50Mb of the genome
+v<-sort(v)
+sum(orig[v,3]-orig[v,2]) #checking the total size of bases
+
+write.table(orig[v,], file="~/analysis/data/angsd/keep50Mb.bed",row.names=FALSE,col.names=FALSE,quote=FALSE)
+```
+
+* putting that data back into [cluster]
+
+```{bash}
+scp /home/elias/analysis/data/angsd/keep50Mb.bed kodiak:/data/oziolore/fhet/data/angsd2/
+
+```
+
+* Converting that to a .file
+
+```{bash}
+cat /data/oziolore/fhet/data/angsd2/keep50Mb.bed | \
+awk '{OFS="\t"}{s=$2+1}{print $1,s,$3}' > /data/oziolore//fhet/data/angsd2/keep50Mb.file
+```
+
+* indexing all of those files with ANGSD
+
+```{bash}
+/data/oziolore/program/angsd/angsd sites index /data/oziolore/fhet/data/angsd2/keepsites2.file
+/data/oziolore/program/angsd/angsd sites index /data/oziolore/fhet/data/angsd2/keep50Mb.file
+
+```

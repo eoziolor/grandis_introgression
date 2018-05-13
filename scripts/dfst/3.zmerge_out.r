@@ -100,8 +100,8 @@ write.table(pbs_out[bnpu,1:3],"~/analysis/data/dfst/pbs_regions_sharedbnpu.bed",
 
 #Finding regions of overlap----
 
-# source("http://bioconductor.org/biocLite.R")
-# biocLite()
+source("http://bioconductor.org/biocLite.R")
+biocLite()
 library("rtracklayer")
 
 

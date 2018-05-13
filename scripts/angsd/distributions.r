@@ -98,7 +98,7 @@ gbtaj<-density(taj[subw,10],na.rm=TRUE)
 
 #par(mfrow=c(1,1),mgp=c(3,2,0))
 plot(bnptaj,xlim=c(-.3,.3),col="firebrick2",bty="l",
-     ylim=c(0,20),xlab="",ylab="",main="",lwd=3,cex.axis=4)
+     ylim=c(0,50),xlab="",ylab="",main="",lwd=3,cex.axis=4)
 polygon(bnptaj,col="lightpink",density=100,border=NA)
 lines(sjtaj,xlim=c(-.15,.3),col="firebrick2",lwd=3)
 polygon(sjtaj,col="red",density=100,border=NA)

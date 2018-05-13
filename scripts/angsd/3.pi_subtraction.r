@@ -9,6 +9,13 @@ pops<-c("scaf","start","end","bbvb","bbpb","bbsjsp","bbbnp","bbsp","bbgb",
         "bnpsp","bnpgb",
         "spgb","keep")
 
+pops2<-c("bbvb","bbpb","bbsjsp","bbbnp","bbsp","bbgb",
+         "vbpb","vbsjsp","vbbnp","vbsp","vbgb",
+         "pbsjsp","pbbnp","pbsp","pbgb",
+         "sjspbnp","sjspsp","sjspgb",
+         "bnpsp","bnpgb",
+         "spgb")
+
 pidiff_temp<-matrix(nrow=1026857,ncol=21)
 
 k<-0
