@@ -1,6 +1,5 @@
 ###Buffalo Bayou loding pi(column6), theta(column4), and counts(columns 5,7)
 
-
 bb<-read.table("~/analysis/data/angsd/subsample/BB_neut_1kb.bed",stringsAsFactors=FALSE)
 vb<-read.table("~/analysis/data/angsd/subsample/VB_neut_1kb.bed",stringsAsFactors=FALSE)
 pb<-read.table("~/analysis/data/angsd/subsample/PB_neut_1kb.bed",stringsAsFactors=FALSE)

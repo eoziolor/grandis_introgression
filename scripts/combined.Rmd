@@ -267,9 +267,61 @@ scp kodiak:/data/oziolore/fhet/data/angsd2/*.sfs /home/elias/analysis/data/angsd
 ```
 
 ##Plot SFS in R
+* starting with folded spectra of subsample (24 per population)
+
+```{r}
+sf<-list.files("~/analysis/data/angsd/subsample//","*.sfs",full.names=TRUE)
+cols<-c("black","lightpink","cadetblue3","grey80","firebrick2","cadetblue1","grey40")
+pop<-list("bb","bnp","gb","pb","sj","sp","vb")
+
+for(i in 1:7){
+  pop[[i]]<-scan(sf[[i]])
+}
+
+par(mfrow=c(3,3),mar=c(2,2,2,2))
+for(i in 1:7){
+  plot(log(pop[[i]]),col=cols[i],pch=20,lwd=3)
+}
+```
+
+* unfolded spectra of subsample (24 per population)
+
+```{r}
+sf<-list.files("~/analysis/data/angsd/subsample/unfolded/","*.sfs",full.names=TRUE)
+cols<-c("black","lightpink","cadetblue3","grey80","firebrick2","cadetblue1","grey40")
+pop<-list("bb","bnp","gb","pb","sj","sp","vb")
+
+for(i in 1:7){
+  pop[[i]]<-scan(sf[[i]])
+}
+
+par(mfrow=c(3,3),mar=c(2,2,2,2))
+for(i in 1:7){
+  plot(log(pop[[i]]),col=cols[i],pch=20,lwd=3)
+}
+```
+
+* folded spectra of all individuals
 
 ```{r}
 sf<-list.files("~/analysis/data/angsd/raw/","*.sfs",full.names=TRUE)
+cols<-c("black","lightpink","cadetblue3","grey80","firebrick2","cadetblue1","grey40")
+pop<-list("bb","bnp","gb","pb","sj","sp","vb")
+
+for(i in 1:7){
+  pop[[i]]<-scan(sf[[i]])
+}
+
+par(mfrow=c(3,3),mar=c(2,2,2,2))
+for(i in 1:7){
+  plot(log(pop[[i]]),col=cols[i],pch=20,lwd=3)
+}
+```
+
+* unfolded spectra of all individuals
+
+```{r}
+sf<-list.files("~/analysis/data/angsd/raw/unfolded/","*.sfs",full.names=TRUE)
 cols<-c("black","lightpink","cadetblue3","grey80","firebrick2","cadetblue1","grey40")
 pop<-list("bb","bnp","gb","pb","sj","sp","vb")
 
@@ -308,4 +360,296 @@ out_sfs=BB.sfs
 
 $my_sfs $in_saf -maxIter 100 -P 8 -nSites 50000000 > $outdir/$out_sfs
 
+```
+
+##Reading thetas.gz file to a readable state: below is command for folded estimate of subsample
+
+```{bash}
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=24:00:00
+#PBS -J 1-7
+
+pops=BB\ VB\ PB\ SJ\ BNP\ SP\ GB
+
+one=$(echo $pops | cut -f $PBS_ARRAY_INDEX -d ' ')
+
+
+#program/file
+my_stat=/data/oziolore/program/angsd_norm/misc/thetaStat
+file=/data/oziolore/fhet/data/angsd2/theta/subsample/$one\.theta.thetas.idx
+out=/data/oziolore/fhet/data/angsd2/theta/subsample/$one\_readable_theta.gz
+
+$my_stat print $file | gzip > $out
+```
+
+* SP has some issues in one of the characters in the compressed readable version. re-doing
+    + worked after just repeating script
+    
+## Plotting distribution of neutral estimates
+* starting with folded subsamples
+
+```{bash}
+scp kodiak:/data/oziolore/fhet/data/angsd2/theta/subsample/*.bed /home/elias/analysis/data/angsd/subsample/
+
+```
+
+* Break the file into pi, theta and and calculate tajima's D
+
+```{r}
+###Buffalo Bayou loding pi(column6), theta(column4), and counts(columns 5,7)
+
+bb<-read.table("~/analysis/data/angsd/subsample/BB_neut_1kb.bed",stringsAsFactors=FALSE) #reading in all files
+vb<-read.table("~/analysis/data/angsd/subsample/VB_neut_1kb.bed",stringsAsFactors=FALSE)
+pb<-read.table("~/analysis/data/angsd/subsample/PB_neut_1kb.bed",stringsAsFactors=FALSE)
+sj<-read.table("~/analysis/data/angsd/subsample/SJ_neut_1kb.bed",stringsAsFactors=FALSE)
+bnp<-read.table("~/analysis/data/angsd/subsample/BNP_neut_1kb.bed",stringsAsFactors=FALSE)
+sp<-read.table("~/analysis/data/angsd/subsample/SP_neut_1kb.bed",stringsAsFactors=FALSE)
+gb<-read.table("~/analysis/data/angsd/subsample/GB_neut_1kb.bed",stringsAsFactors=FALSE)
+
+colnam<-c("scaf","Start","End","Theta","Tcount","Pi","Pcount") #giving them column names
+colnames(bb)<-colnam
+colnames(vb)<-colnam
+colnames(pb)<-colnam
+colnames(sj)<-colnam
+colnames(bnp)<-colnam
+colnames(sp)<-colnam
+colnames(gb)<-colnam
+
+pops<-list(bb,vb,pb,sj,bnp,sp,gb)
+popnames<-c("bb","vb","pb","sj","bnp","sp","gb")
+names(pops)<-popnames
+
+for(i in popnames){ #reading in the files as.numeric
+  for(j in 4:7){
+    pops[[i]][,j]<-as.numeric(pops[[i]][,j])
+  }
+}
+
+popbase<-list()
+
+for(i in popnames){ #calculating per base estimates rather than averaged estimates over the windows we have
+  popbase[[i]]<-cbind(pops[[i]][,1:3],pops[[i]][,4]/pops[[i]][,5],pops[[i]][,6]/pops[[i]][,7])
+}
+
+names<-c("scaf", "start","end",'theta/b',"pi/b")
+
+for(i in popnames){ #giving the new dataframe column names
+  colnames(popbase[[i]])<-names
+}
+
+source("~/analysis/scripts/angsd/tajimas.r")
+
+taj<-list()
+
+for(i in popnames){ #calculating tajima's D for all populations through a function in r; takes forever
+  print(i)
+  for(j in 1:1027369){
+    taj[[i]]<-c(taj[[i]],tajimas(popbase[[i]][j,5],popbase[[i]][j,4],24))
+  }
+}
+
+cov<-cbind(bb[1:3],bb[,7],vb[,7],pb[,7],sj[,7],bnp[,7],sp[,7],gb[,7]) #creating a vector of coverage of each statistic call
+
+nsnps<-cov[,4] #creating a vector that sums all calls over each SNP
+for (i in 5:10){
+  nsnps <- nsnps + cov[,i]
+}
+nsnps <- nsnps/7 #dividing by number of populations and only using sites that have at least 20 SNPS used over the window per population
+
+subw <- nsnps > 20 #filter to be saved for these windows
+
+###
+
+taj<-cbind(bbbase[1:3],taj[["bb"]],taj[["vb"]],taj[["pb"]],taj[["sj"]],taj[["bnp"]],taj[["sp"]],taj[["gb"]]) #binding into a dataframe
+
+taj<-cbind(taj,keep=as.numeric(subw)) #keeping the filter of low representation bases
+
+tajname<-c("scaf","start","end","bb","vb","pb","sjsp","bnp",
+            "sp","gb","keep") #column names
+colnames(taj)<-tajname
+
+write.csv(taj,file="~/analysis/data/angsd/taj_sub",quote=FALSE,row.names=FALSE) #writing tajima's d
+
+theta<-cbind(popbase[["bb"]][1:3],popbase[["bb"]][4],popbase[["vb"]][4],popbase[["pb"]][4],popbase[["sj"]][4],popbase[["bnp"]][4],
+             popbase[["sp"]][4],popbase[["gb"]][4],keep=as.numeric(subw))
+
+thetname<-c("scaf","start","end","bb","vb","pb","sjsp","bnp",
+            "sp","gb","keep")
+colnames(theta)<-thetname
+
+write.csv(theta,file="~/analysis/data/angsd/thetas_sub",quote=FALSE,row.names=FALSE)
+
+
+pi<-cbind(popbase[["bb"]][1:3],popbase[["bb"]][5],popbase[["vb"]][5],popbase[["pb"]][5],popbase[["sj"]][5],popbase[["bnp"]][5],
+          popbase[["sp"]][5],popbase[["gb"]][5],keep=as.numeric(subw))
+
+piname<-c("scaf","start","end","bb","vb","pb","sj","bnp","sp","gb","keep")
+colnames(pi)<-piname
+write.csv(pi,file="~/analysis/data/angsd/pi_sub",quote=FALSE,row.names=FALSE)
+
+```
+
+```{r}
+library('tidyr')
+library('tibble')
+library('magrittr')
+library('dplyr')
+
+#loading neutrality stats----
+
+theta<-read.table("~/analysis/data/angsd/thetas_sub",header=TRUE, sep=',') #reading in summary statistics
+pi<-read.table("~/analysis/data/angsd/pi_sub", header=TRUE, sep=',')
+taj<-read.table("~/analysis/data/angsd/taj_sub",header=TRUE, sep=',')
+
+subw<-pi[,"keep"]>0 #applying filter of low coverage
+
+#calculating mean and median pi----
+pimean<-c() #calculating mean
+for(i in 1:7){
+  pimean[i]<-mean(pi[subw,i+3],na.rm=TRUE)
+}
+
+pimedian<-c() #calculating median
+for(i in 1:7){
+  pimedian[i]<-median(pi[subw,i+3],na.rm=TRUE)
+}
+pops<-c("BB","VB","PB","SJ","BNP","SP","GB")
+names(pimean)<-pops
+names(pimedian)<-pops
+
+
+##ggplot pi----
+library(ggplot2)
+library(reshape2)
+
+mpi<-melt(pi[,1:10],id=c("scaf","start","end"))
+
+ggplot(mpi,
+       aes(x=variable,y=value,fill=variable,color=variable))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(0,.017))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+
+mtaj<-melt(taj[,1:10],id=c("scaf","start","end"))
+
+ggplot(mtaj,
+       aes(x=variable,y=value,fill=variable,color=variable))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(-.15,.3))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+
+#visualizing pi distribution----
+
+bbp<-density(pi[subw,4],na.rm=TRUE)
+vbp<-density(pi[subw,5],na.rm=TRUE)
+pbp<-density(pi[subw,6],na.rm=TRUE)
+sjp<-density(pi[subw,7],na.rm=TRUE)
+bnpp<-density(pi[subw,8],na.rm=TRUE)
+spp<-density(pi[subw,9],na.rm=TRUE)
+gbp<-density(pi[subw,10],na.rm=TRUE)
+
+par(mfrow=c(2,1),mar=c(4,5,2,2),mgp=c(3,2,0))
+
+plot(bnpp,xlim=c(0.0001,.025),col="firebrick2",bty="l",ylim=c(0,450),
+     cex.lab=2,xlab="",ylab="",lwd=3,main="",cex.axis=4)
+polygon(bnpp,col="lightpink",density=100,border=NA)
+lines(sjp,xlim=c(0.001,.025),col="firebrick2",lwd=3)
+polygon(sjp,col="red",density=100,border=NA)
+lines(pbp,xlim=c(0.001,.025),col="black",lwd=3)
+polygon(pbp,col="grey80",density=100,border=NA)
+lines(vbp,xlim=c(0.001,.025),col="black",lwd=3)
+polygon(vbp,col="grey40",density=100,border=NA)
+lines(bbp,xlim=c(0.001,.025),col="black",lwd=3)
+polygon(bbp,col="black",density=100,border=NA)
+polygon(spp,col="cadetblue3",density=100,border=NA)
+lines(spp,xlim=c(0.001,.025),col="cadetblue3",lwd=3)
+lines(gbp,xlim=c(0.001,.025),col="cadetblue3",lwd=3)
+polygon(gbp,col="cadetblue1",density=100,border=NA)
+
+box(lwd=7,bty="l")
+
+#visualizing tajima's D distribution----
+
+bbtaj<-density(taj[subw,4],na.rm=TRUE)
+vbtaj<-density(taj[subw,5],na.rm=TRUE)
+pbtaj<-density(taj[subw,6],na.rm=TRUE)
+sjtaj<-density(taj[subw,7],na.rm=TRUE)
+bnptaj<-density(taj[subw,8],na.rm=TRUE)
+sptaj<-density(taj[subw,9],na.rm=TRUE)
+gbtaj<-density(taj[subw,10],na.rm=TRUE)
+
+#par(mfrow=c(1,1),mgp=c(3,2,0))
+plot(bnptaj,xlim=c(-.3,.3),col="firebrick2",bty="l",
+     ylim=c(0,50),xlab="",ylab="",main="",lwd=3,cex.axis=4)
+polygon(bnptaj,col="lightpink",density=100,border=NA)
+lines(sjtaj,xlim=c(-.15,.3),col="firebrick2",lwd=3)
+polygon(sjtaj,col="red",density=100,border=NA)
+lines(pbtaj,xlim=c(-.15,.3),col="black",lwd=3)
+polygon(pbtaj,col="grey80",density=100,border=NA)
+lines(vbtaj,xlim=c(-.15,.3),col="black",lwd=3)
+polygon(vbtaj,col="grey40",density=100,border=NA)
+lines(bbtaj,xlim=c(-.15,.3),col="black",lwd=3)
+polygon(bbtaj,col="black",density=100,border=NA)
+polygon(sptaj,col="cadetblue3",density=100,border=NA)
+lines(sptaj,xlim=c(-.15,.3),col="cadetblue3",lwd=3)
+lines(gbtaj,xlim=c(-.15,.3),col="cadetblue3",lwd=3)
+polygon(gbtaj,col="cadetblue1",density=100,border=NA)
+
+box(lwd=7,bty="l")
+
+#visualizing theta distribution----
+bbt<-density(theta[,4],na.rm=TRUE)
+vbt<-density(theta[,5],na.rm=TRUE)
+pbt<-density(theta[,6],na.rm=TRUE)
+sjt<-density(theta[,7],na.rm=TRUE)
+bnpt<-density(theta[,8],na.rm=TRUE)
+spt<-density(theta[,9],na.rm=TRUE)
+gbt<-density(theta[,10],na.rm=TRUE)
+
+par(mfrow=c(3,1),mar=c(4,5,2,2),mgp=c(3,2,0))
+plot(spt,xlim=c(0,.025),col="cadetblue3",bty="l",ylim=c(0,450),cex.lab=2,cex.lab=2,xlab="",main="",ylab="",lwd=3,cex.axis=3)
+polygon(spt,col="cadetblue3",density=100,border=NA)
+lines(gbt,xlim=c(0,.025),col="cadetblue3",lwd=3)
+polygon(gbt,col="cadetblue1",density=100,border=NA)
+lines(bnpt,xlim=c(0,.025),col="firebrick2",lwd=3)
+polygon(bnpt,col="lightpink",density=100,border=NA)
+lines(sjt,xlim=c(0,.025),col="firebrick2",lwd=3)
+polygon(sjt,col="firebrick2",density=100,border=NA)
+lines(pbt,xlim=c(0,.025),col="black",lwd=3)
+polygon(pbt,col="grey80",density=100,border=NA)
+lines(vbt,xlim=c(0,.025),col="black",lwd=3)
+polygon(vbt,col="grey40",density=100,border=NA)
+lines(bbt,xlim=c(0,.025),col="black",lwd=3)
+polygon(bbt,col="black",density=100,border=NA)
+
+
+#####Plotting theta vs pi----
+
+par(mfrow=c(3,3))
+plot(theta[,4],pi[,4],pch=20,cex=.5,col="black")
+abline(a=0,b=1,col="red")
+plot(theta[,5],pi[,5],pch=20,cex=.5,col="grey")
+abline(a=0,b=1,col="red")
+plot(theta[,6],pi[,6],pch=20,cex=.5,col="red")
+abline(a=0,b=1,col="black")
+plot(theta[,7],pi[,7],pch=20,cex=.5,col="orange")
+abline(a=0,b=1,col="red")
+plot(theta[,8],pi[,8],pch=20,cex=.5,col="yellow")
+abline(a=0,b=1,col="red")
+plot(theta[,9],pi[,9],pch=20,cex=.5,col="green")
+abline(a=0,b=1,col="red")
+plot(theta[,10],pi[,10],pch=20,cex=.5,col="blue")
+abline(a=0,b=1,col="red")
 ```
