@@ -387,26 +387,60 @@ $my_stat print $file | gzip > $out
 * SP has some issues in one of the characters in the compressed readable version. re-doing
     + worked after just repeating script
     
+* Breaking them into sliding windows
+
+```{bash}
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=02:00:00
+#PBS -J 1-7
+
+pops=BB\ VB\ PB\ SJ\ BNP\ SP\ GB
+
+one=$(echo $pops | cut -f $PBS_ARRAY_INDEX -d ' ')
+
+#programs and files
+
+my_bedtools=/data/oziolore/program/bedtools2/bin/bedtools
+thetas=/data/oziolore/fhet/data/angsd2/theta/$one\_readable_theta.gz
+window=/data/oziolore/fhet/data/windows2/50kb10kb.bed
+my_genome=/data/oziolore/fhet/data/genome2/unsplit_merge.fasta.fai
+outdir=/data/oziolore/fhet/data/angsd2/theta          
+outfile=$one\_neut_50kb10kb.bed
+
+zcat $thetas | \
+egrep -v "^#" | \
+awk '{OFS="\t"}{w=exp($3)}{pi=exp($4)}{s=$2-1}{print $1,s,$2,w,pi}' | \
+$my_bedtools map \
+-a $window \
+-b stdin \
+-g <(cut -f 1-2 $my_genome) \
+-c 4,4,5,5 \
+-o sum,count,sum,count > $outdir/$outfile
+
+```
+    
 ## Plotting distribution of neutral estimates
 * starting with folded subsamples
 
 ```{bash}
-scp kodiak:/data/oziolore/fhet/data/angsd2/theta/subsample/*.bed /home/elias/analysis/data/angsd/subsample/
+scp kodiak:/data/oziolore/fhet/data/angsd2/theta/subsample/*50kb* /home/elias/analysis/data/angsd/subsample/
 
 ```
 
-* Break the file into pi, theta and and calculate tajima's D
+* Break the file into pi, theta and and calculate tajima's D, starting with 50kb windows for speed
 
 ```{r}
 ###Buffalo Bayou loding pi(column6), theta(column4), and counts(columns 5,7)
 
-bb<-read.table("~/analysis/data/angsd/subsample/BB_neut_1kb.bed",stringsAsFactors=FALSE) #reading in all files
-vb<-read.table("~/analysis/data/angsd/subsample/VB_neut_1kb.bed",stringsAsFactors=FALSE)
-pb<-read.table("~/analysis/data/angsd/subsample/PB_neut_1kb.bed",stringsAsFactors=FALSE)
-sj<-read.table("~/analysis/data/angsd/subsample/SJ_neut_1kb.bed",stringsAsFactors=FALSE)
-bnp<-read.table("~/analysis/data/angsd/subsample/BNP_neut_1kb.bed",stringsAsFactors=FALSE)
-sp<-read.table("~/analysis/data/angsd/subsample/SP_neut_1kb.bed",stringsAsFactors=FALSE)
-gb<-read.table("~/analysis/data/angsd/subsample/GB_neut_1kb.bed",stringsAsFactors=FALSE)
+bb<-read.table("~/analysis/data/angsd/subsample/BB_neut_5kb1kb.bed",stringsAsFactors=FALSE) #reading in all files
+vb<-read.table("~/analysis/data/angsd/subsample/VB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+pb<-read.table("~/analysis/data/angsd/subsample/PB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+sj<-read.table("~/analysis/data/angsd/subsample/SJ_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+bnp<-read.table("~/analysis/data/angsd/subsample/BNP_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+sp<-read.table("~/analysis/data/angsd/subsample/SP_neut_5kb1kb.bed",stringsAsFactors=FALSE)
+gb<-read.table("~/analysis/data/angsd/subsample/GB_neut_5kb1kb.bed",stringsAsFactors=FALSE)
 
 colnam<-c("scaf","Start","End","Theta","Tcount","Pi","Pcount") #giving them column names
 colnames(bb)<-colnam
@@ -435,9 +469,22 @@ for(i in popnames){ #calculating per base estimates rather than averaged estimat
 
 names<-c("scaf", "start","end",'theta/b',"pi/b")
 
-for(i in popnames){ #giving the new dataframe column names
+for(i in popnames){ #giving the new list column names
   colnames(popbase[[i]])<-names
 }
+
+wt<-matrix(nrow=length(popbase[[1]][,1]),ncol=length(popnames)) #making a matrix of Waterson's theta values
+for(i in 1:7){
+  wt[,i]<-popbase[[i]][,4]
+}
+colnames(wt)<-popnames
+
+pi<-matrix(nrow=length(popbase[[1]][,1]),ncol=length(popnames)) #making a matrix of pi values
+for(i in 1:7){
+  pi[,i]<-popbase[[i]][,5]
+}
+colnames(pi)<-popnames
+
 
 source("~/analysis/scripts/angsd/tajimas.r")
 
@@ -446,7 +493,7 @@ taj<-list()
 for(i in popnames){ #calculating tajima's D for all populations through a function in r; takes forever
   print(i)
   for(j in 1:1027369){
-    taj[[i]]<-c(taj[[i]],tajimas(popbase[[i]][j,5],popbase[[i]][j,4],24))
+    taj[[i]]<-c(taj[[i]],tajimas(pi[j,i],wt[j,i],24))
   }
 }
 
@@ -472,8 +519,7 @@ colnames(taj)<-tajname
 
 write.csv(taj,file="~/analysis/data/angsd/taj_sub",quote=FALSE,row.names=FALSE) #writing tajima's d
 
-theta<-cbind(popbase[["bb"]][1:3],popbase[["bb"]][4],popbase[["vb"]][4],popbase[["pb"]][4],popbase[["sj"]][4],popbase[["bnp"]][4],
-             popbase[["sp"]][4],popbase[["gb"]][4],keep=as.numeric(subw))
+theta<-cbind(popbase[["bb"]][1:3],wt,keep=as.numeric(subw))
 
 thetname<-c("scaf","start","end","bb","vb","pb","sjsp","bnp",
             "sp","gb","keep")
@@ -482,8 +528,7 @@ colnames(theta)<-thetname
 write.csv(theta,file="~/analysis/data/angsd/thetas_sub",quote=FALSE,row.names=FALSE)
 
 
-pi<-cbind(popbase[["bb"]][1:3],popbase[["bb"]][5],popbase[["vb"]][5],popbase[["pb"]][5],popbase[["sj"]][5],popbase[["bnp"]][5],
-          popbase[["sp"]][5],popbase[["gb"]][5],keep=as.numeric(subw))
+pi<-cbind(popbase[["bb"]][1:3],pi,keep=as.numeric(subw))
 
 piname<-c("scaf","start","end","bb","vb","pb","sj","bnp","sp","gb","keep")
 colnames(pi)<-piname
@@ -528,17 +573,22 @@ library(reshape2)
 
 mpi<-melt(pi[,1:10],id=c("scaf","start","end"))
 
-ggplot(mpi,
-       aes(x=variable,y=value,fill=variable,color=variable))+
-  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+ggplot(mpi[subw,],
+       aes(x=value,fill=variable,color=variable))+
+  geom_density(alpha=.6)+
+  xlim(c(0,0.02)) +
   scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
-  scale_color_manual(values=c("grey40",rep("black",6)))+
-  scale_y_continuous(limits=c(0,.017))+
-  theme_classic()+
-  labs(y="",x="")+
-  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
-  theme(axis.text.y=element_text(color="black",size=40))
+  scale_color_manual(values=c("grey40",rep("black",6)))
+  # scale_y_continuous(limits=c(0,.017))+
+  # theme_classic()+
+  # labs(y="",x="")+
+  # theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  # theme(axis.text.y=element_text(color="black",size=40))
 
+```
+
+
+```{r}
 mtaj<-melt(taj[,1:10],id=c("scaf","start","end"))
 
 ggplot(mtaj,
@@ -564,21 +614,23 @@ gbp<-density(pi[subw,10],na.rm=TRUE)
 
 par(mfrow=c(2,1),mar=c(4,5,2,2),mgp=c(3,2,0))
 
-plot(bnpp,xlim=c(0.0001,.025),col="firebrick2",bty="l",ylim=c(0,450),
-     cex.lab=2,xlab="",ylab="",lwd=3,main="",cex.axis=4)
-polygon(bnpp,col="lightpink",density=100,border=NA)
-lines(sjp,xlim=c(0.001,.025),col="firebrick2",lwd=3)
-polygon(sjp,col="red",density=100,border=NA)
-lines(pbp,xlim=c(0.001,.025),col="black",lwd=3)
-polygon(pbp,col="grey80",density=100,border=NA)
-lines(vbp,xlim=c(0.001,.025),col="black",lwd=3)
-polygon(vbp,col="grey40",density=100,border=NA)
-lines(bbp,xlim=c(0.001,.025),col="black",lwd=3)
-polygon(bbp,col="black",density=100,border=NA)
-polygon(spp,col="cadetblue3",density=100,border=NA)
+plot(gbp,xlim=c(0.0001,.025),col="cadetblue3",bty="l",ylim=c(0,450),
+     cex.lab=2,xlab="",ylab="",lwd=3,main="",cex.axis=3)
+#polygon(gbp,col="cadetblue1",density=100,border=NA)
 lines(spp,xlim=c(0.001,.025),col="cadetblue3",lwd=3)
-lines(gbp,xlim=c(0.001,.025),col="cadetblue3",lwd=3)
-polygon(gbp,col="cadetblue1",density=100,border=NA)
+#polygon(spp,col="cadetblue3",density=100,border=NA)
+lines(bnpp,xlim=c(0.001,.025),col="firebrick2",lwd=3)
+#polygon(bnpp,col="lightpink",density=100,border=NA)
+lines(sjp,xlim=c(0.001,.025),col="firebrick2",lwd=3)
+#polygon(sjp,col="firebrick2",density=100,border=NA)
+lines(pbp,xlim=c(0.001,.025),col="black",lwd=3)
+#polygon(pbp,col="grey80",density=100,border=NA)
+lines(vbp,xlim=c(0.001,.025),col="black",lwd=3)
+#polygon(vbp,col="grey40",density=100,border=NA)
+lines(bbp,xlim=c(0.001,.025),col="black",lwd=3)
+#polygon(bbp,col="black",density=100,border=NA)
+
+
 
 box(lwd=7,bty="l")
 
