@@ -270,7 +270,7 @@ scp kodiak:/data/oziolore/fhet/data/angsd2/*.sfs /home/elias/analysis/data/angsd
 * starting with folded spectra of subsample (24 per population)
 
 ```{r}
-sf<-list.files("~/analysis/data/angsd/subsample//","*.sfs",full.names=TRUE)
+sf<-list.files("~/analysis/data/angsd/subsample/","*.sfs",full.names=TRUE)
 cols<-c("black","lightpink","cadetblue3","grey80","firebrick2","cadetblue1","grey40")
 pop<-list("bb","bnp","gb","pb","sj","sp","vb")
 
@@ -462,7 +462,7 @@ subw <- nsnps > 20 #filter to be saved for these windows
 
 ###
 
-taj<-cbind(bbbase[1:3],taj[["bb"]],taj[["vb"]],taj[["pb"]],taj[["sj"]],taj[["bnp"]],taj[["sp"]],taj[["gb"]]) #binding into a dataframe
+taj<-cbind(popbase[[1]][,1:3],taj[["bb"]],taj[["vb"]],taj[["pb"]],taj[["sj"]],taj[["bnp"]],taj[["sp"]],taj[["gb"]]) #binding into a dataframe
 
 taj<-cbind(taj,keep=as.numeric(subw)) #keeping the filter of low representation bases
 
@@ -488,6 +488,8 @@ pi<-cbind(popbase[["bb"]][1:3],popbase[["bb"]][5],popbase[["vb"]][5],popbase[["p
 piname<-c("scaf","start","end","bb","vb","pb","sj","bnp","sp","gb","keep")
 colnames(pi)<-piname
 write.csv(pi,file="~/analysis/data/angsd/pi_sub",quote=FALSE,row.names=FALSE)
+
+write.csv(cov,file="~/analysis/data/angsd/cov_sub",quote=FALSE,row.names = FALSE)
 
 ```
 
