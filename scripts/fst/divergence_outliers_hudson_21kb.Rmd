@@ -1,0 +1,1016 @@
+---
+title: "divergence_outliers_21Kb_win"
+author: "Elias"
+date: "May 14, 2018"
+output: html_document
+---
+---
+title: "Divergence_outliers"
+author: "E. Oziolor"
+date: "April 30, 2018"
+output: html_document
+---
+
+#Re-do of outlier window pipeline for divergence with Hudson estimator of Fst (this time using 21kb windows)
+
+## grabbing calculated PBS over 1kb regions and repeating merging outlier windows
+
+```{r}
+
+library(XML)
+library(tidyr)
+library(stringr)
+library(dplyr)
+library(gtools)
+library(naturalsort)
+library(RCurl)
+library(ggplot2)
+library(reshape2)
+
+load("~/analysis/data/comparison/noah_stats.RData") #loading data produced from individual SNP call pi and dxy calculations
+pbstat2<-cbind(lift[,1:3],pbstat[,4:6],pbstat[,8],pbstat[,7]) #Binding pbs statistics for populations of interest, in this case F. grandis 
+
+#Only run if you haven't created an ordered table of chromosomes
+#r=ordering them by chromosome
+# ord<-mixedorder(pbstat2$V1) #Data imported is ordered alphabetically (ex. chr1, chr10...); this reorders it to alphanumeric (chr1, chr2...)
+# pbsn<-pbstat2[ord,] #applying sorted order to our dataset
+# 
+# pbsn$V1<-factor(pbsn$V1,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+#                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+#                                      "chr20","chr21","chr22","chr23","chr24")) #factors are sometimes not sorted together with it, so sorting them separately
+# 
+# #writing table to be used in further analysis
+# write.table(pbsn[,1:8],"~/analysis/data/fst/hudsonpbs_1kb.bed",row.names = FALSE,col.names = FALSE,quote=FALSE,sep='\t') #Not really necessary, but subsetting the data, so that you don't have to reorder every time
+
+#reading in pbs table to find outlier regions
+pbs<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",header=FALSE) #loading in ordered table of pbs values for populations of interest
+pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs") #naming them according to their belonging
+colnames(pbs)<-pbsname #applying naming scheme
+
+quantiles<-c() #calculating quantiles in order to apply outlier thresholds
+for(i in 1:5){
+  quantiles[i]<-quantile(pbs[,i+3],probs=.99,na.rm=TRUE)
+}
+
+
+# Quantile info
+# BBpbs - 0.18202835
+# VBpbs - 0.14889788 
+# PBpbs - 0.22912063 
+# SJpbs - 0.08587848
+# BNP - 0.04271162
+
+
+```
+
+## Using bedtools to merge outliers of these pbs statistics; removing non-mapped regions (noise for the most part)
+
+```{bash}
+#grabbing the table file (remember that it needs to be in bed format);
+cat ~/analysis/data/fst/hudsonpbs_1kb.bed | \
+#removing all NA
+grep -v NA | \
+#using awk to remove all values below outlier
+awk '$4>0.18202835 || $5>0.14889788  || $6>0.22912063 || $7>0.08587848 || $8>0.04271162' | \
+#piping into bedtools and merging into outlier windows within 50000 of each other
+~/program/bedtools2/bin/bedtools merge -i stdin -d 50000 \
+#which columns do you want summary statistics printed for
+-c 4,4,5,5,6,6,7,7,8,8 \
+#what statistics do you want printed
+-o sum,count,sum,count,sum,count,sum,count,sum,count \
+#using fai file to map those regions back to genomic regions and saving as bed file
+-g <(cut -f 1-2 ~/analysis/data/genome/unsplit_merge.fasta.fai) > ~/analysis/data/fst/hudson_pbsmergeoutliers.bed
+
+#doing the same but instead with summed statistic, with highest peak outliers
+cat ~/analysis/data/fst/hudsonpbs_1kb.bed | \
+grep -v NA | \
+awk '$4>0.18202835 || $5>0.14889788  || $6>0.22912063 || $7>0.08587848 || $8>0.04271162' | \
+~/program/bedtools2/bin/bedtools merge -i stdin -d 50000 \
+-c 4,4,5,5,6,6,7,7,8,8 \
+-o max,count,max,count,max,count,max,count,max,count \
+-g <(cut -f 1-2 ~/analysis/data/genome/unsplit_merge.fasta.fai) > ~/analysis/data/fst/hudson_pbsmergeoutliers_max.bed
+
+```
+
+## Now taking these merged windows and plotting them to find common outliers
+
+```{r}
+PBSout<-read.table("~/analysis/data/fst/hudson_pbsmergeoutliers.bed",stringsAsFactors=FALSE) # Reading in the maximum outlier regions of interest
+colnames(PBSout)<- c("Scaf","start","end","BBsum", "BBcount","VBsum","VBcount","PBsum","PBcount","SJsum","SJcount","BNPsum","BNPcount") #assigning them column names (we chose columns to be printed earlier)
+
+BBtot<-sum(PBSout[,4]) #summing total level of divergence in these regions
+VBtot<-sum(PBSout[,6])
+PBtot<-sum(PBSout[,8])
+SJtot<-sum(PBSout[,10])
+BNPtot<-sum(PBSout[,12])
+
+interest2<-c() #creating a vector of interest to weigh in the level of divergence by population, so that ones in most divergent populations don't get outweighed
+for (i in 1:2119){
+  interest2<-(PBSout[,4]/BBtot)*100+(PBSout[,6]/VBtot)*100+(PBSout[,8]/PBtot)*100+(PBSout[,10]/SJtot)*100+(PBSout[,12]/BNPtot)*100
+}
+
+ord<-order(interest2,decreasing=TRUE) #order that vector
+ord2<-ord[1:10] #show top10 regions
+
+par(mar=c(4.2,5,4,4)) #plotting these outliers
+plot(PBSout[ord2,"BBsum"],col='black',pch=20,cex=3,ylim=c(0,4000),ylab="Level of divergence",xlab="Region number",
+     cex.lab=2,cex.axis=2)
+points(PBSout[ord2,"VBsum"],col='grey',pch=20,cex=3)
+points(PBSout[ord2,"PBsum"],col='red',pch=20,cex=3)
+points(PBSout[ord2,"SJsum"],col='darkorange',pch=20,cex=3)
+points(PBSout[ord2,"BNPsum"],col="gold",pch=20,cex=3)
+
+legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red","darkorange2","gold"),
+       pch=20,cex=2,bty="n",y.intersp=1,x.intersp=.5)
+
+```
+
+## Grabbing those regions and putting them on pbs plots
+
+```{r}
+pbs<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",header=FALSE,stringsAsFactors = FALSE) #reading in the windowed pbs estimates
+pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs") #naming columns
+colnames(pbs)<-pbsname
+
+col<-c()# finding 1% outliers
+for (i in 1:5){
+  col[i]<-quantile(pbs[,i+3],prob=.99,na.rm=TRUE)
+}
+
+pbsc<-pbs %>% filter(str_detect(Scaf,"chr")) #only selecting chromosomes
+
+#removing the crappy scaffold that has the first 141 windows of chromosome 16 (mismapped from chr1); this is discovered in dxy.r script in introgression folder
+chr16<-str_detect(pbsc$Scaf,"chr16") #grab chr16
+ord<-order(pbsc[chr16,"BBpbs"],decreasing=TRUE) #pick highest value of chr16
+pbsc16<-pbsc[chr16,] #make an object
+chr16rows<-as.numeric(rownames(pbsc[chr16,])) #grab rownames for it
+crappyrows<-chr16rows[1:300] #get the first 141 rows which contain scaffold "crappy"
+pbsct<-pbsc[-c(crappyrows),] #remove thos rows from total
+chr16.2<-str_detect(pbsc$Scaf,"chr16") #do it again
+head(pbsct[chr16,])
+pbsc<-pbsct
+head(pbsc[chr16,])
+
+#Grabbing regions that are put together pretty well/widely----
+pbs_out_temp<-read.table("~/analysis/data/fst/hudson_pbsmergeoutliers_max.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
+names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount")
+colnames(pbs_out_temp)<-names
+
+pbs_out<-pbs_out_temp %>% filter(str_detect(Scaf,"chr")) #selecting only chromosome mapped scaffolds
+
+#checking for whether those are outliers in different groups--------
+all<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
+res<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
+interm<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
+bbu<-pbs_out[,4]>col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
+vbu<-pbs_out[,4]<col[1] & pbs_out[,6]>col[2] & pbs_out[,8]<col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
+pbu<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]>col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
+sju<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]>col[4] & pbs_out[,12]<col[5]
+bnpu<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]<col[4] & pbs_out[,12]>col[5]
+
+write.table(pbsc[,1:3],"~/analysis/data/fst/subsample/PBS_keep_1kb.bed",
+            row.names = FALSE,col.names = FALSE,quote=FALSE,sep="\t")
+write.table(pbs_out[all,1:3],"~/analysis/data/fst/subsample/pbs_regions_sharedall.bed",
+            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
+write.table(pbs_out[res,1:3],"~/analysis/data/fst/subsample/pbs_regions_sharedres.bed",
+            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
+write.table(pbs_out[interm,1:3],"~/analysis/data/fst/subsample/pbs_regions_sharedinterm.bed",
+            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
+write.table(pbs_out[bbu,1:3],"~/analysis/data/fst/subsample/pbs_regions_sharedbbu.bed",
+            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
+write.table(pbs_out[vbu,1:3],"~/analysis/data/fst/subsample/pbs_regions_sharedvbu.bed",
+            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
+write.table(pbs_out[pbu,1:3],"~/analysis/data/fst/subsample/pbs_regions_sharedpbu.bed",
+            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
+write.table(pbs_out[sju,1:3],"~/analysis/data/fst/subsample/pbs_regions_sharedsju.bed",
+            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
+write.table(pbs_out[bnpu,1:3],"~/analysis/data/fst/subsample/pbs_regions_sharedbnpu.bed",
+            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
+
+
+#source("http://bioconductor.org/biocLite.R")
+#biocLite()
+#biocLite('rtracklayer')
+
+#Finding the overlaps in full data---------
+library("rtracklayer")
+
+bed1=import("~/analysis/data/fst/subsample/PBS_keep_1kb.bed") #importing the windows in which we are searching
+
+bedall=import("~/analysis/data/fst/subsample/pbs_regions_sharedall.bed") #importing shared outliers
+bed1overlall=bed1[bed1 %over% bedall] #Making overlapping regions into genome file
+hitsall<-findOverlaps(bedall,bed1) #finding overlaps as hits
+allhit<-subjectHits(hitsall) #making them into a true false vector
+
+#same for the rest of the comparisons
+bedres=import("~/analysis/data/fst/subsample/pbs_regions_sharedres.bed")
+bed1overlres=bed1[bed1 %over% bedres]
+hitsres<-findOverlaps(bedres,bed1)
+reshit<-subjectHits(hitsres)
+
+bedinterm=import("~/analysis/data/fst/subsample/pbs_regions_sharedinterm.bed")
+bed1overlinterm=bed1[bed1 %over% bedinterm]
+hitsinterm<-findOverlaps(bedinterm,bed1)
+intermhit<-subjectHits(hitsinterm)
+
+bedbbu=import("~/analysis/data/fst/subsample/pbs_regions_sharedbbu.bed")
+bed1overlbbu=bed1[bed1 %over% bedbbu]
+hitsbbu<-findOverlaps(bedbbu,bed1)
+bbuhit<-subjectHits(hitsbbu)
+
+bedvbu=import("~/analysis/data/fst/subsample/pbs_regions_sharedvbu.bed")
+bed1overlvbu=bed1[bed1 %over% bedvbu]
+hitsvbu<-findOverlaps(bedvbu,bed1)
+vbuhit<-subjectHits(hitsvbu)
+
+bedpbu=import("~/analysis/data/fst/subsample/pbs_regions_sharedpbu.bed")
+bed1overlpbu=bed1[bed1 %over% bedpbu]
+hitspbu<-findOverlaps(bedpbu,bed1)
+pbuhit<-subjectHits(hitspbu)
+
+bedsju=import("~/analysis/data/fst/subsample/pbs_regions_sharedsju.bed")
+bed1overlsju=bed1[bed1 %over% bedsju]
+hitssju<-findOverlaps(bedsju,bed1)
+sjuhit<-subjectHits(hitssju)
+
+bedbnpu=import("~/analysis/data/fst/subsample/pbs_regions_sharedbnpu.bed")
+bed1overlbnpu=bed1[bed1 %over% bedbnpu]
+hitsbnpu<-findOverlaps(bedbnpu,bed1)
+bnpuhit<-subjectHits(hitsbnpu)
+
+pbsc<-cbind(pbsc,0,0,0,0,0,0,0,0) #adding columns to the dataframe of pbs values
+newn<-c("Scaf","start","end","BB","VB","PB","SJ","BNP","all","res","interm","bbu","vbu","pbu","sju","bnpu") #giving them names
+colnames(pbsc)<-newn
+pbsc[allhit,"all"]<-pbsc[allhit,"all"]+1 #adding 1s for true values in hits parameter
+pbsc[reshit,"res"]<-pbsc[reshit,"res"]+1
+pbsc[intermhit,"interm"]<-pbsc[intermhit,"interm"]+1
+pbsc[bbuhit,"bbu"]<-pbsc[bbuhit,"bbu"]+1
+pbsc[vbuhit,"vbu"]<-pbsc[vbuhit,"vbu"]+1
+pbsc[pbuhit,"pbu"]<-pbsc[pbuhit,"pbu"]+1
+pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
+pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
+
+#plotting those results by using the pbs_out vector-------------
+pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24")) #ordering factor levels
+palette(c("grey40","grey80"))
+par(mfrow=c(5,1),mar=c(0,3,0,0))
+plot(pbsc[,4],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",
+                              ifelse(pbsc[,"bbu"]>0,"gold2",
+                                     ifelse(pbsc[,4]>col[1],"green2",as.factor(pbsc[,1])))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+plot(pbsc[,5],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",
+                              ifelse(pbsc[,"vbu"]>0,"gold2",
+                                     ifelse(pbsc[,5]>col[2],"green2",as.factor(pbsc[,1])))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+plot(pbsc[,6],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",
+                              ifelse(pbsc[,"pbu"]>0,"gold2",
+                                     ifelse(pbsc[,6]>col[3],"green2",as.factor(pbsc[,1])))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+plot(pbsc[,7],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",
+                              ifelse(pbsc[,"sju"]>0,"gold2",
+                                     ifelse(pbsc[,7]>col[4],"green2",as.factor(pbsc[,1])))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+plot(pbsc[,8],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",
+                              ifelse(pbsc[,"bnpu"]>0,"gold2",
+                                     ifelse(pbsc[,8]>col[5],"green2",as.factor(pbsc[,1])))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+#Simplified to fewer outliers----
+
+pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24"))
+palette(c("grey40","grey80"))
+par(mfrow=c(5,1),mar=c(0,3,0,0))
+plot(pbsc[,4],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",
+                              as.factor(pbsc[,1])))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+plot(pbsc[,5],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",
+                            as.factor(pbsc[,1])))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+plot(pbsc[,6],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",
+                              as.factor(pbsc[,1])))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+plot(pbsc[,7],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",
+                              as.factor(pbsc[,1])))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+plot(pbsc[,8],pch=20,cex=1.2,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",
+                              as.factor(pbsc[,1])))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+
+```
+
+## Breaking these up into 1kb windows and observing whether they are unique
+
+```{r}
+###Plotting outliers vs each other-----------
+pbsct<-pbs %>% filter(str_detect(Scaf,"chr")) #getting only scaffolds mapped onto chromosomes here
+
+pbsc<-na.omit(pbsc[,1:8]) #removing NA values from them
+
+#checking for whether those are outliers in different groups
+all<-pbsc[,4]>col[1] & pbsc[,5]>col[2] & pbsc[,6]>col[3] & pbsc[,7]>col[4] & pbsc[,8]>col[5]
+res<-pbsc[,4]>col[1] & pbsc[,5]>col[2] & pbsc[,6]>col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+interm<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]>col[4] & pbsc[,8]>col[5]
+bbu<-pbsc[,4]>col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+vbu<-pbsc[,4]<col[1] & pbsc[,5]>col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+pbu<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]>col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+sju<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]>col[4] & pbsc[,8]<col[5]
+bnpu<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]>col[5]
+
+#as before, checking which of those regions of divergence maps to specific windows of divergence
+write.table(pbsc[,1:3],"~/analysis/data/fst/subsample/PBS_keep_1kb.bed",row.names = FALSE,col.names = FALSE,quote=FALSE,sep='\t')
+write.table(na.omit(pbsc[all,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedall.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[res,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedres.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[interm,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedinterm.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[bbu,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedbbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[vbu,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedvbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[pbu,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedpbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[sju,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedsju.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[bnpu,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedbnpu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+
+
+#source("http://bioconductor.org/biocLite.R")
+#biocLite()
+#biocLite('rtracklayer')
+
+#Finding the overlaps in full data---------
+library("rtracklayer")
+
+#summarizing these outlier windows, instead of by regions, by 1kb windows - look behind if confused about script (previous chunk)
+bed1=import("~/analysis/data/fst/subsample/PBS_keep_1kb.bed")
+
+bedall=import("~/analysis/data/fst/subsample/pbs_regions_sharedall.bed")
+bed1overlall=bed1[bed1 %over% bedall]
+hitsall<-findOverlaps(bedall,bed1)
+allhit<-subjectHits(hitsall)
+
+bedres=import("~/analysis/data/fst/subsample/pbs_regions_sharedres.bed")
+bed1overlres=bed1[bed1 %over% bedres]
+hitsres<-findOverlaps(bedres,bed1)
+reshit<-subjectHits(hitsres)
+
+bedinterm=import("~/analysis/data/fst/subsample/pbs_regions_sharedinterm.bed")
+bed1overlinterm=bed1[bed1 %over% bedinterm]
+hitsinterm<-findOverlaps(bedinterm,bed1)
+intermhit<-subjectHits(hitsinterm)
+
+bedbbu=import("~/analysis/data/fst/subsample/pbs_regions_sharedbbu.bed")
+bed1overlbbu=bed1[bed1 %over% bedbbu]
+hitsbbu<-findOverlaps(bedbbu,bed1)
+bbuhit<-subjectHits(hitsbbu)
+
+bedvbu=import("~/analysis/data/fst/subsample/pbs_regions_sharedvbu.bed")
+bed1overlvbu=bed1[bed1 %over% bedvbu]
+hitsvbu<-findOverlaps(bedvbu,bed1)
+vbuhit<-subjectHits(hitsvbu)
+
+bedpbu=import("~/analysis/data/fst/subsample/pbs_regions_sharedpbu.bed")
+bed1overlpbu=bed1[bed1 %over% bedpbu]
+hitspbu<-findOverlaps(bedpbu,bed1)
+pbuhit<-subjectHits(hitspbu)
+
+bedsju=import("~/analysis/data/fst/subsample/pbs_regions_sharedsju.bed")
+bed1overlsju=bed1[bed1 %over% bedsju]
+hitssju<-findOverlaps(bedsju,bed1)
+sjuhit<-subjectHits(hitssju)
+
+bedbnpu=import("~/analysis/data/fst/subsample/pbs_regions_sharedbnpu.bed")
+bed1overlbnpu=bed1[bed1 %over% bedbnpu]
+hitsbnpu<-findOverlaps(bedbnpu,bed1)
+bnpuhit<-subjectHits(hitsbnpu)
+
+pbsc<-cbind(pbsc,0,0,0,0,0,0,0,0) #adding these to the 1kb windows we've separated the genome into
+newn<-c("Scaf","start","end","BB","VB","PB","SJ","BNP","all","res","interm","bbu","vbu","pbu","sju","bnpu")
+colnames(pbsc)<-newn
+pbsc[allhit,"all"]<-pbsc[allhit,"all"]+1 #naming adding +1 to each of those windows that is shared
+pbsc[reshit,"res"]<-pbsc[reshit,"res"]+1
+pbsc[intermhit,"interm"]<-pbsc[intermhit,"interm"]+1
+pbsc[bbuhit,"bbu"]<-pbsc[bbuhit,"bbu"]+1
+pbsc[vbuhit,"vbu"]<-pbsc[vbuhit,"vbu"]+1
+pbsc[pbuhit,"pbu"]<-pbsc[pbuhit,"pbu"]+1
+pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
+pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
+
+par(mfrow=c(2,3),mar=c(4,4,0,0)) #plotting these outlier windows vs each other for each population to see how they are distributed among resistant and intermediate populations
+plot(pbsc[,"BB"],pbsc[,"VB"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="VB z values",ylab="BB z values")
+abline(h=0,v=0)
+
+plot(pbsc[,"BB"],pbsc[,"PB"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="PB z values",ylab="BB z values")
+abline(h=0,v=0)
+
+plot(pbsc[,"VB"],pbsc[,"PB"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="PB z values",ylab="VB z values")
+abline(h=0,v=0)
+
+plot(pbsc[,"SJ"],pbsc[,"PB"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="PB z values",ylab="SJ z values")
+abline(h=0,v=0)
+
+plot(pbsc[,"BNP"],pbsc[,"PB"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="PB z values",ylab="BNP z values")
+abline(h=0,v=0)
+
+plot(pbsc[,"BNP"],pbsc[,"SJ"],pch=20,cex=.7,
+     col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"interm"]>0,"red",
+                       ifelse(pbsc[,"res"],"black",NA))),bty='l',
+     xlab="SJ z values",ylab="BNP z values")
+abline(h=0,v=0)
+```
+
+##Test for finding if they are truly different by simulating 1000 random regions of the same size from the genome
+
+```{r}
+
+intermeans<-c()
+for(i in 1:5){
+  intermeans[i]<-mean(pbsc[interm,i+3],na.rm=TRUE)
+}
+
+resmeans<-c()
+for(i in 1:5){
+  resmeans[i]<-mean(pbsc[res,i+3],na.rm=TRUE)
+}
+
+allmeans<-c()
+for(i in 1:5){
+  allmeans[i]<-mean(pbsc[all,i+3],na.rm=TRUE)
+}
+
+#plotting histogram for intermediate regions----
+rimeans<-c()
+b<-c()
+for(i in 1:5){
+  for(j in 1:1000){
+    b[j]<-mean(sample(pbsc[,i+3],size=765,replace=FALSE))
+  }
+  rimeans<-cbind(rimeans,b)
+}
+
+nam<-c("BB","VB","PB","SJ","BNP")
+colnames(rimeans)<-nam
+cols<-c("black","black","black","firebrick2","firebrick2")
+
+par(mfrow=c(2,3),mar=c(4,4,2,2))
+for(i in 1:length(nam)){
+  hist(rimeans[,i],main='',breaks=30,xlim=c(range(rimeans[,i]-.1,na.rm=TRUE)[[1]],intermeans[i]+.5),
+       bty='l',col=cols[i],border=cols[i],xlab=nam[i],cex.axis=3,ylab='')
+  abline(v=intermeans[i],lwd=3,col="green")
+  box(bty='l',lwd=3)
+}
+
+#plotting histogram for resistant only regions----
+
+rrmeans<-c()
+b<-c()
+for(i in 1:5){
+  for(j in 1:1000){
+    b[j]<-mean(sample(pbsc[,i+3],size=2549,replace=FALSE))
+  }
+  rrmeans<-cbind(rrmeans,b)
+}
+
+nam<-c("BB","VB","PB","SJ","BNP")
+colnames(rrmeans)<-nam
+cols<-c("black","black","black","firebrick2","firebrick2")
+
+par(mfrow=c(2,3))
+for(i in 1:length(nam)){
+  hist(rrmeans[,i],main='',breaks=30,xlim=c(range(rrmeans[,i]-.1,na.rm=TRUE)[[1]],resmeans[i]+.5),
+       bty='l',col=cols[i],border=cols[i],xlab=nam[i])
+  abline(v=resmeans[i],lwd=3,col="green")
+}
+
+###plotting histogram for shared regions----
+
+rameans<-c()
+b<-c()
+for(i in 1:5){
+  for(j in 1:1000){
+    b[j]<-mean(sample(pbsc[,i+3],size=259,replace=FALSE))
+  }
+  rameans<-cbind(rameans,b)
+}
+
+nam<-c("BB","VB","PB","SJ","BNP")
+colnames(rameans)<-nam
+cols<-c("black","black","black","firebrick2","firebrick2")
+
+par(mfrow=c(2,3))
+for(i in 1:length(nam)){
+  hist(rameans[,i],main='',breaks=30,xlim=c(range(rameans[,i]-.1,na.rm=TRUE)[[1]],allmeans[i]+.5),
+       bty='l',col=cols[i],border=cols[i],xlab=nam[i])
+  abline(v=allmeans[i],lwd=3,col="green")
+}
+
+
+```
+
+
+## Plotting specific regions of the genome based on divergence - messed up for now, will have to re-do
+
+```{r}
+#smoothing funciton----
+subsmooth <- function(vec,by=10,width=11){
+  
+  len <- length(vec)
+  subl <- seq(from=by,to=len,by=by)
+  submax <- length(subl)
+  width <- width/2
+  test <- vec[subl]
+  
+  for(i in 1:submax){
+    
+    j <- i - width
+    k <- i + width
+    if(j < 1) {j <- 1}
+    if(k > submax) {k <- submax}
+    test[i] <- mean(test[j:k],na.rm=TRUE)
+  }
+  
+  return(test)
+  
+}
+
+
+###Plotting CHR1/AHR region------------
+pbsc1<-pbsc %>% filter(str_detect(Scaf,"\\bchr1\\b"))
+
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(subsmooth(pbsc1[1:5000,i+3]),pch=20,cex=.5,ylim=c(0,1.8),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(50,60),col="red",lty=2,lwd=1.5)
+}
+
+#plotting ARNT chr8----
+pbsc8<-pbsc %>% filter(str_detect(Scaf,"\\bchr8\\b"))
+
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(subsmooth(pbsc8[14000:18000,i+3]),pch=20,cex=.5,ylim=c(0,.5),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(170,173),col="red",lty=2,lwd=1.5)
+}
+
+
+#plotting AIP chr2----
+pbsc2<-pbsc %>% filter(str_detect(Scaf,"\\bchr2\\b"))
+
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(subsmooth(pbsc2[23000:26000,i+3]),pch=20,cex=.5,ylim=c(0,.4),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(140,142),col="red",lty=2,lwd=1.5)
+}
+
+#plotting AQP3
+
+pbsc24<-pbsc %>% filter(str_detect(Scaf,"\\bchr24\\b"))
+
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(subsmooth(pbsc24[22000:26000,i+3]),pch=20,cex=.5,ylim=c(0,.5),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(159,162),col="red",lty=2,lwd=1.5)
+}
+
+#plotting AQP3
+
+pbsc11<-pbsc %>% filter(str_detect(Scaf,"\\bchr11\\b"))
+
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:5){
+  plot(subsmooth(pbsc11[27000:28940,i+3]),pch=20,cex=.5,ylim=c(0,.5),bty='l',cex.axis=2,ylab='',xlab='')
+  box(bty='l',lwd=3)
+  abline(v=c(181,188),col="red",lty=2,lwd=1.5)
+}
+
+```
+
+##Calculating Hudson's Fst from pi and dxy (start from here for zstats)
+
+```{r}
+load("~/analysis/data/comparison/noah_stats.RData") #loading data produced from individual SNP call pi and dxy calculations
+
+pops<-c("BB","VB","PB","SJSP","BNP","GB","SP") #creating a vector of names for our populations
+
+fsth<-as.data.frame(fst2[,1:21])#creating matrix to hold fst data takes about 1 hour to run; Here I'm calculating Hudson's Fst from our dataset;
+
+f=0
+for(i in pops){
+  for(j in pops){
+    if(i==j){next()}
+    if(i>j){next()}
+    f<-f+1
+    print(f)
+    colnames(fsth)[f]<-paste(sort(unique(c(i,j))),collapse=".")
+    print(colnames(fsth)[f])
+    fsth[,f]<-1-((fst2[,i]+fst2[,j])/2)/fst2[,paste(sort(unique(c(i,j))),collapse=".")]
+  }
+}
+
+#write.table(fsth,"~/analysis/data/fst/fsth",col.names = FALSE,quote = FALSE,row.names = FALSE) #to save it for later
+
+#fsth<-read.table("~/analysis/data/fst/fsth",header=FALSE) #loading fsth values
+```
+##Caclulating Z statistic from the fst values
+
+```{r}
+#Dependent on having loaded fsth into RAM from above chunk
+# install.packages('matrixStats')
+library(matrixStats)
+
+fsth[!is.finite(as.matrix(fsth))]<-NA #making all inifite values into NA
+
+fstmeans<-colMeans(fsth,na.rm=TRUE) #calculating average fst
+fstmeans<-as.matrix(fstmeans) #putting it into a matrix
+
+fststdev<-colSds(as.matrix(fsth),na.rm=TRUE) #calculating standard deviation overall
+fststdev<-as.matrix(fststdev)
+row.names(fststdev)<-row.names(fstmeans) #making sure the rows are correctly assigned
+
+zfst<-matrix(nrow=dim(fsth)[1],ncol=dim(fsth)[2]) #creating a matrix that will hold z values
+colnames(zfst)<-colnames(fsth)
+
+#running a loop that calculates z values
+for (i in 1:21){
+    zfst[,i]<-(fsth[,i]-fstmeans[i])/fststdev[i]
+}
+
+#write.table(zfst,"~/analysis/data/fst/zfst_hud_1kb",row.names=FALSE,col.names=FALSE,quote=FALSE,sep="\t")
+#zfst<-read.table("~/analysis/data/fst/zfst_hud_1kb",header=FALSE)
+```
+
+##Subtraction of pi and conversion to z statistic (this time let's use the 20kb values)
+
+```{r}
+pi<-cbind(fst2[,"BB"],fst2[,"VB"],fst2[,"PB"],fst2[,"SJSP"],fst2[,"BNP"],fst2[,"GB"],fst2[,"SP"]) #taking only pi values for F. grandis from dataframe
+pops<-c("BB","VB","PB","SJSP","BNP","GB","SP") #creating a vector of names for our populations
+colnames(pi)<-c(pops)
+
+head(val2) # vector of # of SNPs evaluated to come to a summary statistic per window
+
+pib<-pi/val2[,4] #converting these estimates to per base
+pib[!is.finite(as.matrix(pib))]<-NA #putting NA in the stead of all all infinite values
+
+pidiff<-as.data.frame(fst[,1:21]) #creating data frame that would hold pidiff values
+
+#looping over variables to calculate the difference in pi
+f=0
+for(i in pops){
+  for(j in pops){
+    if(i==j){next()}
+    if(i>j){next()}
+    f<-f+1
+    print(f)
+    colnames(pidiff)[f]<-paste(sort(unique(c(i,j))),collapse=".")
+    print(colnames(pidiff)[f])
+    pidiff[,f]<-pib[,i]-pib[,j]
+  }
+}
+
+pidiff[!is.finite(as.matrix(pidiff))]<-NA #removing all infinite values and replacing with NA
+pimeans<-colMeans(as.matrix(pidiff),na.rm=TRUE) #calculating means of columns of pi difference
+pimeans<-as.matrix(pimeans) #converting into a matrix so I can use numeric values out of it
+
+library(matrixStats)
+pistdev<-colSds(as.matrix(pidiff),na.rm=TRUE) #calculating standard deviation from columns
+pistdev<-as.matrix(pistdev)
+
+zpi<-matrix(nrow=dim(pidiff)[[1]],ncol = dim(pidiff)[[2]])
+
+for (i in 1:21){
+    zpi[,i]<-(pidiff[,i]-pimeans[i])/pistdev[i]
+}
+colnames(zpi)<-colnames(pidiff)
+
+#write.table(zpi,"~/analysis/data/angsd/zpi_20kb",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+```
+
+##Messing around with pi
+
+```{r}
+
+mpi<-melt(pib[,1:7])
+
+ggplot(mpi,
+       aes(x=Var2,y=value,fill=Var2,color=Var2))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(0,.017))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+
+
+```
+
+## Merging z statistics into a common one (high z would mean high fst and low pi)
+
+```{r}
+#zfst<-read.table("~/analysis/data/fst/zfst_hud_1kb",sep='\t')
+#zpi<-read.table("~/analysis/data/angsd/zpi_1kb",sep="\t")
+colnames(zfst)<-colnames(fsth) #naming columns
+colnames(zpi)<-colnames(fsth)
+
+zfst<-as.data.frame(zfst)
+zpi<-as.data.frame(zpi)
+
+zfst2<-zfst %>% mutate(seq=seq(1:dim(zfst)[[1]])) #adding sequence, basically a way to match the rows to each other
+zpi2<-zpi %>% mutate(seq=seq(1:dim(zpi)[[1]])) #same
+
+colnam<-colnames(zfst2[,1:21]) #saving colnames as a vector so we can match columns
+zmerge_temp<-cbind(zfst2[colnam]-zpi2[match(zfst2$seq,zpi2$seq),colnam]) #subtracting zpi from zfst for a zmerge
+
+subw<-val[,4]>5 #filtering values that didn't have very many supportive snps
+
+zmerge<-zmerge_temp %>% mutate(keep=as.numeric(subw)) #Adds that filter column as 0s and 1s
+
+#write.table(zmerge,"~/analysis/data/dfst/zmerge_1kb",row.names = FALSE,col.names = FALSE,quote = FALSE)
+
+```
+
+## Doing a PBS analysis with Z statistics
+
+```{r}
+#zmerge<-read.table("~/analysis/data/dfst/zmerge_1kb",header=FALSE)
+
+znames<-c(names(fsth),"keep")
+colnames(zmerge)<-znames
+
+names(zmerge)<-gsub("SJSP","SJ",names(zmerge))
+
+distgb<-zmerge %>% 
+  select(contains("GB")) #only selecting GB columns
+sub1<-gsub("GB.","",names(distgb)) #removing GB from names
+sub2<-gsub(".GB","",sub1)
+names(distgb)<-sub2
+
+distsp<-zmerge %>% 
+  select(contains("SP")) #only selecting SP columns
+sub3<-gsub("SP.","",names(distsp))
+sub4<-gsub(".SP","",sub3)
+names(distsp)<-sub4
+
+pops<-c("BB","VB","PB","SJ","BNP")
+
+distgb2<-distgb %>% 
+  select(pops) #rearranging columns
+
+distsp2<-distsp %>% 
+  select(pops)
+
+colnam<-colnames(distgb2) #assigning a vector
+distsp3<-distsp2 %>% mutate(seq=seq(1:dim(distsp)[[1]])) #adding sequence as before
+distgb3<-distgb2 %>% mutate(seq=seq(1:dim(distgb)[[1]]))
+
+total_dist<-cbind(distsp3[colnam]+distgb3[match(distsp3$seq,distgb3$seq),colnam]) #matching the two and adding them to each
+
+pbsz<-matrix(nrow=dim(total_dist)[[1]],ncol=dim(total_dist)[[2]]) #creating matriz to hold 
+
+for(i in 1:5){ #calculating the z pbs value
+  pbsz[,i]<-(total_dist[,i]-distgb[,"SP"])/2
+}
+colnames(pbsz)<-colnames(total_dist)#naming
+
+subw<-val[,4]>20 #filter
+
+plot(pbsz[subw,"BB"],pch=20,cex=.2,ylim=c(-10,30))
+
+zpbs<-cbind(lift,pbsz) #plugging in location values
+
+# ord<-mixedorder(zpbs$V1) #Data imported is ordered alphabetically (ex. chr1, chr10...); this reorders it to alphanumeric (chr1, chr2...)
+# zpbs<-zpbs[ord,] #applying sorted order to our dataset
+# 
+# zpbs<-read.table("~/analysis/data/dfst/zpbs_20kb",header=FALSE)
+# colnames(zpbs)<-c("Scaf","start","end","BB","VB","PB","SJ","BNP")
+# 
+# zpbs$Scaf<-factor(zpbs$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+#                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+#                                      "chr20","chr21","chr22","chr23","chr24")) #factors are sometimes not sorted together with it, so sorting them separately
+# zpbs<-zpbs %>% 
+#   filter(str_detect(Scaf,"chr")) #filtering only chromosome mapped regions
+
+#write.table(zpbs,"~/analysis/data/dfst/zpbs_20kb",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t") #writing
+zpbs<-read.table("~/analysis/data/dfst/zpbs_20kb",header=FALSE)
+colnames(zpbs)<-c("Scaf","start","end","BB","VB","PB","SJ","BNP")
+zpbs<-zpbs %>% 
+  filter(str_detect(Scaf,"chr")) #filtering only chromosome mapped regions
+
+```
+
+##Looking at 1% outlier regions
+
+```{r}
+col<-c() #figuring outliers
+for (i in 1:5){
+  col[i]<-quantile(zpbs[,i+3],prob=.99,na.rm=TRUE)
+}
+names(col)<-names(total_dist)
+#1% thresholds
+print(col)
+
+```
+
+##Creating outlier regions of interest
+
+```{bash}
+cat ~/analysis/data/dfst/zpbs_20kb | grep -v NA | \
+awk '$4>2.070793 || $5>3.693761  || $6>2.908474 || $7>2.406610 || $8>2.087560 ' | \
+~/program/bedtools2/bin/bedtools merge -i stdin -d 500000 \
+-c 4,4,5,5,6,6,7,7,8,8 \
+-o max,count,max,count,max,count,max,count,max,count \
+-g <(cut -f 1-2 ~/analysis/data/genome/unsplit_merge.fasta.fai) > ~/analysis/data/dfst/zregions_max_20kb.bed
+```
+
+##Shared outliers
+
+```{r}
+PBSout<-read.table("~/analysis/data/dfst/zregions_max_20kb.bed",stringsAsFactors=FALSE) # Reading in the maximum outlier regions of interest
+colnames(PBSout)<- c("Scaf","start","end","BBsum", "BBcount","VBsum","VBcount","PBsum","PBcount","SJsum","SJcount","BNPsum","BNPcount") #assigning them column names (we chose columns to be printed earlier)
+
+BBtot<-sum(PBSout[,4]) #summing total level of divergence in these regions
+VBtot<-sum(PBSout[,6])
+PBtot<-sum(PBSout[,8])
+SJtot<-sum(PBSout[,10])
+BNPtot<-sum(PBSout[,12])
+
+interest2<-c() #creating a vector of interest to weigh in the level of divergence by population, so that ones in most divergent populations don't get outweighed
+for (i in 1:dim(PBSout)[[1]]){
+  interest2<-(PBSout[,4]/BBtot)*100+(PBSout[,6]/VBtot)*100+(PBSout[,8]/PBtot)*100+(PBSout[,10]/SJtot)*100+(PBSout[,12]/BNPtot)*100
+}
+
+ord<-order(interest2,decreasing=TRUE) #order that vector
+ord2<-ord[1:10] #show top10 regions
+
+par(mar=c(4.2,5,4,4)) #plotting these outliers
+plot(PBSout[ord2,"BBsum"],col='black',pch=20,cex=3,ylim=c(0,500),ylab="Level of divergence",xlab="Region number",
+     cex.lab=2,cex.axis=2)
+points(PBSout[ord2,"VBsum"],col='grey',pch=20,cex=3)
+points(PBSout[ord2,"PBsum"],col='red',pch=20,cex=3)
+points(PBSout[ord2,"SJsum"],col='darkorange',pch=20,cex=3)
+points(PBSout[ord2,"BNPsum"],col="gold",pch=20,cex=3)
+
+legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red","darkorange2","gold"),
+       pch=20,cex=2,bty="n",y.intersp=1,x.intersp=.5)
+
+```
+
+##Now let's plot up some figures with the merged z statistics
+
+```{r}
+zpbs<-read.table("~/analysis/data/dfst/zpbs_20kb",header=FALSE)
+colnames(zpbs)<-c("Scaf","start","end","BB","VB","PB","SJ","BNP")
+zpbs<-zpbs %>% 
+  filter(str_detect(Scaf,"chr")) #filtering only chromosome mapped regions
+
+#using data from the outlier regions in order to select regions of interest that are shared, res unique or interm unique
+pbs_out_temp<-read.table("~/analysis/data/dfst/zregions_max_20kb.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
+names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount") #naming columns
+colnames(pbs_out_temp)<-names
+
+pbs_out<-pbs_out_temp %>% filter(str_detect(Scaf,"chr")) #filtering to only select chromosome mapped scaffolds
+
+all<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5] # vector wiht T/F of shared outliers
+res<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
+
+interm<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
+
+write.table(zpbs[,1:3],"~/analysis/data/dfst/zpbs.bed",row.names = FALSE,col.names = FALSE,quote=FALSE, sep="\t") #saving background genomic regions in bed format
+write.table(pbs_out[all,1:3],"~/analysis/data/dfst/pbs_regions_sharedall.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t") #saving shared regions to look at overlap with the 1kb regions
+write.table(pbs_out[res,1:3],"~/analysis/data/dfst/pbs_regions_sharedres.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t")
+write.table(pbs_out[interm,1:3],"~/analysis/data/dfst/pbs_regions_sharedinterm.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t")
+
+#only run source() and biocLite() if you don't have them installed
+# source("http://bioconductor.org/biocLite.R")
+# biocLite()
+library("rtracklayer")
+
+bed1=import("~/analysis/data/dfst/zpbs.bed")
+
+bedall=import("~/analysis/data/dfst/pbs_regions_sharedall.bed")
+bed1overlall=bed1[bed1 %over% bedall]
+hitsall<-findOverlaps(bedall,bed1)
+allhit<-subjectHits(hitsall)
+
+bedres=import("~/analysis/data/dfst/pbs_regions_sharedres.bed")
+bed1overlres=bed1[bed1 %over% bedres]
+hitsres<-findOverlaps(bedres,bed1)
+reshit<-subjectHits(hitsres)
+
+bedinterm=import("~/analysis/data/dfst/pbs_regions_sharedinterm.bed")
+bed1overlinterm=bed1[bed1 %over% bedinterm]
+hitsinterm<-findOverlaps(bedinterm,bed1)
+intermhit<-subjectHits(hitsinterm)
+
+zpbs$Scaf<-factor(zpbs$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24")) #factors are sometimes not sorted together with it, so sorting them separately
+
+zpbs<-cbind(zpbs,0,0,0)
+newn<-c("Scaf","start","end","BB","VB","PB","SJ","BNP","all","res","interm")
+colnames(zpbs)<-newn
+zpbs[allhit,"all"]<-zpbs[allhit,"all"]+1
+zpbs[reshit,"res"]<-zpbs[reshit,"res"]+1
+zpbs[intermhit,"interm"]<-zpbs[intermhit,"interm"]+1
+
+
+palette(c("grey40","grey80"))
+par(mfrow=c(5,1),mar=c(0,3,0,0))
+plot(zpbs[,4],pch=20,cex=1.2,
+     col=ifelse(zpbs[,"all"]>0,"purple",
+                ifelse(zpbs[,"res"]>0,"black",
+                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
+plot(zpbs[,5],pch=20,cex=1.2,
+     col=ifelse(zpbs[,"all"]>0,"purple",
+                ifelse(zpbs[,"res"]>0,"black",
+                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
+plot(zpbs[,6],pch=20,cex=1.2,
+     col=ifelse(zpbs[,"all"]>0,"purple",
+                ifelse(zpbs[,"res"]>0,"black",
+                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
+plot(zpbs[,7],pch=20,cex=1.2,
+     col=ifelse(zpbs[,"all"]>0,"purple",
+                ifelse(zpbs[,"res"]>0,"black",
+                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
+plot(zpbs[,8],pch=20,cex=1.2,
+     col=ifelse(zpbs[,"all"]>0,"purple",
+                ifelse(zpbs[,"res"]>0,"black",
+                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
+```
