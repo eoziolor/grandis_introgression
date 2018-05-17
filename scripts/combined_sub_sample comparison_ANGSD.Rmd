@@ -1,0 +1,220 @@
+---
+title: "ANGSD_sample size comparison"
+author: "Elias"
+date: "May 17, 2018"
+output: html_document
+---
+```{bash Downloading data}
+scp kodiak:/data/oziolore/fhet/data/angsd2/theta/subsample/*50kb* /home/elias/analysis/data/angsd/subsample/
+
+```
+
+* Break the file into pi, theta and and calculate tajima's D, starting with 50kb windows for speed
+
+```{r Calculating Taj D; subsetting pi and theta}
+# ###Buffalo Bayou loding pi(column6), theta(column4), and counts(columns 5,7)
+# 
+# bb<-read.table("~/analysis/data/angsd/subsample/BB_neut_50kb10kb.bed",stringsAsFactors=FALSE) #reading in all files
+# vb<-read.table("~/analysis/data/angsd/subsample/VB_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+# pb<-read.table("~/analysis/data/angsd/subsample/PB_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+# sj<-read.table("~/analysis/data/angsd/subsample/SJ_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+# bnp<-read.table("~/analysis/data/angsd/subsample/BNP_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+# sp<-read.table("~/analysis/data/angsd/subsample/SP_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+# gb<-read.table("~/analysis/data/angsd/subsample/GB_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+# 
+# colnam<-c("scaf","Start","End","Theta","Tcount","Pi","Pcount") #giving them column names
+# colnames(bb)<-colnam
+# colnames(vb)<-colnam
+# colnames(pb)<-colnam
+# colnames(sj)<-colnam
+# colnames(bnp)<-colnam
+# colnames(sp)<-colnam
+# colnames(gb)<-colnam
+# 
+# pops<-list(bb,vb,pb,sj,bnp,sp,gb)
+# popnames<-c("bb","vb","pb","sj","bnp","sp","gb")
+# names(pops)<-popnames
+# 
+# for(i in popnames){ #reading in the files as.numeric
+#   for(j in 4:7){
+#     pops[[i]][,j]<-as.numeric(pops[[i]][,j])
+#   }
+# }
+# 
+# cov<-cbind(bb[1:3],bb[,7],vb[,7],pb[,7],sj[,7],bnp[,7],sp[,7],gb[,7]) #creating a vector of coverage of each statistic call
+# 
+# nsnps<-cov[,4] #creating a vector that sums all calls over each SNP
+# for (i in 5:10){
+#   nsnps <- nsnps + cov[,i]
+# }
+# nsnps <- nsnps/7 #dividing by number of populations and only using sites that have at least 20 SNPS used over the window per population
+# 
+# subw <- nsnps > 20 #filter to be saved for these windows
+# 
+# 
+# #calculating mean and median pi----
+# pimean<-c() #calculating mean
+# for(i in popnames){
+#   pimean[i]<-sum(pops[[i]][subw,6],na.rm=TRUE)/sum(pops[[i]][subw,7],na.rm=TRUE)
+# }
+# 
+# #converting these to per base estimates
+# popbase<-list()
+# 
+# for(i in popnames){ #calculating per base estimates rather than averaged estimates over the windows we have
+#   popbase[[i]]<-cbind(pops[[i]][,1:3],pops[[i]][,4]/pops[[i]][,5],pops[[i]][,6]/pops[[i]][,7])
+# }
+# 
+# names<-c("scaf", "start","end",'theta/b',"pi/b")
+# 
+# for(i in popnames){ #giving the new list column names
+#   colnames(popbase[[i]])<-names
+# }
+# 
+# wt<-matrix(nrow=length(popbase[[1]][,1]),ncol=length(popnames)) #making a matrix of Waterson's theta values
+# for(i in 1:7){
+#   wt[,i]<-popbase[[i]][,4]
+# }
+# colnames(wt)<-popnames
+# 
+# pi<-matrix(nrow=length(popbase[[1]][,1]),ncol=length(popnames)) #making a matrix of pi values
+# for(i in 1:7){
+#   pi[,i]<-popbase[[i]][,5]
+# }
+# colnames(pi)<-popnames
+# 
+# 
+# source("~/analysis/scripts/angsd/tajimas.r")
+# 
+# taj<-list()
+# 
+# for(i in popnames){ #calculating tajima's D for all populations through a function in r; takes forever
+#   print(i)
+#   for(j in 1:dim(pi)[[1]]){
+#     taj[[i]]<-c(taj[[i]],tajimas(pi[j,i],wt[j,i],24))
+#   }
+# }
+# 
+# 
+# ###
+# 
+# taj<-cbind(popbase[[1]][,1:3],taj[["bb"]],taj[["vb"]],taj[["pb"]],taj[["sj"]],taj[["bnp"]],taj[["sp"]],taj[["gb"]]) #binding into a dataframe
+# 
+# taj<-cbind(taj,keep=as.numeric(subw)) #keeping the filter of low representation bases
+# 
+# tajname<-c("scaf","start","end","bb","vb","pb","sjsp","bnp",
+#             "sp","gb","keep") #column names
+# colnames(taj)<-tajname
+# 
+# write.csv(taj,file="~/analysis/data/angsd/taj_sub",quote=FALSE,row.names=FALSE) #writing tajima's d
+# 
+# theta<-cbind(popbase[["bb"]][1:3],wt,keep=as.numeric(subw))
+# 
+# thetname<-c("scaf","start","end","bb","vb","pb","sjsp","bnp",
+#             "sp","gb","keep")
+# colnames(theta)<-thetname
+# 
+# write.csv(theta,file="~/analysis/data/angsd/thetas_sub",quote=FALSE,row.names=FALSE)
+# 
+# 
+# pi<-cbind(popbase[["bb"]][1:3],pi,keep=as.numeric(subw))
+# 
+# piname<-c("scaf","start","end","bb","vb","pb","sj","bnp","sp","gb","keep")
+# colnames(pi)<-piname
+# write.csv(pi,file="~/analysis/data/angsd/pi_sub",quote=FALSE,row.names=FALSE)
+# 
+# write.csv(cov,file="~/analysis/data/angsd/cov_sub",quote=FALSE,row.names = FALSE)
+
+```
+
+```{r Plotting subsampled data}
+library('tidyr')
+library('tibble')
+library('magrittr')
+library('dplyr')
+
+#loading neutrality stats----
+
+theta<-read.table("~/analysis/data/angsd/sample_comparison/thetas_sub",header=TRUE, sep=',') #reading in summary statistics
+pi<-read.table("~/analysis/data/angsd/sample_comparison/pi_sub", header=TRUE, sep=',')
+taj<-read.table("~/analysis/data/angsd/sample_comparison/taj_sub",header=TRUE, sep=',')
+
+subw<-pi[,"keep"]>0 #applying filter of low coverage
+
+##ggplot pi----
+library(ggplot2)
+library(reshape2)
+
+mpi<-melt(pi[,1:10],id=c("scaf","start","end"))
+
+ggplot(mpi,
+       aes(x=variable,y=value,fill=variable,color=variable))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(0,.015))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+
+mtaj<-melt(taj[,1:10],id=c("scaf","start","end"))
+
+ggplot(mtaj,
+       aes(x=variable,y=value,fill=variable,color=variable))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(-.35,.1))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+
+``` 
+
+
+```{r Plotting full sample data}
+library('tidyr')
+library('tibble')
+library('magrittr')
+library('dplyr')
+
+#loading neutrality stats----
+
+theta<-read.table("~/analysis/data/angsd/sample_comparison/thetas",header=TRUE, sep=',') #reading in summary statistics
+pi<-read.table("~/analysis/data/angsd/sample_comparison/pi", header=TRUE, sep=',')
+taj<-read.table("~/analysis/data/angsd/sample_comparison/taj",header=TRUE, sep=',')
+
+subw<-pi[,"keep"]>0 #applying filter of low coverage
+
+##ggplot pi----
+library(ggplot2)
+library(reshape2)
+
+mpi<-melt(pi[,1:10],id=c("scaf","start","end"))
+
+ggplot(mpi,
+       aes(x=variable,y=value,fill=variable,color=variable))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(0,.015))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+
+mtaj<-melt(taj[,1:10],id=c("scaf","start","end"))
+
+ggplot(mtaj,
+       aes(x=variable,y=value,fill=variable,color=variable))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(-.35,.1))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+```
