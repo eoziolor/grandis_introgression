@@ -433,7 +433,6 @@ scp kodiak:/data/oziolore/fhet/data/angsd2/theta/*_1kb* /home/elias/analysis/dat
 
 ```{r First data wrangling with R}
 ###Buffalo Bayou loding pi(column6), theta(column4), and counts(columns 5,7)
-library('zoo') #rollapply function for sliding windows; not necessary if you use funciton slide
 
 bb<-read.table("~/analysis/data/angsd/raw/BB_neut_1kb.bed",stringsAsFactors=FALSE) #reading in all files
 vb<-read.table("~/analysis/data/angsd/raw/VB_neut_1kb.bed",stringsAsFactors=FALSE)
@@ -453,6 +452,7 @@ colnames(sp)<-colnam
 colnames(gb)<-colnam
 
 #Slide function----
+#This basically takes width number of windows and takes an average pi of them
 slide<-function(x,y,width,slide){
   aver<-c()
   for(i in 1:length(y)){
@@ -493,6 +493,7 @@ slidecount<-function(x,y,width,slide){
 pops<-list(bb,vb,pb,sj,bnp,sp,gb)
 popnames<-c("bb","vb","pb","sj","bnp","sp","gb")
 names(pops)<-popnames
+pops2<-pops
 
 for(i in popnames){ #converting files into 20kb merged windows
   for(j in c(4,6)){
@@ -501,9 +502,11 @@ for(i in popnames){ #converting files into 20kb merged windows
   }
   for(f in c(5,7)){
     print(i)
-    pops2[[i]][,j]<-slidecount(pops[[i]],as.numeric(pops[[i]][,j]),width=20,slide=1)
+    pops2[[i]][,f]<-slidecount(pops[[i]],as.numeric(pops[[i]][,f]),width=20,slide=1)
   }
 }
+
+slidecount(pops[["bb"]],as.numeric(pops[["bb"]][,5]),width=20,slide=1)
 
 cov<-cbind(bb[1:3],bb[,7],vb[,7],pb[,7],sj[,7],bnp[,7],sp[,7],gb[,7]) #creating a vector of coverage of each statistic call
 
