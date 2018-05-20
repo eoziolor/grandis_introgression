@@ -7,6 +7,20 @@ output: html_document
 
 #Fundulus grandis adapting to contamination
 
+##Uploading files to NCBI
+
+* Downloaded .bam files to computer
+```{bash}
+#log into NIH
+ftp ftp-private.ncbi.nlm.nih.gov
+#Go to directory
+cd uploads/oziolor@gmail.com_4XM4FcAt/new_folder
+#turn off interactive mode so it doesn't ask you to submit each freaking sample
+prompt
+#Submit all samples
+mput BU*
+```
+
 ##installing ANGSD
 * low coverage data neutral statistics
 
@@ -494,19 +508,27 @@ pops<-list(bb,vb,pb,sj,bnp,sp,gb)
 popnames<-c("bb","vb","pb","sj","bnp","sp","gb")
 names(pops)<-popnames
 pops2<-pops
+# 
+# for(i in popnames){ #converting files into 20kb merged windows
+#   for(j in c(4,6)){
+#     print(i)
+#     pops2[[i]][,j]<-slide(pops[[i]],as.numeric(pops[[i]][,j]),width=20,slide=1)
+#   }
+#   for(f in c(5,7)){
+#     print(i)
+#     pops2[[i]][,f]<-slidecount(pops[[i]],as.numeric(pops[[i]][,f]),width=20,slide=1)
+#   }
+# }
+# 
+# 
+# write.table(pops2[["bb"]],"~/analysis/data/angsd/raw/BB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+# write.table(pops2[["vb"]],"~/analysis/data/angsd/raw/VB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+# write.table(pops2[["pb"]],"~/analysis/data/angsd/raw/PB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+# write.table(pops2[["sj"]],"~/analysis/data/angsd/raw/SJ_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+# write.table(pops2[["bnp"]],"~/analysis/data/angsd/raw/BNP_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+# write.table(pops2[["sp"]],"~/analysis/data/angsd/raw/SP_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+# write.table(pops2[["gb"]],"~/analysis/data/angsd/raw/GB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
 
-for(i in popnames){ #converting files into 20kb merged windows
-  for(j in c(4,6)){
-    print(i)
-    pops2[[i]][,j]<-slide(pops[[i]],as.numeric(pops[[i]][,j]),width=20,slide=1)
-  }
-  for(f in c(5,7)){
-    print(i)
-    pops2[[i]][,f]<-slidecount(pops[[i]],as.numeric(pops[[i]][,f]),width=20,slide=1)
-  }
-}
-
-slidecount(pops[["bb"]],as.numeric(pops[["bb"]][,5]),width=20,slide=1)
 
 cov<-cbind(bb[1:3],bb[,7],vb[,7],pb[,7],sj[,7],bnp[,7],sp[,7],gb[,7]) #creating a vector of coverage of each statistic call
 
