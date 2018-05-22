@@ -532,7 +532,7 @@ write.table(pops2[["gb"]],"~/analysis/data/angsd/raw/GB_neut2.bed",quote = FALSE
 
 ```
 
-*Let's read in the windowed estimates wejust created
+*Let's read in the windowed estimates we just created
 
 ```{r}
 
@@ -772,4 +772,319 @@ box(lwd=7,bty="l")
 # abline(a=0,b=1,col="red")
 # plot(theta[,10],pi[,10],pch=20,cex=.5,col="blue")
 # abline(a=0,b=1,col="red")
+```
+
+
+##Calculating Hudson's Fst from pi and dxy
+
+```{r}
+load("~/analysis/data/comparison/noah_stats.RData") #loading data produced from individual SNP call pi and dxy calculations
+
+pops<-c("BB","VB","PB","SJSP","BNP","GB","SP") #creating a vector of names for our populations
+
+fsth<-as.data.frame(fst2[,1:21])#creating matrix to hold fst data takes about 1 hour to run; Here I'm calculating Hudson's Fst from our dataset;
+
+f=0
+for(i in pops){
+  for(j in pops){
+    if(i==j){next()}
+    if(i>j){next()}
+    f<-f+1
+    print(f)
+    colnames(fsth)[f]<-paste(sort(unique(c(i,j))),collapse=".")
+    print(colnames(fsth)[f])
+    fsth[,f]<-1-((fst2[,i]+fst2[,j])/2)/fst2[,paste(sort(unique(c(i,j))),collapse=".")]
+  }
+}
+
+#write.table(fsth,"~/analysis/data/fst/fsth",col.names = FALSE,quote = FALSE,row.names = FALSE) #to save it for later
+
+#fsth<-read.table("~/analysis/data/fst/fsth",header=FALSE) #loading fsth values
+```
+##Caclulating Z statistic from the fst values
+
+```{r}
+#Dependent on having loaded fsth into RAM from above chunk
+# install.packages('matrixStats')
+library(matrixStats)
+
+fsth[!is.finite(as.matrix(fsth))]<-NA #making all inifite values into NA
+
+fstmeans<-colMeans(fsth,na.rm=TRUE) #calculating average fst
+fstmeans<-as.matrix(fstmeans) #putting it into a matrix
+
+fststdev<-colSds(as.matrix(fsth),na.rm=TRUE) #calculating standard deviation overall
+fststdev<-as.matrix(fststdev)
+row.names(fststdev)<-row.names(fstmeans) #making sure the rows are correctly assigned
+
+zfst<-matrix(nrow=dim(fsth)[1],ncol=dim(fsth)[2]) #creating a matrix that will hold z values
+colnames(zfst)<-colnames(fsth)
+
+#running a loop that calculates z values
+for (i in 1:21){
+    zfst[,i]<-(fsth[,i]-fstmeans[i])/fststdev[i]
+}
+
+#write.table(zfst,"~/analysis/data/fst/zfst_hud_1kb",row.names=FALSE,col.names=FALSE,quote=FALSE,sep="\t")
+#zfst<-read.table("~/analysis/data/fst/zfst_hud_1kb",header=FALSE)
+```
+
+##Subtraction of pi and conversion to z statistic CORRECT THIS TO BE THE PI VALUES YOU JUST CALCULATED FROM ANGSD
+
+```{r}
+pi<-read.csv("~/analysis/data/angsd/pi",stringsAsFactors=TRUE) #taking only pi values for F. grandis from dataframe
+pops<-c("BB","VB","PB","SJSP","BNP","GB","SP") #creating a vector of names for our populations
+colnames(pi)<-c(pops)
+
+head(val) # vector of # of SNPs evaluated to come to a summary statistic per window
+
+pib<-pi/val[,4] #converting these estimates to per base
+pib[!is.finite(as.matrix(pib))]<-NA #putting NA in the stead of all all infinite values
+
+pidiff<-as.data.frame(fst[,1:21]) #creating data frame that would hold pidiff values
+
+#looping over variables to calculate the difference in pi
+f=0
+for(i in pops){
+  for(j in pops){
+    if(i==j){next()}
+    if(i>j){next()}
+    f<-f+1
+    print(f)
+    colnames(pidiff)[f]<-paste(sort(unique(c(i,j))),collapse=".")
+    print(colnames(pidiff)[f])
+    pidiff[,f]<-pib[,i]-pib[,j]
+  }
+}
+
+pidiff[!is.finite(as.matrix(pidiff))]<-NA #removing all infinite values and replacing with NA
+pimeans<-colMeans(as.matrix(pidiff),na.rm=TRUE) #calculating means of columns of pi difference
+pimeans<-as.matrix(pimeans) #converting into a matrix so I can use numeric values out of it
+
+library(matrixStats)
+pistdev<-colSds(as.matrix(pidiff),na.rm=TRUE) #calculating standard deviation from columns
+pistdev<-as.matrix(pistdev)
+
+zpi<-matrix(nrow=dim(pidiff)[[1]],ncol = dim(pidiff)[[2]])
+
+for (i in 1:21){
+    zpi[,i]<-(pidiff[,i]-pimeans[i])/pistdev[i]
+}
+colnames(zpi)<-colnames(pidiff)
+
+#write.table(zpi,"~/analysis/data/angsd/zpi_1kb",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+```
+
+##Messing around with pi
+
+```{r}
+
+mpi<-melt(pib[,1:7])
+
+ggplot(mpi,
+       aes(x=Var2,y=value,fill=Var2,color=Var2))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(0,.017))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+
+
+```
+
+## Merging z statistics into a common one (high z would mean high fst and low pi)
+
+```{r}
+#zfst<-read.table("~/analysis/data/fst/zfst_hud_1kb",sep='\t')
+#zpi<-read.table("~/analysis/data/angsd/zpi_1kb",sep="\t")
+colnames(zfst)<-colnames(fsth) #naming columns
+colnames(zpi)<-colnames(fsth)
+
+zfst<-as.data.frame(zfst)
+zpi<-as.data.frame(zpi)
+
+zfst2<-zfst %>% mutate(seq=seq(1:dim(zfst)[[1]])) #adding sequence, basically a way to match the rows to each other
+zpi2<-zpi %>% mutate(seq=seq(1:dim(zpi)[[1]])) #same
+
+colnam<-colnames(zfst2[,1:21]) #saving colnames as a vector so we can match columns
+zmerge_temp<-cbind(zfst2[colnam]-zpi2[match(zfst2$seq,zpi2$seq),colnam]) #subtracting zpi from zfst for a zmerge
+
+subw<-val[,4]>5 #filtering values that didn't have very many supportive snps
+
+zmerge<-zmerge_temp %>% mutate(keep=as.numeric(subw)) #Adds that filter column as 0s and 1s
+
+#write.table(zmerge,"~/analysis/data/dfst/zmerge_1kb",row.names = FALSE,col.names = FALSE,quote = FALSE)
+
+```
+
+## Doing a PBS analysis with Z statistics
+
+```{r}
+#zmerge<-read.table("~/analysis/data/dfst/zmerge_1kb",header=FALSE)
+
+znames<-c(names(fsth),"keep")
+colnames(zmerge)<-znames
+
+names(zmerge)<-gsub("SJSP","SJ",names(zmerge))
+
+distgb<-zmerge %>% 
+  select(contains("GB")) #only selecting GB columns
+sub1<-gsub("GB.","",names(distgb)) #removing GB from names
+sub2<-gsub(".GB","",sub1)
+names(distgb)<-sub2
+
+distsp<-zmerge %>% 
+  select(contains("SP")) #only selecting SP columns
+sub3<-gsub("SP.","",names(distsp))
+sub4<-gsub(".SP","",sub3)
+names(distsp)<-sub4
+
+pops<-c("BB","VB","PB","SJ","BNP")
+
+distgb2<-distgb %>% 
+  select(pops) #rearranging columns
+
+distsp2<-distsp %>% 
+  select(pops)
+
+colnam<-colnames(distgb2) #assigning a vector
+distsp3<-distsp2 %>% mutate(seq=seq(1:dim(distsp)[[1]])) #adding sequence as before
+distgb3<-distgb2 %>% mutate(seq=seq(1:dim(distgb)[[1]]))
+
+total_dist<-cbind(distsp3[colnam]+distgb3[match(distsp3$seq,distgb3$seq),colnam]) #matching the two and adding them to each
+
+pbsz<-matrix(nrow=dim(total_dist)[[1]],ncol=dim(total_dist)[[2]]) #creating matriz to hold 
+
+for(i in 1:5){ #calculating the z pbs value
+  pbsz[,i]<-(total_dist[,i]-distgb[,"SP"])/2
+}
+colnames(pbsz)<-colnames(total_dist)#naming
+
+subw<-val[,4]>20 #filter
+
+plot(pbsz[subw,"PB"],pch=20,cex=.2,ylim=c(-10,30))
+
+zpbs<-cbind(lift,pbsz) #plugging in location values
+
+ord<-mixedorder(zpbs$V1) #Data imported is ordered alphabetically (ex. chr1, chr10...); this reorders it to alphanumeric (chr1, chr2...)
+zpbsn<-zpbs[ord,] #applying sorted order to our dataset
+
+write.table(zpbsn,"~/analysis/data/dfst/zpbs_1kb",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t") #writing
+
+```
+
+##Looking at 1% outlier regions
+
+```{r}
+col<-c() #figuring outliers
+for (i in 1:5){
+  col[i]<-quantile(zpbs[,i+3],prob=.99,na.rm=TRUE)
+}
+names(col)<-names(total_dist)
+#1% thresholds
+print(col)
+
+```
+
+##Creating outlier regions of interest
+
+```{bash}
+cat ~/analysis/data/dfst/zpbs_1kb | grep -v NA | \
+awk '$4>3.523703 || $5>3.172488  || $6>3.340705 || $7>3.031223 || $8>2.910434' | \
+~/program/bedtools2/bin/bedtools merge -i stdin -d 50000 \
+-c 4,4,5,5,6,6,7,7,8,8 \
+-o max,count,max,count,max,count,max,count,max,count \
+-g <(cut -f 1-2 ~/analysis/data/genome/unsplit_merge.fasta.fai) > ~/analysis/data/dfst/zregions_max_1kb.bed
+```
+
+#Now let's plot up some figures with the merged z statistics
+
+```{r}
+zpbs<-zpbsn %>% 
+  filter(str_detect(V1,"chr")) #filtering only chromosome mapped regions
+
+#using data from the outlier regions in order to select regions of interest that are shared, res unique or interm unique
+pbs_out_temp<-read.table("~/analysis/data/dfst/zregions_max_1kb.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
+names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount") #naming columns
+colnames(pbs_out_temp)<-names
+
+pbs_out<-pbs_out_temp %>% filter(str_detect(Scaf,"chr")) #filtering to only select chromosome mapped scaffolds
+
+all<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5] # vector wiht T/F of shared outliers
+res<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
+interm<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
+
+write.table(lift[,1:3],"~/analysis/data/dfst/zpbs.bed",row.names = FALSE,col.names = FALSE,quote=FALSE, sep="\t") #saving background genomic regions in bed format
+write.table(pbs_out[all,1:3],"~/analysis/data/dfst/pbs_regions_sharedall.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t") #saving shared regions to look at overlap with the 1kb regions
+write.table(pbs_out[res,1:3],"~/analysis/data/dfst/pbs_regions_sharedres.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t")
+write.table(pbs_out[interm,1:3],"~/analysis/data/dfst/pbs_regions_sharedinterm.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t")
+
+#only run source() and biocLite() if you don't have them installed
+# source("http://bioconductor.org/biocLite.R")
+# biocLite()
+library("rtracklayer")
+
+bed1=import("~/analysis/data/dfst/zpbs.bed")
+
+bedall=import("~/analysis/data/dfst/pbs_regions_sharedall.bed")
+bed1overlall=bed1[bed1 %over% bedall]
+hitsall<-findOverlaps(bedall,bed1)
+allhit<-subjectHits(hitsall)
+
+bedres=import("~/analysis/data/dfst/pbs_regions_sharedres.bed")
+bed1overlres=bed1[bed1 %over% bedres]
+hitsres<-findOverlaps(bedres,bed1)
+reshit<-subjectHits(hitsres)
+
+bedinterm=import("~/analysis/data/dfst/pbs_regions_sharedinterm.bed")
+bed1overlinterm=bed1[bed1 %over% bedinterm]
+hitsinterm<-findOverlaps(bedinterm,bed1)
+intermhit<-subjectHits(hitsinterm)
+
+zpbs<-cbind(zpbs,0,0,0)
+newn<-c("Scaf","start","end","BB","VB","PB","SJ","BNP","all","res","interm")
+colnames(zpbs)<-newn
+zpbs[allhit,"all"]<-zpbs[allhit,"all"]+1
+zpbs[reshit,"res"]<-zpbs[reshit,"res"]+1
+zpbs[intermhit,"interm"]<-zpbs[intermhit,"interm"]+1
+
+zpbs$Scaf<-factor(zpbs$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24")) #factors are sometimes not sorted together with it, so sorting them separately
+
+palette(c("grey40","grey80"))
+par(mfrow=c(5,1),mar=c(0,3,0,0))
+plot(zpbs[,4],pch=20,cex=1.2,
+     col=ifelse(zpbs[,"all"]>0,"purple",
+                ifelse(zpbs[,"res"]>0,"black",
+                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
+plot(zpbs[,5],pch=20,cex=1.2,
+     col=ifelse(zpbs[,"all"]>0,"purple",
+                ifelse(zpbs[,"res"]>0,"black",
+                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
+plot(zpbs[,6],pch=20,cex=1.2,
+     col=ifelse(zpbs[,"all"]>0,"purple",
+                ifelse(zpbs[,"res"]>0,"black",
+                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
+plot(zpbs[,7],pch=20,cex=1.2,
+     col=ifelse(zpbs[,"all"]>0,"purple",
+                ifelse(zpbs[,"res"]>0,"black",
+                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
+plot(zpbs[,8],pch=20,cex=1.2,
+     col=ifelse(zpbs[,"all"]>0,"purple",
+                ifelse(zpbs[,"res"]>0,"black",
+                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
 ```

@@ -699,7 +699,7 @@ for (i in 1:21){
 #zfst<-read.table("~/analysis/data/fst/zfst_hud_1kb",header=FALSE)
 ```
 
-##Subtraction of pi and conversion to z statistic
+##Subtraction of pi and conversion to z statistic CORRECT THIS TO BE THE PI VALUES YOU JUST CALCULATED FROM ANGSD
 
 ```{r}
 pi<-cbind(fst[,"BB"],fst[,"VB"],fst[,"PB"],fst[,"SJSP"],fst[,"BNP"],fst[,"GB"],fst[,"SP"]) #taking only pi values for F. grandis from dataframe
