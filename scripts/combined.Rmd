@@ -443,7 +443,8 @@ scp kodiak:/data/oziolore/fhet/data/angsd2/theta/*_1kb* /home/elias/analysis/dat
 
 ```
 
-* Break the file into pi, theta and and calculate tajima's D, starting with 50kb windows for speed
+* Break the file into pi, theta and and calculate tajima's D
+* starting with 1kb windows by noah's lift file. Merging them into 20 kb windows
 
 ```{r First data wrangling with R}
 ###Buffalo Bayou loding pi(column6), theta(column4), and counts(columns 5,7)
@@ -481,7 +482,7 @@ slide<-function(x,y,width,slide){
         count=count+1
       }else{next()}
     }
-    aver[i]<-added/count
+    aver[i]<-added
   }
   return(aver)
 }
@@ -508,45 +509,77 @@ pops<-list(bb,vb,pb,sj,bnp,sp,gb)
 popnames<-c("bb","vb","pb","sj","bnp","sp","gb")
 names(pops)<-popnames
 pops2<-pops
-# 
-# for(i in popnames){ #converting files into 20kb merged windows
-#   for(j in c(4,6)){
-#     print(i)
-#     pops2[[i]][,j]<-slide(pops[[i]],as.numeric(pops[[i]][,j]),width=20,slide=1)
-#   }
-#   for(f in c(5,7)){
-#     print(i)
-#     pops2[[i]][,f]<-slidecount(pops[[i]],as.numeric(pops[[i]][,f]),width=20,slide=1)
-#   }
-# }
-# 
-# 
-# write.table(pops2[["bb"]],"~/analysis/data/angsd/raw/BB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
-# write.table(pops2[["vb"]],"~/analysis/data/angsd/raw/VB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
-# write.table(pops2[["pb"]],"~/analysis/data/angsd/raw/PB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
-# write.table(pops2[["sj"]],"~/analysis/data/angsd/raw/SJ_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
-# write.table(pops2[["bnp"]],"~/analysis/data/angsd/raw/BNP_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
-# write.table(pops2[["sp"]],"~/analysis/data/angsd/raw/SP_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
-# write.table(pops2[["gb"]],"~/analysis/data/angsd/raw/GB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
 
+for(i in popnames){ #converting files into 20kb merged windows
+  for(j in c(4,6)){
+    print(i)
+    pops2[[i]][,j]<-slide(pops[[i]],as.numeric(pops[[i]][,j]),width=20,slide=1)
+  }
+  for(f in c(5,7)){
+    print(i)
+    pops2[[i]][,f]<-slidecount(pops[[i]],as.numeric(pops[[i]][,f]),width=20,slide=1)
+  }
+}
+
+
+write.table(pops2[["bb"]],"~/analysis/data/angsd/raw/BB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+write.table(pops2[["vb"]],"~/analysis/data/angsd/raw/VB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+write.table(pops2[["pb"]],"~/analysis/data/angsd/raw/PB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+write.table(pops2[["sj"]],"~/analysis/data/angsd/raw/SJ_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+write.table(pops2[["bnp"]],"~/analysis/data/angsd/raw/BNP_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+write.table(pops2[["sp"]],"~/analysis/data/angsd/raw/SP_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+write.table(pops2[["gb"]],"~/analysis/data/angsd/raw/GB_neut2.bed",quote = FALSE,row.names = FALSE,col.names = FALSE,sep=",")
+
+```
+
+*Let's read in the windowed estimates wejust created
+
+```{r}
+
+bb<-read.csv("~/analysis/data/angsd/raw/BB_neut2.bed",stringsAsFactors=FALSE) #reading in all files
+vb<-read.csv("~/analysis/data/angsd/raw/VB_neut2.bed",stringsAsFactors=FALSE)
+pb<-read.csv("~/analysis/data/angsd/raw/PB_neut2.bed",stringsAsFactors=FALSE)
+sj<-read.csv("~/analysis/data/angsd/raw/SJ_neut2.bed",stringsAsFactors=FALSE)
+bnp<-read.csv("~/analysis/data/angsd/raw/BNP_neut2.bed",stringsAsFactors=FALSE)
+sp<-read.csv("~/analysis/data/angsd/raw/SP_neut2.bed",stringsAsFactors=FALSE)
+gb<-read.csv("~/analysis/data/angsd/raw/GB_neut2.bed",stringsAsFactors=FALSE)
+
+colnam<-c("scaf","Start","End","Theta","Tcount","Pi","Pcount") #giving them column names
+colnames(bb)<-colnam
+colnames(vb)<-colnam
+colnames(pb)<-colnam
+colnames(sj)<-colnam
+colnames(bnp)<-colnam
+colnames(sp)<-colnam
+colnames(gb)<-colnam
+
+pops<-list(bb,vb,pb,sj,bnp,sp,gb)
+popnames<-c("bb","vb","pb","sj","bnp","sp","gb")
+names(pops)<-popnames
 
 cov<-cbind(bb[1:3],bb[,7],vb[,7],pb[,7],sj[,7],bnp[,7],sp[,7],gb[,7]) #creating a vector of coverage of each statistic call
 
+for(i in popnames){
+  for(j in 4:7){
+  pops[[i]][,j]<-as.numeric(pops[[i]][,j])
+  }
+}
+
+
+###Calculating blocks of certianty
 nsnps<-cov[,4] #creating a vector that sums all calls over each SNP
 for (i in 5:10){
   nsnps <- nsnps + cov[,i]
 }
 nsnps <- nsnps/7 #dividing by number of populations and only using sites that have at least 20 SNPS used over the window per population
 
-subw <- nsnps > 20 #filter to be saved for these windows
-
+subw <- nsnps > 50 #filter to be saved for these windows
 
 #calculating mean and median pi----
-pimean<-c() #calculating mean
+pimean<-c() #calculating mean/something is wrong here. check
 for(i in popnames){
   pimean[i]<-sum(pops[[i]][subw,6],na.rm=TRUE)/sum(pops[[i]][subw,7],na.rm=TRUE)
 }
-
 
 popbase<-list()
 
