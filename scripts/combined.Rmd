@@ -881,15 +881,11 @@ for (i in 1:21){
 
 ```{r}
 pi<-read.csv("~/analysis/data/angsd/pi",stringsAsFactors=TRUE) #taking only pi values for F. grandis from dataframe
-pops<-c("BB","VB","PB","SJSP","BNP","GB","SP") #creating a vector of names for our populations
-colnames(pi)<-c(pops)
+pops<-c("bb","vb","pb","sj","bnp","sp","gb") #creating a vector of names for our populations
 
 head(val) # vector of # of SNPs evaluated to come to a summary statistic per window
 
-pib<-pi/val[,4] #converting these estimates to per base
-pib[!is.finite(as.matrix(pib))]<-NA #putting NA in the stead of all all infinite values
-
-pidiff<-as.data.frame(fst[,1:21]) #creating data frame that would hold pidiff values
+FIGURE THIS OUT, MAYBE RERUN FST WITH NEW WINDOWS???pidiff<-as.data.frame(fst[-1,1:21]) #creating data frame that would hold pidiff values
 
 #looping over variables to calculate the difference in pi
 f=0
@@ -901,7 +897,7 @@ for(i in pops){
     print(f)
     colnames(pidiff)[f]<-paste(sort(unique(c(i,j))),collapse=".")
     print(colnames(pidiff)[f])
-    pidiff[,f]<-pib[,i]-pib[,j]
+    pidiff[,f]<-pi[,i]-pi[,j]
   }
 }
 
