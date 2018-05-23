@@ -466,6 +466,54 @@ colnames(bnp)<-colnam
 colnames(sp)<-colnam
 colnames(gb)<-colnam
 
+#Calculating mean pi from 1kb non-overlapping windows----
+pops<-list(bb,vb,pb,sj,bnp,sp,gb)
+popnames<-c("bb","vb","pb","sj","bnp","sp","gb")
+names(pops)<-popnames
+
+cov<-cbind(bb[1:3],bb[,7],vb[,7],pb[,7],sj[,7],bnp[,7],sp[,7],gb[,7]) #creating a vector of coverage of each statistic call
+
+for(i in popnames){
+  for(j in 4:7){
+  pops[[i]][,j]<-as.numeric(pops[[i]][,j])
+  }
+}
+
+
+###Calculating blocks of certianty
+nsnps<-cov[,4] #creating a vector that sums all calls over each SNP
+for (i in 5:10){
+  nsnps <- nsnps + cov[,i]
+}
+nsnps <- nsnps/7 #dividing by number of populations and only using sites that have at least 20 SNPS used over the window per population
+
+subw <- nsnps > 50 #filter to be saved for these windows
+
+#calculating mean and median pi----
+pimean<-c() #calculating mean/something is wrong here. check
+for(i in popnames){
+  pimean[i]<-sum(pops[[i]][subw,6],na.rm=TRUE)/sum(pops[[i]][subw,7],na.rm=TRUE)
+}
+
+#calculating effective population size
+#Theta(pi)=4Ne*u => Ne=theta(pi)/4u
+
+u1<-3.5e-9 #mutation rate from cichlids
+u2<-1.5e-9 #mutation rate from flounder
+u3<-2.2e-9 #average eukaryotic mutation rate
+
+mut<-c(u1,u2,u3)
+
+Ne<-matrix(nrow=7,ncol=3)
+rownames(Ne)<-names(pimean)
+colnames(Ne)<-c("cichlid u","flounder u","euk u")
+  
+for(i in 1:3){
+  Ne[,i]<-as.numeric(pimean/(4*mut[i]))
+}
+
+write.table(Ne,"~/analysis/data/angsd/Ne_estimates.csv",quote=FALSE)
+
 #Slide function----
 #This basically takes width number of windows and takes an average pi of them
 slide<-function(x,y,width,slide){
