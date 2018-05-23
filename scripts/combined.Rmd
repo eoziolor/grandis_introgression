@@ -9,6 +9,19 @@ output: html_document
 
 ##Uploading files to NCBI
 
+```{r}
+library(XML)
+library(tidyr)
+library(stringr)
+library(dplyr)
+library(gtools)
+library(naturalsort)
+library(RCurl)
+library(ggplot2)
+library(reshape2)
+
+```
+
 * Downloaded .bam files to computer
 ```{bash}
 #log into NIH
@@ -885,7 +898,9 @@ pops<-c("bb","vb","pb","sj","bnp","sp","gb") #creating a vector of names for our
 
 head(val) # vector of # of SNPs evaluated to come to a summary statistic per window
 
-FIGURE THIS OUT, MAYBE RERUN FST WITH NEW WINDOWS???pidiff<-as.data.frame(fst[-1,1:21]) #creating data frame that would hold pidiff values
+fsth2<-cbind(lift,fsth) #getting the coordinates onto the fsth matrix
+
+pidiff<-as.data.frame(fst[-1,1:21]) #creating data frame that would hold pidiff values; my calculated pi values have 1 less row (first row of chr1 from 0-1000); don't know why, but oh well. suck it row 0-1000
 
 #looping over variables to calculate the difference in pi
 f=0
@@ -916,17 +931,19 @@ for (i in 1:21){
 }
 colnames(zpi)<-colnames(pidiff)
 
-#write.table(zpi,"~/analysis/data/angsd/zpi_1kb",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+#write.table(zpi,"~/analysis/data/angsd/zpi_20kb",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
 ```
 
 ##Messing around with pi
 
 ```{r}
+library('reshape')
+library(ggplot2)
 
-mpi<-melt(pib[,1:7])
+mpi<-melt(pi[,4:10])
 
 ggplot(mpi,
-       aes(x=Var2,y=value,fill=Var2,color=Var2))+
+       aes(x=variable,y=value,fill=variable,color=variable))+
   geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
   scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
   scale_color_manual(values=c("grey40",rep("black",6)))+
@@ -1016,7 +1033,7 @@ zpbs<-cbind(lift,pbsz) #plugging in location values
 ord<-mixedorder(zpbs$V1) #Data imported is ordered alphabetically (ex. chr1, chr10...); this reorders it to alphanumeric (chr1, chr2...)
 zpbsn<-zpbs[ord,] #applying sorted order to our dataset
 
-write.table(zpbsn,"~/analysis/data/dfst/zpbs_1kb",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t") #writing
+write.table(zpbsn,"~/analysis/data/dfst/zpbs_20kb",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t") #writing
 
 ```
 
