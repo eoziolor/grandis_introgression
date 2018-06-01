@@ -2637,6 +2637,21 @@ library(rtracklayer)
 library(ggplot2)
 library(ggsci)
 
+pbs_dist<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",header=FALSE)
+distnames<-c("Scaf","start","end","bb","vb","pb","sj","bnp")
+colnames(pbs_dist)<-distnames
+col<-c()
+for (i in 1:5){
+  col[i]<-quantile(pbs_dist[,i+3],prob=.99,na.rm=TRUE)
+}
+
+
+z<-read.table("~/analysis/data/expectations/hudson_pbsmergeoutliers_max.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
+names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount")
+colnames(z)<-names
+
+all<-z[,4]>col[1] & z[,6]>col[2] & z[,8]>col[3] & z[,10]>col[4] & z[,12]>col[5]
+
 ###Reading in VCF for outlier regions that include introgression, formatting ----
 vcf<-read.table("~/analysis/data/fst/hudson_out_all_intr_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
 sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
