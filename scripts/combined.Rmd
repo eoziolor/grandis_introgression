@@ -2831,3 +2831,62 @@ abline(h=1,lwd=3,lty=2)
 legend("topright",legend=c(chr[,1]),col=c(chr[,2]),pch=20,cex=1)
 
 ```
+
+* Figuring out which scaffolds belong to which chromosome so I can take out chr1 for collaborators
+```{r}
+load("~/analysis/data/comparison/noah_stats.RData") #loading data produced from individual SNP call pi and dxy calculations
+
+ref<-as.data.frame(cbind(lift[,1],fst[,1]))
+
+ref1<-ref %>% 
+  filter(V1=="chr1")
+
+chr1scaf<-unique(ref1[,2])
+
+write.table(chr1scaf,"~/analysis/data/introgression/chr1scaf",quote=FALSE,col.names = FALSE,row.names = FALSE)
+
+```
+
+* Filtering out only those scaffolds from the vcf that match chr1
+
+```{bash}
+list=/home/eoziolor/fgran/data/varcall/chr1scaf
+my_out=/home/eoziolor/fgran/data/varcall/lengths
+joint_vcf=/home/eoziolor/fgran/data/varcall/hetgrand.hap.vcf.gz
+head=/home/eoziolor/fgran/data/varcall/head.vcf
+
+zcat $joint_vcf | head -n 100000 | grep "#" > $head
+
+for i in {1..73}
+  do scaf=$(sed -n "$(echo $i)p" $list)
+  cat $head | grep $scaf | perl -lne 'print $1 if /length=\s*(.*)>/' >> $my_out
+done
+
+```
+
+```{bash}
+#reformatting list of scaffolds
+
+cat chr1scaf | awk '{OFS=""}{s=":"}{p="-"}{print $1,s,0,p}'>chr1scaf_form
+
+#merging with list of lenghts
+
+paste -d '' chr1scaf_form lengths > chr1_list
+
+#Using tabix to take out that vcf
+
+#!/bin/bash -l
+
+#SBATCH -J chr1sub
+#SBATCH -o chr1sub-%A-%a.output
+#SBATCH -e chr1sub-%A-%a.output
+#SBATCH -N 1
+#SBATCH --cpus-per-task=8
+#SBATCH -t 24:00:00
+#SBATCH --mem=60000
+list=/home/eoziolor/fgran/data/varcall/chr1_list
+joint_vcf=/home/eoziolor/fgran/data/varcall/hetgrand.hap.vcf.gz
+
+xargs -a $list -I {} tabix -fh $joint_vcf {} | bgzip > chr1.vcf.gz
+```
+
