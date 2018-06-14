@@ -132,6 +132,7 @@ library('tidyr')
 library('tibble')
 library('magrittr')
 library('dplyr')
+library('gridExtra')
 
 #loading neutrality stats----
 
@@ -147,6 +148,7 @@ library(reshape2)
 
 mpi<-melt(pi[,1:10],id=c("scaf","start","end"))
 
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pi.jpg",width=1000,height=600)
 ggplot(mpi,
        aes(x=variable,y=value,fill=variable,color=variable))+
   geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
@@ -157,19 +159,22 @@ ggplot(mpi,
   labs(y="",x="")+
   theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
   theme(axis.text.y=element_text(color="black",size=40))
+dev.off()
 
 mtaj<-melt(taj[,1:10],id=c("scaf","start","end"))
 
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/taj.jpg",width=1000,height=600)
 ggplot(mtaj,
        aes(x=variable,y=value,fill=variable,color=variable))+
   geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
   scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
   scale_color_manual(values=c("grey40",rep("black",6)))+
-  scale_y_continuous(limits=c(-.35,.1))+
+  scale_y_continuous(limits=c(-.25,.05))+
   theme_classic()+
   labs(y="",x="")+
   theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
   theme(axis.text.y=element_text(color="black",size=40))
+dev.off()
 
 ``` 
 
