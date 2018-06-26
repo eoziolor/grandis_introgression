@@ -1502,46 +1502,46 @@ pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
 #Simplified to fewer outliers----
 
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pbs.jpg",width=1000,height=1200)
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pbs.jpg",width=1000,height=800)
 pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
                                      "chr20","chr21","chr22","chr23","chr24"))
-palette(c("grey40","gold"))
+palette(c("grey90","grey50"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 plot(pbsc[,4],pch=20,cex=2,
      col=ifelse(pbsc[,"all"]>0,"purple",
                 ifelse(pbsc[,"res"]>0,"black",
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
 
 plot(pbsc[,5],pch=20,cex=2,
      col=ifelse(pbsc[,"all"]>0,"purple",
                 ifelse(pbsc[,"res"]>0,"black",
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                             as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
 
 plot(pbsc[,6],pch=20,cex=2,
      col=ifelse(pbsc[,"all"]>0,"purple",
                 ifelse(pbsc[,"res"]>0,"black",
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
 
 plot(pbsc[,7],pch=20,cex=2,
      col=ifelse(pbsc[,"all"]>0,"purple",
                 ifelse(pbsc[,"res"]>0,"black",
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
 
 plot(pbsc[,8],pch=20,cex=2,
      col=ifelse(pbsc[,"all"]>0,"purple",
                 ifelse(pbsc[,"res"]>0,"black",
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
+     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
 dev.off()
 
 ```
@@ -2898,6 +2898,7 @@ legend("topright",legend=c(chr[,1]),col=c(chr[,2]),pch=20,cex=1)
 ```
 
 #Introgression models
+###Plotting models of introgression
 
 ```{r}
 
@@ -2926,10 +2927,10 @@ jpeg("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/intro_models
 par(oma = c(1,1.5,2,1.5),mar=c(3,3,3,3),mgp=c(1,2,0))
 plot(sels18_scaled, maxCL_mig_stagSweeps.sels[18:31] - cl_neutral, 
      cex.axis = 1.3, ylab = "", ylim = c(4.8e5, yMax), 
-     type = "l", col = "red", xlim = c(0, 1), xaxt = "none", xlab = "", lwd = 6, cex.lab = 1.1)
+     type = "l", col = "forestgreen", xlim = c(0, 1), xaxt = "none", xlab = "", lwd = 6, cex.lab = 1.1)
 box(lwd=6)
-lines(sels18_scaled, maxCL_sv.sels[18:31] - cl_neutral, col = "red", lwd = 6, lty = 2)
-axis(1, at = seq(0, 1, length.out = 6), labels = seq(0.5, 1, length.out = 6), col = "red", lwd = 6, cex.axis = 2.8)
+lines(sels18_scaled, maxCL_sv.sels[18:31] - cl_neutral, col = "forestgreen", lwd = 6, lty = 2)
+axis(1, at = seq(0, 1, length.out = 6), labels = seq(0.5, 1, length.out = 6), col = "forestgreen", lwd = 6, cex.axis = 2.8)
 lines(times18_scaled, maxCL_mig_stagSweeps.times[1:18] - cl_neutral, col = "plum2", lwd = 6, lty = 1)
 axis(3, lwd = 6, at = seq(0, 1, length.out = 6), labels = seq(times[1], times[18], length.out = 6), col = "plum2", cex.axis = 2.8)
 
@@ -2981,17 +2982,106 @@ dxy4$chr<-factor(dxy4$chr,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","ch
                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
                                      "chr20","chr21","chr22","chr23","chr24"))
 
-#tiff("~/analysis/data/introgression/introgression.tiff",width=1200,height=600)
+tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/introgression_dxy.tiff",width=1200,height=600)
 palette(c("grey40","grey80"))
-par(mfrow=c(3,1),mar=c(2,4,2,0))
+par(mfrow=c(3,1),mar=c(0,4,0,0))
 plot(dxy4[,"BB"],pch=20,cex=1,col=ifelse(dxy4[,"BB"]<col[2],"red",as.factor(dxy4[,"chr"])),bty='n',
-     xlab="",ylab="",xaxt='n',ylim=c(-.0271,.021),cex.axis=2.5)
+     xlab="",ylab="",xaxt='n',ylim=c(-.0271,.01),cex.axis=4)
 plot(dxy4[,"VB"],pch=20,cex=1,col=ifelse(dxy4[,"VB"]<col[1],"red",as.factor(dxy4[,"chr"])),bty='n',
-     xlab="",ylab="",xaxt='n',ylim=c(-.0271,.021),cex.axis=2.5)
+     xlab="",ylab="",xaxt='n',ylim=c(-.0271,.01),cex.axis=4)
 plot(dxy4[,"PB"],pch=20,cex=1,col=ifelse(dxy4[,"PB"]<col[3],"red",as.factor(dxy4[,"chr"])),bty='n',
-     xlab="",ylab="",xaxt='n',ylim=c(-.0271,.021),cex.axis=2.5)
-#dev.off()
+     xlab="",ylab="",xaxt='n',ylim=c(-.0271,.01),cex.axis=4)
+dev.off()
 ``` 
+
+### Introgression MDS plots of AHR
+
+```{r}
+library(viridis)
+library(dplyr)
+library(magrittr)
+library(Rphylip)
+library(ape)
+library(stringr)
+
+load("~/analysis/scripts/introgression/AHR_elias_plotdata.Rdata")
+names<-row.names(mds)
+popcol<-ifelse(grepl("-",names),"plum",
+               ifelse(grepl("BB",names),"black",
+                      ifelse(grepl("VB",names),"black",
+                             ifelse(grepl("PB",names),"black",
+                                    ifelse(grepl("SJ",names),"firebrick2",
+                                           ifelse(grepl("BNP",names),"firebrick2",
+                                                  ifelse(grepl("SP",names),"cadetblue3",
+                                                         ifelse(grepl("GB",names),"cadetblue3","WRONG"))))))))
+popcol2<-ifelse(grepl("-",names),"plum",
+               ifelse(grepl("BB",names),"black",
+                      ifelse(grepl("VB",names),"grey40",
+                             ifelse(grepl("PB",names),"grey80",
+                                    ifelse(grepl("SJ",names),"firebrick2",
+                                           ifelse(grepl("BNP",names),"lightpink",
+                                                  ifelse(grepl("SP",names),"cadetblue3",
+                                                         ifelse(grepl("GB",names),"cadetblue1","WRONG"))))))))               
+popsym<-ifelse(grepl("d2",pop2),"23",
+               ifelse(grepl("d1",pop2),"24",
+                      ifelse(grepl("d0",pop2),"21","22")))
+
+#plotting NJ tree
+plot(tr,type="unrooted",show.tip.label=FALSE)
+tiplabels(pch=as.numeric(popsym),col=popcol,bg=popcol2,cex=1.5)
+
+#plotting MDS
+plot(mds,col=popcol,cex=2,cex.axis=2,pch=as.numeric(popsym),
+     bg=popcol2,bty='n')
+box(bty='l',lwd=5)
+
+```
+
+### Blocks of introgression
+
+```{r}
+library('ggplot2')
+library('reshape')
+block<-read.table("~/analysis/data/introgression/grandis_int_blocks.txt",sep='\t',head=TRUE) #reading in introgression blocks
+block[,"sam"]<-sub("SJSP","SJ",block[,"sam"])
+subw<-block[,"count"]>4 #filtering regions with less than 4 outliers present
+block2<-block[subw,]
+
+a<-seq(400000,13000000,by=1000000) #creating bins for plotting
+ranges<-paste(head(a,-1),a[-1],sep=' - ') #putting them in ranges
+#fr<-hist(block2[,"length"],breaks=a,include.lowest=TRUE,plot=FALSE)
+
+pops<-c("BB","VB","PB","SJ","BNP","SP","GB")
+num<-c(24,49,47,24,48,48,48)
+names(num)<-pops
+counts<-matrix(nrow = length(ranges),ncol = length(pops))
+colnames(counts)<-pops
+rownames(counts)<-a[-1]
+
+for(i in pops){
+  len<-block2[grepl(i,block2[,"sam"]),"length"]
+  fr<-hist(len,breaks=a,include.lowest = TRUE,plot=FALSE )
+  counts[,i]<-fr$counts/num[i][[1]]
+}
+
+counts2<-melt(counts)
+colnames(counts2)<-c("size","pop","count")
+counts2$pop<-factor(counts2$pop,levels=c("BB","VB","PB","SJ","BNP","SP","GB"))
+
+tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/introgression_size.tiff",width=700,height=400)
+ggplot(counts2,
+       aes(x=size/1000000,y=count,by=pop,color=pop))+
+#  geom_line(aes(col=pop),lwd=3)+
+  stat_smooth(aes(y=count,x=size/1000000),method=lm,formula=y~poly(x,5),se=FALSE,lwd=3)+
+  theme_classic()+
+  scale_color_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue3","cadetblue1"))+
+  theme(axis.line=element_line(size=2),
+        axis.text.x=element_text(size=20),
+        axis.text.y=element_text(size=20),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank())
+dev.off()
+```
 
 ## Deletion plotting for both species
 
