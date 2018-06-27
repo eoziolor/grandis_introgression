@@ -1126,6 +1126,7 @@ awk '$4>3.231165 || $5>2.609672  || $6>3.752385 || $7>3.139116 || $8>2.731015' |
 ##Now let's plot up some figures with the merged z statistics
 
 ```{r}
+zpbsn<-read.table("~/analysis/data/dfst/zpbs_20kb",sep='\t',header=FALSE)
 zpbs<-zpbsn %>% 
   filter(str_detect(V1,"chr")) #filtering only chromosome mapped regions
 
@@ -1177,8 +1178,9 @@ zpbs[intermhit,"interm"]<-zpbs[intermhit,"interm"]+1
 zpbs$Scaf<-factor(zpbs$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
                                      "chr20","chr21","chr22","chr23","chr24")) #factors are sometimes not sorted together with it, so sorting them separately
+tiff(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/zpbs.jpeg",width=1200,height=800)
 
-palette(c("grey40","grey80"))
+palette(c("grey50","grey90"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
 plot(zpbs[,4],pch=20,cex=1.2,
      col=ifelse(zpbs[,"all"]>0,"purple",
@@ -1209,6 +1211,8 @@ plot(zpbs[,8],pch=20,cex=1.2,
                 ifelse(zpbs[,"res"]>0,"black",
                        ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+
+dev.off()
 
 ```
 
@@ -3325,8 +3329,6 @@ par(lwd=3)
 barplot(copies.prop,beside=TRUE,col=c("white","mediumorchid1","purple3"),
        ylab='',cex.axis = 2.2,cex.names = 1.5,lwd=3)
 dev.off
-```
-
 
 # legend("topright",legend=c("wt","delHet","delHom"),pch=20,cex=1.2,col=c("blue","red","pink","green","lightgrey","grey50","black"),
 #        x.intersp = 0.4,y.intersp = .7)
