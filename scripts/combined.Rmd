@@ -2927,12 +2927,12 @@ jpeg("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/intro_models
 par(oma = c(1,1.5,2,1.5),mar=c(3,3,3,3),mgp=c(1,2,0))
 plot(sels18_scaled, maxCL_mig_stagSweeps.sels[18:31] - cl_neutral, 
      cex.axis = 1.3, ylab = "", ylim = c(4.8e5, yMax), 
-     type = "l", col = "forestgreen", xlim = c(0, 1), xaxt = "none", xlab = "", lwd = 6, cex.lab = 1.1)
+     type = "l", col = "seagreen3", xlim = c(0, 1), xaxt = "none", xlab = "", lwd = 6, cex.lab = 1.1)
 box(lwd=6)
-lines(sels18_scaled, maxCL_sv.sels[18:31] - cl_neutral, col = "forestgreen", lwd = 6, lty = 2)
-axis(1, at = seq(0, 1, length.out = 6), labels = seq(0.5, 1, length.out = 6), col = "forestgreen", lwd = 6, cex.axis = 2.8)
-lines(times18_scaled, maxCL_mig_stagSweeps.times[1:18] - cl_neutral, col = "plum2", lwd = 6, lty = 1)
-axis(3, lwd = 6, at = seq(0, 1, length.out = 6), labels = seq(times[1], times[18], length.out = 6), col = "plum2", cex.axis = 2.8)
+lines(sels18_scaled, maxCL_sv.sels[18:31] - cl_neutral, col = "seagreen3", lwd = 6, lty = 2)
+axis(1, at = seq(0, 1, length.out = 6), labels = seq(0.5, 1, length.out = 6), col = "seagreen3", lwd = 6, cex.axis = 2.8)
+lines(times18_scaled, maxCL_mig_stagSweeps.times[1:18] - cl_neutral, col = "gold2", lwd = 6, lty = 1)
+axis(3, lwd = 6, at = seq(0, 1, length.out = 6), labels = seq(times[1], times[18], length.out = 6), col = "gold2", cex.axis = 2.8)
 
 #legend("bottomright", lty = c(1,2), legend = c("Introgression", "ILS"), lwd = 6)
 #mtext(line = 3, side = 1, text = "selection coefficient", cex = 1.3)
@@ -2985,11 +2985,11 @@ dxy4$chr<-factor(dxy4$chr,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","ch
 tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/introgression_dxy.tiff",width=1200,height=600)
 palette(c("grey40","grey80"))
 par(mfrow=c(3,1),mar=c(0,4,0,0))
-plot(dxy4[,"BB"],pch=20,cex=1,col=ifelse(dxy4[,"BB"]<col[2],"red",as.factor(dxy4[,"chr"])),bty='n',
+plot(dxy4[,"BB"],pch=20,cex=1,col=ifelse(dxy4[,"BB"]<col[2],"seagreen3",as.factor(dxy4[,"chr"])),bty='n',
      xlab="",ylab="",xaxt='n',ylim=c(-.0271,.01),cex.axis=4)
-plot(dxy4[,"VB"],pch=20,cex=1,col=ifelse(dxy4[,"VB"]<col[1],"red",as.factor(dxy4[,"chr"])),bty='n',
+plot(dxy4[,"VB"],pch=20,cex=1,col=ifelse(dxy4[,"VB"]<col[1],"seagreen3",as.factor(dxy4[,"chr"])),bty='n',
      xlab="",ylab="",xaxt='n',ylim=c(-.0271,.01),cex.axis=4)
-plot(dxy4[,"PB"],pch=20,cex=1,col=ifelse(dxy4[,"PB"]<col[3],"red",as.factor(dxy4[,"chr"])),bty='n',
+plot(dxy4[,"PB"],pch=20,cex=1,col=ifelse(dxy4[,"PB"]<col[3],"seagreen3",as.factor(dxy4[,"chr"])),bty='n',
      xlab="",ylab="",xaxt='n',ylim=c(-.0271,.01),cex.axis=4)
 dev.off()
 ``` 
@@ -3006,7 +3006,7 @@ library(stringr)
 
 load("~/analysis/scripts/introgression/AHR_elias_plotdata.Rdata")
 names<-row.names(mds)
-popcol<-ifelse(grepl("-",names),"plum",
+popcol<-ifelse(grepl("-",names),"seagreen3",
                ifelse(grepl("BB",names),"black",
                       ifelse(grepl("VB",names),"black",
                              ifelse(grepl("PB",names),"black",
@@ -3014,7 +3014,7 @@ popcol<-ifelse(grepl("-",names),"plum",
                                            ifelse(grepl("BNP",names),"firebrick2",
                                                   ifelse(grepl("SP",names),"cadetblue3",
                                                          ifelse(grepl("GB",names),"cadetblue3","WRONG"))))))))
-popcol2<-ifelse(grepl("-",names),"plum",
+popcol2<-ifelse(grepl("-",names),"seagreen3",
                ifelse(grepl("BB",names),"black",
                       ifelse(grepl("VB",names),"grey40",
                              ifelse(grepl("PB",names),"grey80",
@@ -3031,9 +3031,11 @@ plot(tr,type="unrooted",show.tip.label=FALSE)
 tiplabels(pch=as.numeric(popsym),col=popcol,bg=popcol2,cex=1.5)
 
 #plotting MDS
+tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/introgression_mds.tiff",width=650,height=600)
 plot(mds,col=popcol,cex=2,cex.axis=2,pch=as.numeric(popsym),
-     bg=popcol2,bty='n')
+     bg=popcol2,bty='n',xlab='',ylab='')
 box(bty='l',lwd=5)
+dev.off()
 
 ```
 
@@ -3085,14 +3087,17 @@ dev.off()
 
 ## Deletion plotting for both species
 
-```{r}
-# install.packages('viridis')
-# install.packages('dplyr')
-# install.packages('magrittr')
-# install.packages('Rphylip')
-# install.packages('ape')
-# install.packages('stringr')
+* Getting the sample names from the vcf file
 
+```{bash}
+zcat hetgran.vcf.gz | grep -v "##" | head -n 1 > header.txt
+
+```
+
+* downloaded depth file from Noah
+
+
+```{r}
 library(viridis)
 library(dplyr)
 library(magrittr)
@@ -3100,25 +3105,28 @@ library(Rphylip)
 library(ape)
 library(stringr)
 
-source("~/analysis/scripts/depth/pullgenos.r")
-#source("~/analysis/scripts/depth/pullgenos.phased.r")
+#colnames(gts)[1] <- "pos"
+col<-scan("~/analysis/data/depth/header.txt",sep='\t',what = "character") #grabbing names of all individuals
+dep<-read.table("~/analysis/data/depth/NW_012234474.1_550000-800000.depth.txt.gz",stringsAsFactors=FALSE) #grabbing depth vector made by samtools
+sexscore0<-col[-c(1:9)] #removing non-individual fields
+sexscore<-gsub("SJSP","SJ",sexscore)
+names(sexscore)<-sexscore # for counting later
+mat<-read.table("~/analysis/data/plink/popcolors.txt",stringsAsFactors=FALSE,sep="\t") #getting colors for later
 
-gts<-pullgenos("chr1:650000-900000")
-#hap<-pullgenos.phased("chr1:650000-900000")
-colnames(gts)[1] <- "pos"
-dep<-read.table("~/analysis/data/depth/NW_012234474.1_550000-800000.depth.txt.gz",stringsAsFactors=FALSE)
-sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
-mat<-read.table("~/analysis/data/plink/popcolors.txt",stringsAsFactors=FALSE,sep="\t")
-pops <- gsub("-.*","",sexscore[,1])
-popord <- c(grep("BB",sexscore$sample),grep("VB",sexscore$sample),grep("PB",sexscore$sample),grep("SJ",sexscore$sample),
-            grep("BNP",sexscore$sample),grep("SP",sexscore$sample),grep("GB",sexscore$sample))
-bbo<-grep("BB",sexscore$sample)
-vbo<-grep("VB",sexscore$sample)
-pbo<-grep("PB",sexscore$sample)
-sjo<-grep("SJ",sexscore$sample)
-bnpo<-grep("BNP",sexscore$sample)
-spo<-grep("SP",sexscore$sample)
-gbo<-grep("GB",sexscore$sample)
+pops0 <- gsub("-.*||_.*||.*\\.","",sexscore) #getting a vector of all pops for the individuals
+pops<-gsub("SJSP","SJ",pops0) #renaming SJSP because it causes problems for grepping SP
+
+popord <- c(grep("ER",sexscore),grep("BB",sexscore),grep("VB",sexscore),grep("PB",sexscore),grep("SJ",sexscore),
+            grep("BNP",sexscore),grep("SP",sexscore),grep("GB",sexscore))
+
+ero<-grep("ER",sexscore)
+bbo<-grep("BB",sexscore)
+vbo<-grep("VB",sexscore)
+pbo<-grep("PB",sexscore)
+sjo<-grep("SJ",sexscore)
+bnpo<-grep("BNP",sexscore)
+spo<-grep("SP",sexscore)
+gbo<-grep("GB",sexscore)
 
 
 ##deletion boundaries:
@@ -3126,16 +3134,22 @@ gbo<-grep("GB",sexscore$sample)
   #will use a conservative window that doesn't include a little spike in coverage: 760000-800000
 
 #no deletion
-nodel<-dep[,2]>810000&dep[,2]<890000
-del<-dep[,2]>760000&dep[,2]<800000
+nodel<-dep[,2]>750000&dep[,2]<800000
+del<-dep[,2]>640000&dep[,2]<710000
 
 scalevec <- colSums(dep[nodel,-c(1,2)])/(sum(nodel))
 scalevec2<- colSums(dep[del,-c(1,2)])/sum(del)
 
-copies_per_ind <- data.frame(cbind(n_copies=rep(2,288),pop=gsub("-.*","",sexscore[,1])),stringsAsFactors=FALSE)
-rownames(copies_per_ind) <- colnames(gts)[-1]
+copies_per_ind <- data.frame(cbind(n_copies=rep(2,576),pop=gsub("-.*||_.*||.*\\.","",sexscore)),stringsAsFactors=FALSE)
+rownames(copies_per_ind) <- sexscore
 
 #my alternative
+
+ercopy<-t(t(dep[del,ero+2])/scalevec[ero])%>%
+  (function(x){
+    s <- colSums(x)
+    o <- order(s,decreasing=TRUE)
+    s[o]})
 
 bbcopy<-t(t(dep[del,bbo+2])/scalevec[bbo])%>%
   (function(x){
@@ -3201,8 +3215,8 @@ bbnum<-t(t(dep[del,bbo+2])/scalevec[bbo])%>%
     s <- colSums(x)
     o <- order(s,decreasing=TRUE)
     o}) %>%
-  (gts[,bbo+1])[,.] %>%
-  colnames() %>%
+  (sexscore[bbo])[.] %>%
+  names() %>%
   cbind(
     .,
     c(rep(2,18),rep(1,5),rep(0,1))
@@ -3215,8 +3229,8 @@ vbnum<-t(t(dep[del,vbo+2])/scalevec[vbo])%>%
     s <- colSums(x)
     o <- order(s,decreasing=TRUE)
     o}) %>%
-  (gts[,vbo+1])[,.] %>%
-  colnames() %>%
+  (sexscore[vbo])[.] %>%
+  names() %>%
   cbind(
     .,
     c(rep(2,38),rep(1,10),rep(0,1))
@@ -3229,8 +3243,8 @@ pbnum<-t(t(dep[del,pbo+2])/scalevec[pbo])%>%
     s <- colSums(x)
     o <- order(s,decreasing=TRUE)
     o}) %>%
-  (gts[,pbo+1])[,.] %>%
-  colnames() %>%
+ (sexscore[pbo])[.] %>%
+  names() %>%
   cbind(
     .,
     c(rep(2,21),rep(1,22),rep(0,4))
@@ -3243,8 +3257,8 @@ sjnum<-t(t(dep[del,sjo+2])/scalevec[sjo])%>%
     s <- colSums(x)
     o <- order(s,decreasing=TRUE)
     o}) %>%
-  (gts[,sjo+1])[,.] %>%
-  colnames() %>%
+  (sexscore[sjo])[.] %>%
+  names() %>%
   cbind(
     .,
     c(rep(2,1),rep(1,4),rep(0,19))
@@ -3257,8 +3271,8 @@ bnpnum<-t(t(dep[del,bnpo+2])/scalevec[bnpo])%>%
     s <- colSums(x)
     o <- order(s,decreasing=TRUE)
     o}) %>%
-  (gts[,bnpo+1])[,.] %>%
-  colnames() %>%
+  (sexscore[bnpo])[.] %>%
+  names() %>%
   cbind(
     .,
     c(rep(2,0),rep(1,5),rep(0,43))
@@ -3271,8 +3285,8 @@ spnum<-t(t(dep[del,spo+2])/scalevec[spo])%>%
     s <- colSums(x)
     o <- order(s,decreasing=TRUE)
     o}) %>%
-  (gts[,spo+1])[,.] %>%
-  colnames() %>%
+  (sexscore[spo])[.] %>%
+  names() %>%
   cbind(
     .,
     c(rep(2,0),rep(1,0),rep(0,48))
@@ -3285,8 +3299,8 @@ gbnum<-t(t(dep[del,gbo+2])/scalevec[gbo])%>%
     s <- colSums(x)
     o <- order(s,decreasing=TRUE)
     o}) %>%
-  (gts[,gbo+1])[,.] %>%
-  colnames() %>%
+  (sexscore[gbo])[.] %>%
+  names() %>%
   cbind(
     .,
     c(rep(2,0),rep(1,1),rep(0,47))
@@ -3303,10 +3317,16 @@ copies_per_ind[,1] <- as.numeric(copies_per_ind[,1])
 #                        ylab='',cex.axis = 2.5,cex.names = 1.5)})
 par(mfrow=c(1,1),mar=c(2,4,2,4))
 copies<-as.array(table(copies_per_ind[,c(1,2)]) %>% 
-                (function(x){x[,c(3,6,2,5,4,7,1)]}) )
+                (function(x){x[,c("GB","SP","BNP","SJ","PB","VB","BB")]}) )
 copies.prop<-prop.table(copies,2)*100 
-barplot(copies.prop,beside=TRUE,col=c("darkolivegreen1","chartreuse3","darkgreen"),
-       ylab='',cex.axis = 2.2,cex.names = 1.5)
+
+tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/deletion_freq.tiff",width=1000,height=400)
+par(lwd=3)
+barplot(copies.prop,beside=TRUE,col=c("white","mediumorchid1","purple3"),
+       ylab='',cex.axis = 2.2,cex.names = 1.5,lwd=3)
+dev.off
+```
+
 
 # legend("topright",legend=c("wt","delHet","delHom"),pch=20,cex=1.2,col=c("blue","red","pink","green","lightgrey","grey50","black"),
 #        x.intersp = 0.4,y.intersp = .7)
@@ -3341,10 +3361,21 @@ depsub <- as.data.frame(apply(dep[,-c(1,2)],MAR=2,FUN=subsmooth,by=20,width=500)
 jump<-dep[seq(from=20,to=dim(dep)[1],by=20),2]
 depsub <- cbind("Chr1sub",jump,depsub)
 
-par(mfrow=c(7,1),mar=c(2,4,1.5,0.5))
+tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/deletion_heat.tiff",width=1200,height=1000)
 
+par(mfrow=c(8,1),mar=c(2,4,0,0))
 
-bb <- grep("BB",sexscore$sample)
+er <- grep("ER",sexscore)
+t(t(depsub[,ero+2])/scalevec[ero]) %>%
+  (function(x){
+    s <- colSums(x)
+    o <- order(s,decreasing=TRUE)
+    x[,o]
+  }) %>%
+  
+  image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(ero)),ylab="ER",xlab='')
+
+bb <- grep("BB",sexscore)
 t(t(depsub[,bbo+2])/scalevec[bbo]) %>%
   (function(x){
     s <- colSums(x)
@@ -3354,7 +3385,7 @@ t(t(depsub[,bbo+2])/scalevec[bbo]) %>%
   
   image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(bbo)),ylab="BB")
 
-vb <- grep("vb",sexscore$sample)
+vb <- grep("vb",sexscore)
 t(t(depsub[,vbo+2])/scalevec[vbo]) %>%
   (function(x){
     s <- colSums(x)
@@ -3364,7 +3395,7 @@ t(t(depsub[,vbo+2])/scalevec[vbo]) %>%
   
   image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(vbo)),ylab="VB")
 
-pb <- grep("pb",sexscore$sample)
+pb <- grep("pb",sexscore)
 t(t(depsub[,pbo+2])/scalevec[pbo]) %>%
   (function(x){
     s <- colSums(x)
@@ -3374,7 +3405,7 @@ t(t(depsub[,pbo+2])/scalevec[pbo]) %>%
   
   image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(pbo)),ylab="PB")
 
-sj <- grep("sj",sexscore$sample)
+sj <- grep("sj",sexscore)
 t(t(depsub[,sjo+2])/scalevec[sjo]) %>%
   (function(x){
     s <- colSums(x)
@@ -3384,7 +3415,7 @@ t(t(depsub[,sjo+2])/scalevec[sjo]) %>%
   
   image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(sjo)),ylab="SJ")
 
-bnp <- grep("bnp",sexscore$sample)
+bnp <- grep("bnp",sexscore)
 t(t(depsub[,bnpo+2])/scalevec[bnpo]) %>%
   (function(x){
     s <- colSums(x)
@@ -3394,7 +3425,7 @@ t(t(depsub[,bnpo+2])/scalevec[bnpo]) %>%
   
   image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(bnpo)),ylab="BNP")
 
-sp <- grep("sp",sexscore$sample)
+sp <- grep("sp",sexscore)
 t(t(depsub[,spo+2])/scalevec[spo]) %>%
   (function(x){
     s <- colSums(x)
@@ -3404,7 +3435,7 @@ t(t(depsub[,spo+2])/scalevec[spo]) %>%
   
   image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(spo)),ylab="SP")
 
-gb <- grep("gb",sexscore$sample)
+gb <- grep("gb",sexscore)
 t(t(depsub[,gbo+2])/scalevec[gbo]) %>%
   (function(x){
     s <- colSums(x)
@@ -3414,30 +3445,31 @@ t(t(depsub[,gbo+2])/scalevec[gbo]) %>%
   
   image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(gbo)),ylab="GB")
 
-par(mfrow=c(2,1),mar=c(2,4,1.5,0.5))
+dev.off()
+# par(mfrow=c(2,1),mar=c(2,4,1.5,0.5))
 
 ###Sex
 
-f <- grep("F",sexscore$sex)
-t(t(depsub[,f+2])/scalevec[f]) %>%
-  (function(x){
-    s <- colSums(x)
-    o <- order(s,decreasing=TRUE)
-    x[,o]
-  }) %>%
-  
-  image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(f)),ylab="F")
-
-
-m <- grep("M",sexscore$sex)
-t(t(depsub[,m+2])/scalevec[m]) %>%
-  (function(x){
-    s <- colSums(x)
-    o <- order(s,decreasing=TRUE)
-    x[,o]
-  }) %>%
-  
-  image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(m)),ylab="M")
+# f <- grep("F",sexscore$sex)
+# t(t(depsub[,f+2])/scalevec[f]) %>%
+#   (function(x){
+#     s <- colSums(x)
+#     o <- order(s,decreasing=TRUE)
+#     x[,o]
+#   }) %>%
+#   
+#   image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(f)),ylab="F")
+# 
+# 
+# m <- grep("M",sexscore$sex)
+# t(t(depsub[,m+2])/scalevec[m]) %>%
+#   (function(x){
+#     s <- colSums(x)
+#     o <- order(s,decreasing=TRUE)
+#     x[,o]
+#   }) %>%
+#   
+#   image(z=.,zlim=c(0,4),col=viridis(30),x=depsub[,2],y=(1:length(m)),ylab="M")
 
 
 ####representative graphs

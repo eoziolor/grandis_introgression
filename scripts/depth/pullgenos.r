@@ -1,4 +1,4 @@
-pullgenos<-function(scaf,vcf="~/analysis/data/depth/chr1_short.vcf.bgz"){
+pullgenos<-function(){
 
 	cline<-paste("tabix ", vcf, " ", scaf,sep="")
 	header<-scan(pipe(paste("zcat",vcf, "| grep -v '##' | head -n 1",sep=" ")),what="character")
