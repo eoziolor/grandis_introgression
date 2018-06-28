@@ -4025,3 +4025,65 @@ chr10_1mb<-est.recrate(chr10$cm.pos,chr10$mb.pos,window=window)
 write.table(chr10_1mb,"~/analysis/data/introgression/chr10_recrate_1mb_window.csv",sep=",")
 
 ```
+
+##Getting chr10 introgressed region in order to determine haplotype frequencies
+
+* Obtained haplotype region from ##Plotting dxy chunk of code
+
+```{bash}
+#!/bin/bash -l
+
+#SBATCH -J c10vcf
+#SBATCH -o c10vcf-%j.output
+#SBATCH -e c10vcf-%j.output
+#SBATCH -N 1
+#SBATCH --cpus-per-task=8
+#SBATCH -t 1:00:00
+#SBATCH --mem=60000
+
+my_tabix=/home/eoziolor/program/htslib/tabix
+
+my_vcf=/home/eoziolor/fgran/data/varcall/chr10_ordered_filtered.vcf.bgz
+my_out=/home/eoziolor/fgran/data/introgression/chr10_intr.vcf.bgz 
+
+$my_tabix -fh $my_vcf chr10:0-1 | bgzip > $my_out
+$my_tabix -f $my_vcf chr10:21507785-29010051 | bgzip >> $my_out
+```
+
+```{bash}
+scp -P 2022 farm:/home/eoziolor/fgran/data/introgression/chr10_intr.vcf.bgz ~/analysis/data/intro_models/
+
+zcat ~/analysis/data/intro_models/chr10_intr.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine_large.r | gzip > ~/analysis/data/intro_models/chr10_intr_haplo.vcf.bgz
+
+```
+
+* the function I am using to haploidize
+
+```{r}
+#what is in haploidize_gran_mine_large.r
+#!/usr/bin/env Rscript
+
+library(stringr)
+library(magrittr)
+
+sam<-function(x){
+      y <- str_split(x,":")[[1]][1] %>% 
+    			 unlist() %>% 
+    			 as.numeric() 
+        return(y)
+      }
+
+f <- file("stdin")
+#f<-file("~/analysis/data/dfst/outliers/zshared.vcf.bgz")
+open(f)
+while(length(line <- readLines(f,n=1)) > 0) {
+  if(grepl("^#",line)){write(line,stdout());next()}
+
+  line <- str_split(line,"\\t") %>% unlist()
+  line[10:585] <- sapply(line[10:585],sam)
+  line <- paste(line,collapse="\t")
+  write(line,stdout())
+  # write(line, stderr())
+  # process line
+}
+```
