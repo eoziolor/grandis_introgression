@@ -448,7 +448,185 @@ $my_bedtools map \
 
 ```
     
-## Plotting distribution of neutral estimates (full sample size)
+## Plotting distribution of neutral estimates 
+
+###Starting with small sample size for the plot of genome wide values
+
+```{bash}
+scp kodiak:/data/oziolore/fhet/data/angsd2/theta/subsample/*50kb* /home/elias/analysis/data/angsd/subsample/
+
+```
+
+* Break the file into pi, theta and and calculate tajima's D, starting with 50kb windows for speed
+
+```{r Calculating Taj D; subsetting pi and theta}
+###Buffalo Bayou loding pi(column6), theta(column4), and counts(columns 5,7)
+
+bb<-read.table("~/analysis/data/angsd/subsample/BB_neut_50kb10kb.bed",stringsAsFactors=FALSE) #reading in all files
+vb<-read.table("~/analysis/data/angsd/subsample/VB_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+pb<-read.table("~/analysis/data/angsd/subsample/PB_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+sj<-read.table("~/analysis/data/angsd/subsample/SJ_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+bnp<-read.table("~/analysis/data/angsd/subsample/BNP_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+sp<-read.table("~/analysis/data/angsd/subsample/SP_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+gb<-read.table("~/analysis/data/angsd/subsample/GB_neut_50kb10kb.bed",stringsAsFactors=FALSE)
+
+colnam<-c("scaf","Start","End","Theta","Tcount","Pi","Pcount") #giving them column names
+colnames(bb)<-colnam
+colnames(vb)<-colnam
+colnames(pb)<-colnam
+colnames(sj)<-colnam
+colnames(bnp)<-colnam
+colnames(sp)<-colnam
+colnames(gb)<-colnam
+
+pops<-list(bb,vb,pb,sj,bnp,sp,gb)
+popnames<-c("bb","vb","pb","sj","bnp","sp","gb")
+names(pops)<-popnames
+
+for(i in popnames){ #reading in the files as.numeric
+  for(j in 4:7){
+    pops[[i]][,j]<-as.numeric(pops[[i]][,j])
+  }
+}
+
+cov<-cbind(bb[1:3],bb[,7],vb[,7],pb[,7],sj[,7],bnp[,7],sp[,7],gb[,7]) #creating a vector of coverage of each statistic call
+
+nsnps<-cov[,4] #creating a vector that sums all calls over each SNP
+for (i in 5:10){
+  nsnps <- nsnps + cov[,i]
+}
+nsnps <- nsnps/7 #dividing by number of populations and only using sites that have at least 20 SNPS used over the window per population
+
+subw <- nsnps > 20 #filter to be saved for these windows
+
+
+#calculating mean and median pi----
+pimean<-c() #calculating mean
+for(i in popnames){
+  pimean[i]<-sum(pops[[i]][subw,6],na.rm=TRUE)/sum(pops[[i]][subw,7],na.rm=TRUE)
+}
+
+#converting these to per base estimates
+popbase<-list()
+
+for(i in popnames){ #calculating per base estimates rather than averaged estimates over the windows we have
+  popbase[[i]]<-cbind(pops[[i]][,1:3],pops[[i]][,4]/pops[[i]][,5],pops[[i]][,6]/pops[[i]][,7])
+}
+
+names<-c("scaf", "start","end",'theta/b',"pi/b")
+
+for(i in popnames){ #giving the new list column names
+  colnames(popbase[[i]])<-names
+}
+
+wt<-matrix(nrow=length(popbase[[1]][,1]),ncol=length(popnames)) #making a matrix of Waterson's theta values
+for(i in 1:7){
+  wt[,i]<-popbase[[i]][,4]
+}
+colnames(wt)<-popnames
+
+pi<-matrix(nrow=length(popbase[[1]][,1]),ncol=length(popnames)) #making a matrix of pi values
+for(i in 1:7){
+  pi[,i]<-popbase[[i]][,5]
+}
+colnames(pi)<-popnames
+
+
+source("~/analysis/scripts/angsd/tajimas.r")
+
+taj<-list()
+
+for(i in popnames){ #calculating tajima's D for all populations through a function in r; takes forever
+  print(i)
+  for(j in 1:dim(pi)[[1]]){
+    taj[[i]]<-c(taj[[i]],tajimas(pi[j,i],wt[j,i],24))
+  }
+}
+
+
+###
+
+taj<-cbind(popbase[[1]][,1:3],taj[["bb"]],taj[["vb"]],taj[["pb"]],taj[["sj"]],taj[["bnp"]],taj[["sp"]],taj[["gb"]]) #binding into a dataframe
+
+taj<-cbind(taj,keep=as.numeric(subw)) #keeping the filter of low representation bases
+
+tajname<-c("scaf","start","end","bb","vb","pb","sjsp","bnp",
+            "sp","gb","keep") #column names
+colnames(taj)<-tajname
+
+write.csv(taj,file="~/analysis/data/angsd/taj_sub",quote=FALSE,row.names=FALSE) #writing tajima's d
+
+theta<-cbind(popbase[["bb"]][1:3],wt,keep=as.numeric(subw))
+
+thetname<-c("scaf","start","end","bb","vb","pb","sjsp","bnp",
+            "sp","gb","keep")
+colnames(theta)<-thetname
+
+write.csv(theta,file="~/analysis/data/angsd/thetas_sub",quote=FALSE,row.names=FALSE)
+
+
+pi<-cbind(popbase[["bb"]][1:3],pi,keep=as.numeric(subw))
+
+piname<-c("scaf","start","end","bb","vb","pb","sj","bnp","sp","gb","keep")
+colnames(pi)<-piname
+write.csv(pi,file="~/analysis/data/angsd/pi_sub",quote=FALSE,row.names=FALSE)
+
+write.csv(cov,file="~/analysis/data/angsd/cov_sub",quote=FALSE,row.names = FALSE)
+
+```
+
+```{r Plotting subsampled data}
+library('tidyr')
+library('tibble')
+library('magrittr')
+library('dplyr')
+library('gridExtra')
+
+#loading neutrality stats----
+
+theta<-read.table("~/analysis/data/angsd/sample_comparison/thetas_sub",header=TRUE, sep=',') #reading in summary statistics
+pi<-read.table("~/analysis/data/angsd/sample_comparison/pi_sub", header=TRUE, sep=',')
+taj<-read.table("~/analysis/data/angsd/sample_comparison/taj_sub",header=TRUE, sep=',')
+
+subw<-pi[,"keep"]>0 #applying filter of low coverage
+
+##ggplot pi----
+library(ggplot2)
+library(reshape2)
+
+mpi<-melt(pi[,1:10],id=c("scaf","start","end"))
+
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pi.jpg",width=1000,height=600)
+ggplot(mpi,
+       aes(x=variable,y=value,fill=variable,color=variable))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(0,.015))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+dev.off()
+
+mtaj<-melt(taj[,1:10],id=c("scaf","start","end"))
+
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/taj.jpg",width=1000,height=600)
+ggplot(mtaj,
+       aes(x=variable,y=value,fill=variable,color=variable))+
+  geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
+  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
+  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_y_continuous(limits=c(-.25,.05))+
+  theme_classic()+
+  labs(y="",x="")+
+  theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
+  theme(axis.text.y=element_text(color="black",size=40))
+dev.off()
+
+```
+
+###full sample size
 * starting with folded samples
 
 ```{bash Copy those files into computer}
@@ -782,8 +960,6 @@ lines(vbp,xlim=c(0.001,.025),col="black",lwd=3)
 lines(bbp,xlim=c(0.001,.025),col="black",lwd=3)
 #polygon(bbp,col="black",density=100,border=NA)
 
-
-
 box(lwd=7,bty="l")
 
 #visualizing tajima's D distribution----
@@ -905,7 +1081,7 @@ load("~/analysis/data/comparison/noah_stats.RData") #loading data produced from 
 
 pops<-c("BB","VB","PB","SJSP","BNP","GB","SP") #creating a vector of names for our populations
 
-fsth<-as.data.frame(fst2[,1:21])#creating matrix to hold fst data takes about 1 hour to run; Here I'm calculating Hudson's Fst from our dataset;
+fsth<-as.data.frame(fst2[,1:21])#creating matrix to hold fst data
 
 f=0
 for(i in pops){
@@ -920,7 +1096,7 @@ for(i in pops){
   }
 }
 
-#write.table(fsth,"~/analysis/data/fst/fsth",col.names = FALSE,quote = FALSE,row.names = FALSE) #to save it for later
+#write.table(fsth,"~/analysis/data/fst/fsth_20",col.names = FALSE,quote = FALSE,row.names = FALSE) #to save it for later
 
 #fsth<-read.table("~/analysis/data/fst/fsth",header=FALSE) #loading fsth values
 ```
@@ -952,7 +1128,7 @@ for (i in 1:21){
 #zfst<-read.table("~/analysis/data/fst/zfst_hud_1kb",header=FALSE)
 ```
 
-##Subtraction of pi and conversion to z statistic CORRECT THIS TO BE THE PI VALUES YOU JUST CALCULATED FROM ANGSD
+##Subtraction of pi and conversion to z statistic
 
 ```{r}
 pi<-read.csv("~/analysis/data/angsd/pi",stringsAsFactors=TRUE) #taking only pi values for F. grandis from dataframe
@@ -1212,6 +1388,159 @@ plot(zpbs[,8],pch=20,cex=1.2,
                        ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
 
+dev.off()
+
+```
+
+##Plotting FST vs PI
+
+```{r}
+library('ggplot2')
+library("RColorBrewer")
+require('gridExtra')
+
+#loading fst and finding representative windows----
+load("~/analysis/data/comparison/noah_stats.RData") #loading data produced from individual SNP call pi and dxy calculations
+
+pops<-c("BB","VB","PB","SJSP","BNP","GB","SP") #creating a vector of names for our populations
+
+fsth<-as.data.frame(fst2[,1:21])#creating matrix to hold fst data
+
+f=0
+for(i in pops){
+  for(j in pops){
+    if(i==j){next()}
+    if(i>j){next()}
+    f<-f+1
+    print(f)
+    colnames(fsth)[f]<-paste(sort(unique(c(i,j))),collapse=".")
+    print(colnames(fsth)[f])
+    fsth[,f]<-1-((fst2[,i]+fst2[,j])/2)/fst2[,paste(sort(unique(c(i,j))),collapse=".")]
+  }
+}
+
+fsth<-fsth[-1,]
+
+#loading pi and theta and finding their rep windows----
+theta<-read.table("~/analysis/data/angsd/thetas",header=TRUE, sep=',') #reading in summary statistics
+pi<-read.table("~/analysis/data/angsd/pi", header=TRUE, sep=',')
+
+subz<-pi[,"keep"]>0
+
+#plotting them all in ggplot
+a<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"BB.GB"],
+    aes(colour=fsth[subz,"BB.GB"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+b<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"GB.VB"],
+    aes(colour=fsth[subz,"GB.VB"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+c<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"GB.PB"],
+    aes(colour=fsth[subz,"GB.PB"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+d<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"GB.SJSP"],
+    aes(colour=fsth[subz,"GB.SJSP"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+e<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"BNP.GB"],
+    aes(colour=fsth[subz,"BNP.GB"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+f<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"GB.SP"],
+    aes(colour=fsth[subz,"GB.SP"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+a2<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"BB.SP"],
+    aes(colour=fsth[subz,"BB.SP"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+b2<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"SP.VB"],
+    aes(colour=fsth[subz,"SP.VB"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+c2<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"PB.SP"],
+    aes(colour=fsth[subz,"PB.SP"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+d2<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"SJSP.SP"],
+    aes(colour=fsth[subz,"SJSP.SP"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+e2<-ggplot(pi[subz,],
+       aes(x=bb,y=gb)) +
+  geom_point(size=fsth[subz,"BNP.SP"],
+    aes(colour=fsth[subz,"BNP.SP"])) +
+  scale_color_gradient(low="yellow",high="black") +
+  theme_classic()+
+  scale_x_continuous(limits=c(0,0.1))+
+  scale_y_continuous(limits=c(0,0.1))+
+  geom_abline(slope=1,lty=2)
+
+
+tiff(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/fst_pi.tiff",width=800,height=1400,units="px")
+grid.arrange(grobs=list(a,b,c,d,e,f,a2,b2,c2,d2,e2),ncol=2)
 dev.off()
 
 ```
@@ -1806,11 +2135,26 @@ pbsc1<-pbsc %>% filter(str_detect(Scaf,"\\bchr1\\b"))
 par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
 
 for(i in 1:5){
-  plot(subsmooth(pbsc1[1:5000,i+3]),pch=20,cex=.5,ylim=c(0,1.8),bty='l',cex.axis=2,ylab='',xlab='')
+  plot(subsmooth(pbsc1[1:5000,i+3]),pch=20,cex=.8,ylim=c(0,1.8),bty='l',cex.axis=2,ylab='',xlab='')
   box(bty='l',lwd=3)
   abline(v=c(50,60),col="red",lty=2,lwd=1.5)
 }
 
+###Plotting Chr10/ARNT introgressed region
+pbsc10<-pbsc %>% filter(str_detect(Scaf,"\\bchr10\\b"))
+
+par(mfrow=c(3,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+
+for(i in 1:3){
+  plot(pbsc10[23000:25000,i+3],pch=20,cex=.5,ylim=c(0,1.8),bty='l',cex.axis=2,ylab='',xlab='',
+       col=ifelse(pbsc10[23000:25000,2]>23926932 & pbsc10[23000:25000,2]<23951650,"red","black"))
+  box(bty='l',lwd=3)
+  abline(h=0,v=c(941,964),col="red",lty=2,lwd=1.5)
+}
+
+```
+
+```{r}
 #plotting ARNT chr8----
 pbsc8<-pbsc %>% filter(str_detect(Scaf,"\\bchr8\\b"))
 
@@ -2996,6 +3340,12 @@ plot(dxy4[,"VB"],pch=20,cex=1,col=ifelse(dxy4[,"VB"]<col[1],"seagreen3",as.facto
 plot(dxy4[,"PB"],pch=20,cex=1,col=ifelse(dxy4[,"PB"]<col[3],"seagreen3",as.factor(dxy4[,"chr"])),bty='n',
      xlab="",ylab="",xaxt='n',ylim=c(-.0271,.01),cex.axis=4)
 dev.off()
+
+#finding the introgression region
+
+chr10_intr<-dxy4[dxy4$chr=="chr10" & dxy4[,"VB"]<col[1],4:6] #taking only introgressed region
+total_chr10<-cbind(head(chr10_intr[,1:2],n=1),tail(chr10_intr[,3],n=1)) #merging the start and end of that region
+write.table(total_chr10,"~/analysis/data/intro_models/chr10_region.txt",col.names = FALSE,row.names = FALSE,quote = FALSE) #writing it down
 ``` 
 
 ### Introgression MDS plots of AHR
@@ -3659,3 +4009,19 @@ m
 
 ```
 
+##Recombination rates chromosome 10
+
+Downloaded chr10 table from https://github.com/jthmiller/Reco_rate on June 27th
+
+```{r}
+install.packages('xoi')
+require(xoi)
+chr10<-read.table("~/analysis/data/introgression/CRH10_table.r",sep=',')
+
+window<-1
+
+chr10_1mb<-est.recrate(chr10$cm.pos,chr10$mb.pos,window=window)
+
+write.table(chr10_1mb,"~/analysis/data/introgression/chr10_recrate_1mb_window.csv",sep=",")
+
+```
