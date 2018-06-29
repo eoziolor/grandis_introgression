@@ -2140,7 +2140,7 @@ for(i in 1:5){
   abline(v=c(50,60),col="red",lty=2,lwd=1.5)
 }
 
-###Plotting Chr10/ARNT introgressed region
+###Plotting Chr10/ARNT introgressed region----
 pbsc10<-pbsc %>% filter(str_detect(Scaf,"\\bchr10\\b"))
 
 par(mfrow=c(3,1),mar=c(3,3,0,0),mgp=c(1,1,0))
@@ -4051,9 +4051,38 @@ $my_tabix -f $my_vcf chr10:21507785-29010051 | bgzip >> $my_out
 ```
 
 ```{bash}
-scp -P 2022 farm:/home/eoziolor/fgran/data/introgression/chr10_intr.vcf.bgz ~/analysis/data/intro_models/
+#created a small vcf for only individuals I need (three resistant pops and 1 reference)
 
-zcat ~/analysis/data/intro_models/chr10_intr.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine_large.r | gzip > ~/analysis/data/intro_models/chr10_intr_haplo.vcf.bgz
+#!/bin/bash -l
+
+#SBATCH -J freqfilter
+#SBATCH -o freqfilter-%j.output
+#SBATCH -e freqfilter-%j.output
+#SBATCH -N 1
+#SBATCH --cpus-per-task=8
+#SBATCH -t 24:00:00
+#SBATCH --mem=30000
+
+#files and programs
+my_vcftools=/home/eoziolor/program/vcftools/bin/vcftools
+my_varcall=/home/eoziolor/fgran/data/introgression/chr10_intr.vcf.bgz
+outdir=/home/eoziolor/fgran/data/introgression
+list=/home/eoziolor/fgran/data/varcall/pops/R1-3.S2.txt
+
+outfile=chr10_small.vcf.bgz
+
+$my_vcftools --gzvcf $my_varcall \
+--keep $list \
+--recode \
+--stdout |\
+bgzip >  $outdir/$outfile
+
+```
+
+```{bash}
+scp -P 2022 farm:/home/eoziolor/fgran/data/introgression/chr10_small.vcf.bgz ~/analysis/data/intro_models/
+
+zcat ~/analysis/data/intro_models/chr10_small.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine_large.r | gzip > ~/analysis/data/intro_models/chr10_small_haplo.vcf.bgz
 
 ```
 
@@ -4086,4 +4115,132 @@ while(length(line <- readLines(f,n=1)) > 0) {
   # write(line, stderr())
   # process line
 }
+```
+
+
+## Getting allele frequencies for Chromosome 10 for populations considered under introgression
+
+```{bash}
+#making Chr10.vcf.bgz
+
+paste \
+<(cat chrompos.txt | cut -f 1,3) \
+<(zcat hetgrand.hap.vcf.gz | grep -v ^# ) | \
+grep "^chr10" | \
+sort -k 2,2n | \
+gzip >chr10.txt.gz
+
+#header of hetgrand.vcf.gz will have two less fields because it doesn't have chromosome positoin, remove scaffolds from the chr10
+
+cat \
+<(zcat head.vcf.gz | grep "##") \
+<(cat header.txt) \
+<(zcat chr10.txt.gz | cut -f 1-2,5-587) \
+<(cat header.txt) |\
+bgzip > chr10.vcf.bgz
+
+#getting out complex SNPs
+
+#!/bin/bash -l
+#SBATCH -J chr10sub
+#SBATCH -o chr10sub-%A-%a.output
+#SBATCH -e chr10sub-%A-%a.output
+#SBATCH -N 1
+#SBATCH --cpus-per-task=8
+#SBATCH -t 24:00:00
+#SBATCH --mem=60000
+
+/home/eoziolor/program/vcflib/bin/vcfallelicprimitives \
+/home/eoziolor/fgran/data/varcall/chr10.vcf.bgz |\
+bgzip > /home/eoziolor/fgran/data/varcall/chr10_biallelic.vcf.bgz
+
+#Filtering out non-biallelic snps
+
+#!/bin/bash -l
+#SBATCH -J filter
+#SBATCH -o filter-%j.output
+#SBATCH -e filter-%j.output
+#SBATCH -N 1
+#SBATCH --cpus-per-task=8
+#SBATCH -t 48:00:00
+#SBATCH --mem=60000
+
+#files and programs
+my_vcftools=/home/eoziolor/program/vcftools/bin/vcftools
+
+
+my_varcall=/home/eoziolor/fgran/data/varcall/chr10_biallelic.vcf.bgz
+outdir=/home/eoziolor/fgran/data/varcall
+outfile=chr10_filtered.vcf.bgz
+
+$my_vcftools --gzvcf $my_varcall \
+--minQ 100 \
+--min-alleles 2 \
+--max-alleles 2 \
+--remove-filtered-all \
+--recode \
+--stdout |\
+bgzip > $outdir/$outfile
+
+#Creating lists so that we can "keep" only pop specific freqs
+
+#!/bin/bash -l
+#SBATCH -J poplist
+#SBATCH -o poplist-%j.output
+#SBATCH -e poplist-%j.output
+#SBATCH -N 1
+#SBATCH --cpus-per-task=8
+#SBATCH -t 48:00:00
+#SBATCH --mem=60000
+
+#files and programs
+my_vcf=/home/eoziolor/fgran/data/varcall/chr10_filtered.vcf.bgz
+dir=/home/eoziolor/fgran/data/varcall/pops/
+
+pops=VB\ SP\ ER\ KC\ BP\ F\ BB\ PB
+
+for i in {1..8}
+	do theone=$(echo $pops | cut -f $i -d ' ')
+	zcat $my_vcf | grep -v "##" | head -n 1 | tr '\t' '\n' | grep $theone > $dir/$theone.txt
+done
+
+#be careful, the SP ones catches SJSP too, so change it with
+
+cat SP.txt | grep -v "SJSP" > newSP.txt
+mv newSP.txt > SP.txt
+
+#Now getting allele frequencies per pop for the chromosome
+
+#!/bin/bash -l
+#SBATCH -J freqfilter
+#SBATCH -o freqfilter-%j.output
+#SBATCH -e freqfilter-%j.output
+#SBATCH -N 1
+#SBATCH --cpus-per-task=8
+#SBATCH -t 24:00:00
+#SBATCH --mem=30000
+
+#files and programs
+my_vcftools=/home/eoziolor/program/vcftools/bin/vcftools
+my_varcall=/home/eoziolor/fgran/data/varcall/chr10_filtered.vcf.bgz
+outdir=/home/eoziolor/fgran/data/varcall
+pops=VB\ SP\ ER\ KC\ F\ BP
+listdir=/home/eoziolor/fgran/data/varcall/pops
+
+for i in {1..6}
+
+do theone=$(echo $pops | cut -f $i -d ' ')
+
+theonefile=$listdir/$theone.txt
+
+outfile=chr10_freqs.$theone
+
+$my_vcftools --gzvcf $my_varcall \
+--keep $theonefile \
+--freq \
+--out $outdir/$outfile
+
+done
+
+
 ```
