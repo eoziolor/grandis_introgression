@@ -1663,21 +1663,21 @@ legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red"
        pch=20,cex=2,bty="n",y.intersp=1,x.intersp=.5)
 
 
-#Ordering them by interest in BB only
-
-ord<-order(PBSout[,"BBsum"],decreasing=TRUE)
-ord2<-ord[1:10] #show top10 regions
-
-par(mar=c(4.2,5,4,4)) #plotting these outliers
-plot(PBSout[ord2,"BBsum"],col='black',pch=20,cex=3,ylim=c(0,4000),ylab="Level of divergence",xlab="Region number",
-     cex.lab=2,cex.axis=2)
-points(PBSout[ord2,"VBsum"],col='grey',pch=20,cex=3)
-points(PBSout[ord2,"PBsum"],col='red',pch=20,cex=3)
-points(PBSout[ord2,"SJsum"],col='darkorange',pch=20,cex=3)
-points(PBSout[ord2,"BNPsum"],col="gold",pch=20,cex=3)
-
-legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red","darkorange2","gold"),
-       pch=20,cex=2,bty="n",y.intersp=1,x.intersp=.5)
+# #Ordering them by interest in BB only
+# 
+# ord<-order(PBSout[,"BBsum"],decreasing=TRUE)
+# ord2<-ord[1:10] #show top10 regions
+# 
+# par(mar=c(4.2,5,4,4)) #plotting these outliers
+# plot(PBSout[ord2,"BBsum"],col='black',pch=20,cex=3,ylim=c(0,4000),ylab="Level of divergence",xlab="Region number",
+#      cex.lab=2,cex.axis=2)
+# points(PBSout[ord2,"VBsum"],col='grey',pch=20,cex=3)
+# points(PBSout[ord2,"PBsum"],col='red',pch=20,cex=3)
+# points(PBSout[ord2,"SJsum"],col='darkorange',pch=20,cex=3)
+# points(PBSout[ord2,"BNPsum"],col="gold",pch=20,cex=3)
+# 
+# legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red","darkorange2","gold"),
+#        pch=20,cex=2,bty="n",y.intersp=1,x.intersp=.5)
 
 
 ```
@@ -3503,7 +3503,7 @@ box(lwd=6)
 lines(sels18_scaled, maxCL_sv.sels[18:31] - cl_neutral, col = "seagreen3", lwd = 6, lty = 2)
 axis(1, at = seq(0, 1, length.out = 6), labels = seq(0.5, 1, length.out = 6), col = "seagreen3", lwd = 6, cex.axis = 2.8)
 lines(times18_scaled, maxCL_mig_stagSweeps.times[1:18] - cl_neutral, col = "gold2", lwd = 6, lty = 1)
-axis(3, lwd = 6, at = seq(0, 1, length.out = 6), labels = seq(times[1], times[18], length.out = 6), col = "gold2", cex.axis = 2.8)
+axis(3, lwd = 6, at = seq(0, 1, length.out = 6), labels = seq(times[1]+11, times[18]+11, length.out = 6), col = "gold2", cex.axis = 2.8)
 
 #legend("bottomright", lty = c(1,2), legend = c("Introgression", "ILS"), lwd = 6)
 #mtext(line = 3, side = 1, text = "selection coefficient", cex = 1.3)
