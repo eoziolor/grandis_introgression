@@ -3766,7 +3766,7 @@ SJtot<-sum(PBSout[,10])
 BNPtot<-sum(PBSout[,12])
 
 interest2<-c() #creating a vector of interest to weigh in the level of divergence by population, so that ones in most divergent populations don't get outweighed
-for (i in 1:2119){
+for (i in 1:dim(PBSout)[[1]]){
   interest2<-(PBSout[,4]/BBtot)*100+(PBSout[,6]/VBtot)*100+(PBSout[,8]/PBtot)*100+(PBSout[,10]/SJtot)*100+(PBSout[,12]/BNPtot)*100
 }
 
@@ -4381,18 +4381,19 @@ mds <- cmdscale(d)
 tr <- nj(d)
 
 #plotting tree
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/ahr1a2a_NJ.jpg",width=400,height=1000)
 plot(tr,"unrooted",show.tip.label=FALSE)
-tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+tiplabels(pch=21,col=popcol2,bg=popfill2,cex=1.2)
 legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
+dev.off()
 
 #plotting mds
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/ahr1a2a_MDS.jpg",width=1000,height=600)
 par(mfrow=c(1,1),mar=c(3,3,0,0))
 plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
      bg=popfill2,bty='l')
 box(bty='l',lwd=5)
-
-legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),
-       pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))
+dev.off()
 
 #Plotting both
 par(mfrow=c(1,2))
@@ -4626,18 +4627,19 @@ mds <- cmdscale(d)
 tr <- nj(d)
 
 #plotting tree
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr8_NJ.jpg",width=400,height=1000)
 plot(tr,"unrooted",show.tip.label=FALSE)
-tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+tiplabels(pch=21,col=popcol2,bg=popfill2,cex=1.2)
 legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
+dev.off()
 
 #plotting mds
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr8_MDS.jpg",width=1000,height=600)
 par(mfrow=c(1,1),mar=c(3,3,0,0))
 plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
      bg=popfill2,bty='l')
 box(bty='l',lwd=5)
-
-legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),
-       pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))
+dev.off()
 
 #Plotting both
 par(mfrow=c(1,2))
@@ -4749,18 +4751,19 @@ mds <- cmdscale(d)
 tr <- nj(d)
 
 #plotting tree
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/aip_chr2_NJ.jpg",width=400,height=1000)
 plot(tr,"unrooted",show.tip.label=FALSE)
-tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+tiplabels(pch=21,col=popcol2,bg=popfill2,cex=1.2)
 legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
+dev.off()
 
 #plotting mds
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/aip_chr2_MDS.jpg",width=1000,height=600)
 par(mfrow=c(1,1),mar=c(3,3,0,0))
 plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
      bg=popfill2,bty='l')
 box(bty='l',lwd=5)
-
-legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),
-       pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))
+dev.off()
 
 #Plotting both
 par(mfrow=c(1,2))
@@ -5799,6 +5802,7 @@ library(gtools)
 library(rtracklayer)
 library(ggplot2)
 library(ggsci)
+library(reshape2)
 
 pbs_dist<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",header=FALSE)
 distnames<-c("Scaf","start","end","bb","vb","pb","sj","bnp")
@@ -5831,7 +5835,7 @@ table(nchar(vcf[,4])>2) #Confirming biallelic SNPs with reference allele after r
 gt<-as.matrix(vcf[,10:297]) #convert to numeric
 class(gt)<-"numeric"
 
-keep<-colMeans(is.na(gt))<0.9 #toss sites with low coverage
+keep<-colMeans(is.na(gt))<0.9 #toss individuals with missing info (less than 90%)
 gt<-gt[,keep]
 
 #Summing SNP frequencies----
@@ -5963,17 +5967,50 @@ efr<-pfr-e
 colnames(efr)<-(zn[subw,1])
 efr1<-efr[,grepl("chr",colnames(efr))]
 
+tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/outlier_freqs.tiff",width=1000,height=600)
 par(mar=c(4,4,2,2))
 plot(efr[,1],ylim=c(-.2,.4),type='n',xaxt='n',
      ylab="Deviation from expected allele frequencies due to admixture",bty='l')
 for(i in 1:dim(efr)[[2]]){
-  lines(efr[,i],ylim=c(0,.5),lwd=ifelse(zn[i,1]=="chr1"&zn[i,2]==0,3,
-                                        ifelse(zn[i,1]=="chr8",3,0.8))
+  lines(efr[,i],lwd=ifelse(zn[i,1]=="chr1"&zn[i,2]==0,4,
+                                        ifelse(zn[i,1]=="chr8"&zn[i,2]==16458074,4,0.8))
         ,col=ifelse(zn[i,1]=="chr1"&zn[i,2]==0,"blue",
-                    ifelse(zn[i,1]=="chr8","green","black")))
+                    ifelse(zn[i,1]=="chr8"&zn[i,2]==16458074,"green","black")))
 }
 axis(side=1,at=1:7,labels=c(rownames(efr)))
+box(lwd=4,bty='l')
 abline(h=1,lwd=3,lty=2,col="black")
+dev.off()
+
+tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/outlier_freqs2.tiff",width=800,height=800)
+efrm<-melt(efr) #putting it in a dataframe more readable by ggplot
+colnames(efrm)<-c("pop","chr","freq")
+
+ggplot(efrm,
+       aes(x=pop,y=freq),color=pop,fill=pop)+
+  geom_violin(draw_quantiles=c(0.5),aes(fill=pop),trim=TRUE,scale="width")+
+  scale_fill_manual(values=c(rep("black",3),rep("firebrick2",2),rep("cadetblue3",2)))+
+  geom_jitter(aes(colour=pop))+
+  scale_color_manual(values=c(rep("grey40",3),rep("black",2),rep("black",2)))+
+  theme_classic()+
+  scale_y_continuous(limits=c(-.2,.4))+
+  theme(axis.line = element_line(size=3))
+dev.off()
+
+tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/outlier_main.tiff",width=1000,height=400)
+efrm<-melt(efr) #putting it in a dataframe more readable by ggplot
+colnames(efrm)<-c("pop","chr","freq")
+
+ggplot(efrm,
+       aes(x=pop,y=freq),color=pop,fill=pop)+
+  geom_violin(draw_quantiles=c(0.5),aes(fill=pop),trim=TRUE,scale="width")+
+  scale_fill_manual(values=c(rep("black",3),rep("firebrick2",2),rep("cadetblue3",2)))+
+  geom_jitter(aes(colour=pop),cex=3)+
+  scale_color_manual(values=c(rep("grey40",3),rep("black",2),rep("black",2)))+
+  theme_classic()+
+  scale_y_continuous(limits=c(-.2,.4))+
+  theme(axis.line = element_line(size=3))
+dev.off()
 
 #Color by chromosome ----
 chr<-unique(colnames(efr1))
