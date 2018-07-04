@@ -5,7 +5,9 @@ date: "May 11, 2018"
 output: html_document
 ---
 
-#Fundulus grandis adapting to contamination
+Fundulus grandis adapting to contamination
+
+#Files
 
 ##Uploading files to NCBI
 
@@ -22,7 +24,7 @@ library(reshape2)
 
 ```
 
-* Downloaded .bam files to computer
+## Downloaded .bam files to computer
 ```{bash}
 #log into NIH
 ftp ftp-private.ncbi.nlm.nih.gov
@@ -34,8 +36,1325 @@ prompt
 mput BU*
 ```
 
-##installing ANGSD
-* low coverage data neutral statistics
+#Trimming
+## Trimming fastq files
+
+```{bash}
+java -jar ~/Computing/Trimmomatic-0.33/trimmomatic-0.33.jar PE
+-basein ~/share/Project_Project1/Sample_BU(write_out)/*R1_001.fastq.gz
+-baseout ~/share/Project_Project1/Sample_BU(write_out)/BU(write_out).fastq.gz
+ILLUMINACLIP:Computing/Trimmomatic-0.33/adapters/TruSeq3-PE-2.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36 HEADCROP:6
+```
+
+#Mapping and variant calling
+
+## Mapping in groups of 50 for speed
+
+```{bash}
+#!/bin/bash
+
+BWA=/home/oziolore/restoreFromData/program/bwa-0.7.15/bwa
+SBL=/home/oziolore/restoreFromData/program/samblaster/samblaster
+outdir=/home/oziolore/restoreFromData/fhet/data/align2/
+genome=/home/oziolore/restoreFromData/fhet/data/genome2/unsplit_merge.fasta
+stools=/home/oziolore/restoreFromData/program/samtools-1.5/samtools
+
+for i in {004..050}
+        do
+	fq1=/home/oziolore/restoreFromData/fhet/data/unmapped/combined1P_BU000$i.fastq.gz
+        fq2=/home/oziolore/restoreFromData/fhet/data/unmapped/combined2P_BU000$i.fastq.gz
+        sam=$(echo $fq1 | grep -oP "BU[0-9]+")
+        pop=$(cat /home/oziolore/restoreFromData/fhet/data/list/pop_samples | grep $sam | cut -f 2)
+        rg=$(echo \@RG\\tID:$sam.combined\\tPL:Illumina\\tPU:x\\tLB:combined\\tSM:$sam.$pop)
+        outdir=/home/oziolore/restoreFromData/fhet/data/align2
+        outroot=$sam\_$pop
+        cmdline=$BWA\ mem\ $genome\ -t\ 2\ -R\ $rg\ $fq1\ $fq2
+        $cmdline | $SBL -e -d $outdir/$outroot.disc.sam -s $outdir/$outroot.split.sam | \
+        $stools view -S -h -u - | \
+        $stools sort -T $outdir/$outroot - > $outdir/$outroot.bam
+done
+
+```
+
+## Excluding high coverage regions
+
+* start by getting coverage over the genome
+
+```{bash}
+/data/oziolore/program/samtools-1.5/samtools depth \
+-d 10000 /data/oziolore/fhet/data/align2/all_merged2.bam | \
+gzip > /data/oziolore/fhet/data/coverage2/coverage_allbases.txt.gz
+```
+
+* Get a random 10Mb chunk of the genome to see distribution
+  + load a fasta file and do this
+
+```{r}
+#Getting 10Mb of random regions to makea decision on [cluster]
+
+#!/bin/bash
+dir=/home/oziolore/restoreFromData/fhet/data/coverage
+
+zcat $dir/coverage_allbases.txt.gz | \
+sort -R | \
+head -n 10000000 | \
+gzip > $dir/cov_10Mbrand.txt.gz
+
+#used the following line to create a genome file in the /genome2/ subfolder
+awk -v OFS='\t' {'print $1,$2'} $fai > $genome
+```
+
+* Plot it to see distribution
+
+```{r}
+setwd("~/analysis/data/admixture/")
+cov<-read.table("~/analysis/data/angsd/cov_10Mbrand.txt.gz",header=F)
+names<-c("chrom","pos","cov")
+
+hist(cov$cov,breaks=1000)
+
+subw<-cov$cov<300
+hist(cov[subw,"cov"],breaks=1000)
+summary(cov$cov)
+summary(cov[subw,"cov"])
+```
+
+* group these regions in a file
+
+```{bash}
+zcat /data/oziolore/fhet/data/coverage2/coverage_allbases2.txt.gz | \
+awk '{OFS="\t"}{s=$2-1}{print $1,s,$2,$3}' | \
+awk '{OFS="\t"}{if($4>200){print}}' | \
+/data/oziolore/program/bedtools2/bin/bedtools merge -i - -d 10 -c 4 -o count > /data/oziolore/fhet/data/coverage2/hicov.bed
+```
+
+* Check how much of the genome you threw out
+
+```{r}
+setwd("~/")
+hi<-read.table("~/hicov.bed",header=F)
+sum(hi[,4])
+```
+
+## Variant calling with freebayes
+
+* Check number of scaffolds you have and sub your job into that many under jobs
+
+```{bash}
+#!/bin/bash
+#PBS -l nodes=1:ppn=1
+#PBS -J 1-2000
+cd /home/oziolore/restoreFromData/fhet/data/varcall/scaffold/
+
+
+#files
+genome=/home/oziolore/restoreFromData/fhet/data/genome2/unsplit_merge.fasta
+my_fai=/home/oziolore/restoreFromData/fhet/data/genome2/unsplit_merge.fasta.fai
+mergebam=/home/oziolore/restoreFromData/fhet/data/align2/all_merged2.bam
+popsfile=/home/oziolore/restoreFromData/fhet/data/list2/populations2.txt
+hicov=/home/oziolore/restoreFromData/fhet/data/coverage2/hicov.bed
+reg_file=/home/oziolore/restoreFromData/fhet/data/genome2/unsplit_merge.genome
+
+#programs
+my_freebayes=/home/oziolore/restoreFromData/program/freebayes/bin/freebayes
+my_samtools=/home/oziolore/restoreFromData/program/samtools-1.5/samtools
+my_bgz=/home/oziolore/restoreFromData/program/htslib/bgzip
+my_bedtools=/home/oziolore/restoreFromData/program/bedtools2/bin/bedtools
+
+#region to investigate
+
+crap=$(echo $PBS_ARRAY_INDEX)
+scaf=$(sed "$crap q;d" $reg_file | cut -f1)
+end=$(sed "$crap q;d" $reg_file | cut -f2)
+region=$scaf:1-$end 
+
+#directories and files
+
+outdir=/home/oziolore/restoreFromData/fhet/data/varcall/scaffold/
+outfile=$scaf.vcf.bgz
+
+$my_samtools view -q 30 -f 2 -h -b  $mergebam $region | \
+$my_bedtools intersect -v -a stdin -b $hicov | \
+$my_freebayes $regions 36 -f $genome --populations $popsfile --stdin | \
+$my_bgz > $outdir/$outfile
+
+echo $outdir
+echo $region
+echo $outfile
+echo $crap
+
+```
+
+#Divergence statistics #1
+
+## FST with Weir and Cockerham
+
+* using vcflib you can do pairwise Fst for all organisms
+
+```{bash}
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=1
+#PBS -J 1-21
+
+cd /home/oziolore/restoreFromData/fhet/scripts/fst/
+
+pops=BB\ VB\ PB\ SJ\ BNP\ GB\ SP
+outdir=/data/oziolore/fhet/data/fst2
+popfile=/data/oziolore/fhet/data/list2/pop_samples
+my_wcfst=/data/oziolore/program/vcflib/bin/wcFst
+my_pfst=/data/oziolore/program/vcflib/bin/pFst
+my_vcf=/data/oziolore/fhet/data/varcall/filtered_chr.vcf.bgz
+my_bgzip=/data/oziolore/program/htslib/bgzip
+
+
+pair=$(for i in {1..6}
+do
+	ii=$(expr $i + 1)
+	for j in $(seq $ii 7)
+	do echo $pops | cut -f $i,$j -d ' '
+done
+done | \
+sed -n "$(echo $PBS_ARRAY_INDEX)p")
+
+echo $PBS_ARRAY_INDEX
+
+pop1=$(echo $pair | cut -f 1 -d ' ')
+pop2=$(echo $pair | cut -f 2 -d ' ')
+
+echo $pop1 $pop2
+
+target=$(grep -n $pop1 $popfile | cut -f 1 -d ":" | awk '{s=$1-1}{print s}' | tr '\n' ',' | \
+sed 's/,$//')
+
+background=$(grep -n $pop2 $popfile | cut -f 1 -d ":" | awk '{s=$1-1}{print s}' | tr '\n' ',' | \
+sed 's/,$//')
+
+outfile1=$pop1.$pop2.wcfst.bgz
+outfile2=$pop1.$pop2.pfst.bgz
+
+out1=$outdir/$outfile1
+out2=$outdir/$outfile2
+
+echo $out1
+echo $out2
+
+echo $target
+echo $background
+echo $outfile1
+echo $outfile2
+
+$my_wcfst \
+--target $target \
+--background $background \
+--file $my_vcf \
+--type GL | \
+$my_bgzip>$out1
+
+$my_pfst \
+--target $target \
+--background $background \
+--file $my_vcf \
+--type GL | \
+$my_bgzip>$out2
+
+```
+
+* merging these to 1kb windows
+
+```{bash}
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=24:00:00
+
+#program/file
+fst_files=/data/oziolore/fhet/data/fst2
+my_bedtools=/data/oziolore/program/bedtools2/bin/bedtools
+my_genome=/data/oziolore/fhet/data/genome2/unsplit_merge.genome
+my_window=/data/oziolore/fhet/data/windows2/new_noah.1kb.bed
+
+for file in /data/oziolore/fhet/data/fst2/*wcfst.bgz
+do
+	outfile=$(echo $file | sed 's/wcfst.bgz/fst.1kb.bed/')
+
+	zcat $file | \
+	awk '{OFS="\t"}{s=$2-1}{print $1,s,$2,$5}' | \
+	$my_bedtools map \
+	-a $my_window \
+	-b stdin \
+	-g $my_genome \
+	-c 4 \
+	-o mean,count> $outfile
+done
+
+```
+
+* Compare these with estimates of Hudson's Fst
+
+#Comparisons
+* I am comparing fst data calculated with Weir&Cockerham 1984 (with correction for sample size) to one calculated from pi
+* Comparing pi calculated by comparing individual snps to one calculated by SFS in ANGSD
+
+
+##Fst statistic
+
+* Weir & Cockerham Fst estimation includes correction for sample size
+    + that has given some odd substructuring paterns for BB and SJ, which Noah has noticed are not present when Fst is calculated from pi (1-mean(pi1,pi2)/dxy)
+    
+* Let's take Noah's data where pi and dxy are calculated on a per SNP basis and take global and local Fst plots from that.
+
+#Neutrality statistics
+
+##calculation of pi and dxy by hand
+
+```{r}
+library(dplyr)
+library(stringr)
+
+cname <- c(
+	"CHROM",
+	"POS",
+	"ID",
+	"REF",
+	"ALT",
+	"QUAL",
+	"FILTER",
+	"INFO",
+	"FORMAT",
+	"BP-10",
+	"BP-11",
+	"BP-12",
+	"BP-13",
+	"BP-14",
+	"BP-15",
+	"BP-16",
+	"BP-17",
+	"BP-18",
+	"BP-19",
+	"BP-1",
+	"BP-20",
+	"BP-21",
+	"BP-22",
+	"BP-23",
+	"BP-24",
+	"BP-25",
+	"BP-26",
+	"BP-27",
+	"BP-28",
+	"BP-29",
+	"BP-2",
+	"BP-30",
+	"BP-31",
+	"BP-32",
+	"BP-33",
+	"BP-34",
+	"BP-38",
+	"BP-39",
+	"BP-3",
+	"BP-40",
+	"BP-41",
+	"BP-42",
+	"BP-43",
+	"BP-44",
+	"BP-45",
+	"BP-46",
+	"BP-47",
+	"BP-48",
+	"BP-49",
+	"BP-4",
+	"BP-50",
+	"BP-51",
+	"BP-52",
+	"BP-53",
+	"BP-5",
+	"BP-6",
+	"BP-7",
+	"BP-8",
+	"BP-9",
+	"ER-11",
+	"ER-12",
+	"ER-13",
+	"ER-14",
+	"ER-15",
+	"ER-16",
+	"ER-17",
+	"ER-18",
+	"ER-19",
+	"ER-20",
+	"ER-21",
+	"ER-22",
+	"ER-23",
+	"ER-24",
+	"ER-25",
+	"ER-26",
+	"ER-27",
+	"ER-28",
+	"ER-29",
+	"ER-30",
+	"ER-31",
+	"ER-32",
+	"ER-33",
+	"ER-34",
+	"ER-35",
+	"ER-36",
+	"ER-38",
+	"ER-39",
+	"ER-40",
+	"ER-41",
+	"ER-42",
+	"ER-43",
+	"ER-44",
+	"ER-45",
+	"ER-46",
+	"ER-47",
+	"ER-48",
+	"ER-49",
+	"ER-50",
+	"ER-51",
+	"ER-52",
+	"ER-53",
+	"ER-54",
+	"ER-55",
+	"ER-56",
+	"ER-57",
+	"ER-58",
+	"ER-59",
+	"ER-60",
+	"F-10",
+	"F-11",
+	"F-12",
+	"F-13",
+	"F-14",
+	"F-15",
+	"F-16",
+	"F-17",
+	"F-18",
+	"F-19",
+	"F-1",
+	"F-20",
+	"F-21",
+	"F-22",
+	"F-23",
+	"F-24",
+	"F-25",
+	"F-26",
+	"F-27",
+	"F-28",
+	"F-29",
+	"F-2",
+	"F-30",
+	"F-31",
+	"F-32",
+	"F-33",
+	"F-34",
+	"F-35",
+	"F-39",
+	"F-40",
+	"F-41",
+	"F-42",
+	"F-43",
+	"F-44",
+	"F-45",
+	"F-46",
+	"F-47",
+	"F-49",
+	"F-4",
+	"F-50",
+	"F-51",
+	"F-52",
+	"F-53",
+	"F-54",
+	"F-5",
+	"F-6",
+	"F-7",
+	"F-8",
+	"F-9",
+	"KC-11",
+	"KC-13",
+	"KC-14",
+	"KC-15",
+	"KC-16",
+	"KC-18",
+	"KC-19",
+	"KC-1",
+	"KC-20",
+	"KC-22",
+	"KC-23",
+	"KC-26",
+	"KC-27",
+	"KC-28",
+	"KC-29",
+	"KC-2",
+	"KC-30",
+	"KC-32",
+	"KC-33",
+	"KC-34",
+	"KC-35",
+	"KC-36",
+	"KC-37",
+	"KC-38",
+	"KC-39",
+	"KC-3",
+	"KC-40",
+	"KC-41",
+	"KC-42",
+	"KC-43",
+	"KC-44",
+	"KC-45",
+	"KC-46",
+	"KC-47",
+	"KC-48",
+	"KC-49",
+	"KC-4",
+	"KC-50",
+	"KC-51",
+	"KC-52",
+	"KC-54",
+	"KC-55",
+	"KC-56",
+	"KC-5",
+	"KC-6",
+	"KC-7",
+	"KC-9",
+	"NYC-10",
+	"NYC-11",
+	"NYC-12",
+	"NYC-13",
+	"NYC-14",
+	"NYC-15",
+	"NYC-16",
+	"NYC-17",
+	"NYC-18",
+	"NYC-19",
+	"NYC-20",
+	"NYC-21",
+	"NYC-22",
+	"NYC-23",
+	"NYC-24",
+	"NYC-25",
+	"NYC-26",
+	"NYC-27",
+	"NYC-28",
+	"NYC-29",
+	"NYC-30",
+	"NYC-31",
+	"NYC-32",
+	"NYC-33",
+	"NYC-34",
+	"NYC-40",
+	"NYC-41",
+	"NYC-42",
+	"NYC-43",
+	"NYC-44",
+	"NYC-45",
+	"NYC-46",
+	"NYC-47",
+	"NYC-48",
+	"NYC-49",
+	"NYC-50",
+	"NYC-51",
+	"NYC-52",
+	"NYC-53",
+	"NYC-54",
+	"NYC-55",
+	"NYC-8",
+	"NYC-9",
+	"SH-14",
+	"SH-15",
+	"SH-16",
+	"SH-17",
+	"SH-18",
+	"SH-19",
+	"SH-1",
+	"SH-201",
+	"SH-202",
+	"SH-203",
+	"SH-204",
+	"SH-205",
+	"SH-206",
+	"SH-207",
+	"SH-208",
+	"SH-209",
+	"SH-20",
+	"SH-210",
+	"SH-211",
+	"SH-212",
+	"SH-213",
+	"SH-21",
+	"SH-22",
+	"SH-23",
+	"SH-24",
+	"SH-25",
+	"SH-26",
+	"SH-27",
+	"SH-28",
+	"SH-29",
+	"SH-2",
+	"SH-30",
+	"SH-31",
+	"SH-32",
+	"SH-33",
+	"SH-34",
+	"SH-35",
+	"SH-36",
+	"SH-37",
+	"SH-38",
+	"SH-39",
+	"SH-3",
+	"SH-40",
+	"SH-41",
+	"SH-42",
+	"SH-4",
+	"SH-5",
+	"SH-6",
+	"SH-7",
+	"SH-8",
+	"BU000004.VB_B",
+	"BU000005.VB_B",
+	"BU000006.VB_B",
+	"BU000007.VB_B",
+	"BU000008.VB_B",
+	"BU000012.SP",
+	"BU000014.SP",
+	"BU000017.SP",
+	"BU000018.SP",
+	"BU000023.SP",
+	"BU000024.SP",
+	"BU000025.SP",
+	"BU000031.SP",
+	"BU000032.SP",
+	"BU000033.SP",
+	"BU000035.SP",
+	"BU000036.SP",
+	"BU000037.SP",
+	"BU000039.SP",
+	"BU000041.SP",
+	"BU000046.SP",
+	"BU000048.SP",
+	"BU000049.SP",
+	"BU000052.SP",
+	"BU000053.SP",
+	"BU000054.SP",
+	"BU000055.SP",
+	"BU000056.SP",
+	"BU000057.SP",
+	"BU000062.GB",
+	"BU000063.GB",
+	"BU000064.GB",
+	"BU000065.GB",
+	"BU000066.GB",
+	"BU000067.GB",
+	"BU000068.GB",
+	"BU000069.GB",
+	"BU000070.GB",
+	"BU000071.GB",
+	"BU000072.GB",
+	"BU000073.GB",
+	"BU000074.GB",
+	"BU000075.GB",
+	"BU000076.GB",
+	"BU000077.GB",
+	"BU000078.GB",
+	"BU000081.GB",
+	"BU000082.GB",
+	"BU000083.GB",
+	"BU000084.GB",
+	"BU000085.GB",
+	"BU000086.GB",
+	"BU000087.GB",
+	"BU000088.GB",
+	"BU000089.GB",
+	"BU000090.GB",
+	"BU000092.GB",
+	"BU000093.GB",
+	"BU000094.GB",
+	"BU000095.GB",
+	"BU000097.GB",
+	"BU000100.GB",
+	"BU000101.GB",
+	"BU000102.GB",
+	"BU000103.GB",
+	"BU000104.GB",
+	"BU000105.GB",
+	"BU000106.GB",
+	"BU000110.GB",
+	"BU000116.GB",
+	"BU000120.GB",
+	"BU000121.GB",
+	"BU000123.GB",
+	"BU000124.GB",
+	"BU000125.GB",
+	"BU000126.GB",
+	"BU000127.GB",
+	"BU000129.VB_A",
+	"BU000130.VB_A",
+	"BU000131.VB_A",
+	"BU000132.VB_A",
+	"BU000133.VB_A",
+	"BU000134.VB_A",
+	"BU000135.VB_A",
+	"BU000136.VB_A",
+	"BU000137.VB_A",
+	"BU000138.VB_A",
+	"BU000139.VB_A",
+	"BU000140.VB_A",
+	"BU000141.VB_A",
+	"BU000142.VB_A",
+	"BU000144.VB_A",
+	"BU000145.VB_A",
+	"BU000148.VB_A",
+	"BU000149.VB_A",
+	"BU000150.VB_A",
+	"BU000151.VB_A",
+	"BU000152.VB_A",
+	"BU000153.VB_A",
+	"BU000155.VB_A",
+	"BU000157.VB_A",
+	"BU000158.VB_A",
+	"BU000160.VB_A",
+	"BU000161.VB_A",
+	"BU000164.VB_A",
+	"BU000165.VB_A",
+	"BU000166.VB_A",
+	"BU000167.VB_A",
+	"BU000168.VB_B",
+	"BU000169.VB_B",
+	"BU000170.VB_B",
+	"BU000171.VB_B",
+	"BU000172.VB_B",
+	"BU000173.VB_B",
+	"BU000174.VB_B",
+	"BU000175.VB_B",
+	"BU000176.VB_B",
+	"BU000177.VB_B",
+	"BU000178.VB_B",
+	"BU000179.VB_B",
+	"BU000180.VB_B",
+	"BU000182.PB_A",
+	"BU000183.PB_A",
+	"BU000184.PB_A",
+	"BU000185.PB_A",
+	"BU000186.PB_A",
+	"BU000187.PB_A",
+	"BU000188.PB_A",
+	"BU000190.PB_A",
+	"BU000191.PB_A",
+	"BU000192.PB_A",
+	"BU000193.PB_A",
+	"BU000194.PB_A",
+	"BU000195.PB_A",
+	"BU000196.PB_A",
+	"BU000197.PB_A",
+	"BU000198.PB_A",
+	"BU000199.PB_A",
+	"BU000200.PB_A",
+	"BU000201.PB_A",
+	"BU000202.PB_A",
+	"BU000203.PB_A",
+	"BU000204.PB_A",
+	"BU000205.PB_A",
+	"BU000206.PB_A",
+	"BU000207.PB_B",
+	"BU000209.PB_B",
+	"BU000210.PB_B",
+	"BU000211.PB_B",
+	"BU000212.PB_B",
+	"BU000213.PB_B",
+	"BU000214.PB_B",
+	"BU000215.PB_B",
+	"BU000217.PB_B",
+	"BU000219.PB_B",
+	"BU000223.PB_B",
+	"BU000225.PB_B",
+	"BU000226.PB_B",
+	"BU000227.PB_B",
+	"BU000228.PB_B",
+	"BU000229.PB_B",
+	"BU000230.PB_B",
+	"BU000231.PB_B",
+	"BU000233.PB_B",
+	"BU000234.PB_B",
+	"BU000235.PB_B",
+	"BU000237.PB_B",
+	"BU000242.PB_B",
+	"BU000244.SP",
+	"BU000245.SP",
+	"BU000246.SP",
+	"BU000248.SP",
+	"BU000249.SP",
+	"BU000250.SP",
+	"BU000252.SP",
+	"BU000253.SP",
+	"BU000254.SP",
+	"BU000255.SP",
+	"BU000256.SP",
+	"BU000257.SP",
+	"BU000259.SP",
+	"BU000260.SP",
+	"BU000261.SP",
+	"BU000262.SP",
+	"BU000263.SP",
+	"BU000264.SP",
+	"BU000265.SP",
+	"BU000266.SP",
+	"BU000269.SP",
+	"BU000270.SP",
+	"BU000271.SP",
+	"BU000272.SP",
+	"BU000318.BNP",
+	"BU000319.BNP",
+	"BU000320.BNP",
+	"BU000321.BNP",
+	"BU000322.BNP",
+	"BU000323.BNP",
+	"BU000324.BNP",
+	"BU000325.BNP",
+	"BU000326.BNP",
+	"BU000327.BNP",
+	"BU000328.BNP",
+	"BU000329.BNP",
+	"BU000330.BNP",
+	"BU000331.BNP",
+	"BU000332.BNP",
+	"BU000333.BNP",
+	"BU000334.BNP",
+	"BU000335.BNP",
+	"BU000336.BNP",
+	"BU000337.BNP",
+	"BU000338.BNP",
+	"BU000339.BNP",
+	"BU000340.BNP",
+	"BU000341.BNP",
+	"BU000343.BNP",
+	"BU000344.BNP",
+	"BU000345.BNP",
+	"BU000346.BNP",
+	"BU000347.BNP",
+	"BU000348.BNP",
+	"BU000349.BNP",
+	"BU000350.BNP",
+	"BU000351.BNP",
+	"BU000352.BNP",
+	"BU000354.BNP",
+	"BU000355.BNP",
+	"BU000356.BNP",
+	"BU000357.BNP",
+	"BU000358.BNP",
+	"BU000359.BNP",
+	"BU000361.BNP",
+	"BU000362.BNP",
+	"BU000364.BNP",
+	"BU000366.BNP",
+	"BU000367.BNP",
+	"BU000372.BNP",
+	"BU000375.BNP",
+	"BU000382.BB",
+	"BU000383.BB",
+	"BU000384.BB",
+	"BU000386.BB",
+	"BU000390.BB",
+	"BU000391.BB",
+	"BU000392.BB",
+	"BU000393.BNP",
+	"BU000397.BB",
+	"BU000398.BB",
+	"BU000400.BB",
+	"BU000402.BB",
+	"BU000403.BB",
+	"BU000405.BB",
+	"BU000406.BB",
+	"BU000407.BB",
+	"BU000408.BB",
+	"BU000409.BB",
+	"BU000410.BB",
+	"BU000411.BB",
+	"BU000413.BB",
+	"BU000414.BB",
+	"BU000415.BB",
+	"BU000416.BB",
+	"BU000417.BB",
+	"BU000418.SJSP",
+	"BU000419.SJSP",
+	"BU000420.SJSP",
+	"BU000421.SJSP",
+	"BU000424.SJSP",
+	"BU000425.SJSP",
+	"BU000426.SJSP",
+	"BU000427.SJSP",
+	"BU000431.SJSP",
+	"BU000432.SJSP",
+	"BU000433.SJSP",
+	"BU000439.SJSP",
+	"BU000441.SJSP",
+	"BU000442.SJSP",
+	"BU000443.SJSP",
+	"BU000444.SJSP",
+	"BU000446.SJSP",
+	"BU000449.SJSP",
+	"BU000451.SJSP",
+	"BU000454.SJSP",
+	"BU000458.SJSP",
+	"BU000460.SJSP",
+	"BU000463.SJSP",
+	"BU000464.SJSP")
+
+
+options(scipen=99)
+# get vector of sample population names
+pop <- cname[10:585] %>% gsub("-.*","",.) %>% gsub(".*\\.","",.) %>% gsub("_.*","",.)
+popu <- unique(pop)
+popu <- sort(popu)
+
+slist <- lapply(sort(popu), FUN=function(x){which(pop==x)})
+
+# need to calculate pi from short haplotypes. 
+# function "adist" can calculate ins,del,subs in pairwise fashion
+# another option is to use CIGAR strings to reconstruct alignment,tossing out insertions
+# third option is to actually align the sequences using, e.g biostrings?
+
+# going to just use "adist". it's not correct, but good enough I hope. 
+	# only going to count "substitutions" found by adist, equal cost for ins, del, sub
+
+# calculate allele substitution distance matrix. 
+	# alseq is a vector of allele sequences
+	# for compatibility downstream, must contain ALL allele sequences from VCF record
+ad <- function(alseq){
+
+	# distance between alleles
+	ad <- adist(alseq,counts=TRUE,costs=c(ins=2,del=2,subs=1))
+
+	# inferred substitutions only, excluding indels
+	d <- attr(ad,"counts")[,,3]
+
+	return(d)
+
+	}
+
+
+# calculate pi 
+	# for a matrix of allele distances (d)
+	# and a vector of genotypes (alvec, coded 1..n, NOT 0..n) 
+piw <- function(d,alvec){
+
+	# counts of alleles
+	ac <- alvec %>% factor(.,levels=1:dim(d)[1]) %>% table()
+
+	if(length(ac)==1){return(0)}
+
+	# counts of pairwise comparisons among alleles
+	fc <- (ac %>% combn(.,2) %>% apply(.,MAR=2,FUN=prod))
+
+	p <- sum(fc * d[lower.tri(d)])/choose(length(alvec),2)
+
+	return(p)
+
+	}
+
+# calculate pi between two sets of alleles, as above. 
+pib <- function(d,alvec1,alvec2){
+
+	nal <- dim(d)[1]
+	# counts of alleles
+	ac <- c(alvec1,alvec2) %>% factor(.,levels=1:nal) %>% table()
+	# bail out if no variation
+	if(length(ac)==1){return(0)}
+
+	# allele counts per population
+	ac1 <- alvec1 %>% factor(.,levels=1:nal) %>% table()
+	ac2 <- alvec2 %>% factor(.,levels=1:nal) %>% table()
+
+	# counts of pairwise combinations
+	fc <- cbind(ac1) %*% rbind(ac2)
+
+	# calculate pi
+	p <- sum(fc * d)/(length(alvec1) * length(alvec2))
+	return(p)
+	}
+
+
+pis <- c()
+pibs <- c()
+
+f <- file("stdin")
+open(f)
+ind <- 1
+
+while(length(line <- readLines(f,n=1)) > 0) {
+
+	# skip comment lines
+	if(grepl("^#",line)){next()}
+	line <- str_split(line,"\\t") %>% unlist()
+
+	ind <- ind + 1
+
+	# genotype vector
+	gt <- gsub(":.*","",line[10:585])
+	gt <- as.numeric(gt)+1
+	
+	# list of vectors of haploid genotypes per population
+	sgt <- lapply(slist,FUN=function(x,v){x <- v[x]; x[!is.na(x)]},v=gt)
+
+	# if sample size doesn't equal at least vector, skip
+	minsam <- c(3,3,5,5,5,3,5,5,3,5,3,3,3)
+	samsize <- sapply(sgt,length)
+	#cat(paste(samsize,collapse="\t",sep=""),"\n",sep="",file="samsize.allpops.txt",append=TRUE)
+	if(!all(samsize>=minsam)){next()}
+
+	# vector of alleles
+	alleles <- c(line[4],unlist(str_split(line[5],",")))
+	
+	# # distance between alleles
+	d <- ad(alleles)
+	
+	# caculate pi within
+	pis <- sapply(sgt,piw,d=d) %>% round(.,digits=5)
+	pibs <- apply(t(combn(sgt,2)),MAR=1,FUN=function(x){pib(d=d,x[[1]],x[[2]])})  %>% round(.,digits=5)
+	p <- c(line[1],line[2],pis,pibs)
+
+	cat(paste(p,collapse="\t",sep=""),"\n",sep="")
+
+	if((ind %% 1000) == 0){write(ind,stderr())}
+
+}
+
+```
+
+```{bash}
+scp -P 2022 farm:/home/nreid/noah_stats.RData ~/analysis/data/comparison/noah_stats.RData
+```
+
+```{r}
+load("~/analysis/data/comparison/noah_stats.RData")
+write.table(lift,"~/analysis/data/fst/noah.1kb.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+```
+
+* starting with the PBS statistic comparisons
+    + grabbing my data and plotting outlier windows
+    
+```{r}
+library(XML)
+library(magrittr)
+library(stringr)
+library(dplyr)
+library(gtools)
+library(naturalsort)
+library(stringr)
+library(dplyr)
+library(gtools)
+
+#Reading in table and getting quantiles----
+pbs<-read.table("~/analysis/data/fst/allpbs5kb",header=FALSE,stringsAsFactors = FALSE)
+pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs","keep")
+colnames(pbs)<-pbsname
+
+pbsc<-pbs %>% 
+  filter(str_detect(Scaf,"chr"))
+subw<-pbsc[,9]>0
+
+#Reorder Noah's data by chromosome
+pbst<-cbind(lift[,1:3],pbstat[,4:9])
+ord<-mixedorder(pbst$V1)
+pbsn<-pbst[ord,]
+#Plotting a regression against the PBS statistics calculated by Noah
+
+pbsnc<-pbsn %>% 
+  filter(str_detect(V1,"chr"))
+
+
+pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24"))
+
+pbsnc$V1<-factor(pbsnc$V1,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24"))
+
+palette(c("grey40","grey80"))
+par(mfrow=c(2,1),mar=c(2,2,0,0))
+plot(pbsc[subw,"BBpbs"],pch=20,cex=.2,col=as.factor(pbsc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+plot(pbsnc[subw,"BB"],pch=20,cex=.2,col=as.factor(pbsnc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+
+par(mfrow=c(2,1),mar=c(2,2,0,0))
+plot(pbsc[subw,"VBpbs"],pch=20,cex=.2,col=as.factor(pbsc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+plot(pbsnc[subw,"VB"],pch=20,cex=.2,col=as.factor(pbsnc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+
+par(mfrow=c(2,1),mar=c(2,2,0,0))
+plot(pbsc[subw,"PBpbs"],pch=20,cex=.2,col=as.factor(pbsc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+plot(pbsnc[subw,"PB"],pch=20,cex=.2,col=as.factor(pbsnc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+
+par(mfrow=c(2,1),mar=c(2,2,0,0))
+plot(pbsc[subw,"SJpbs"],pch=20,cex=.2,col=as.factor(pbsc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+plot(pbsnc[subw,"SJSP"],pch=20,cex=.2,col=as.factor(pbsnc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+
+par(mfrow=c(2,1),mar=c(2,2,0,0))
+plot(pbsc[subw,"BNPpbs"],pch=20,cex=.2,col=as.factor(pbsc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+plot(pbsnc[subw,"BNP"],pch=20,cex=.2,col=as.factor(pbsnc[subw,1]),bty='l',ylim=c(-0.5,3.5))
+
+#Only works if you call the 1kb windows
+# par(mfrow=c(3,2),mar=c(2,2,0,0))
+# plot(pbsc[subw,"BBpbs"],pbsnc[subw,"BB"],pch=20,cex=.2)
+# plot(pbsc[subw,"VBpbs"],pbsnc[subw,"VB"],pch=20,cex=.2)
+# plot(pbsc[subw,"PBpbs"],pbsnc[subw,"PB"],pch=20,cex=.2)
+# plot(pbsc[subw,"SJpbs"],pbsnc[subw,"SJSP"],pch=20,cex=.2)
+# plot(pbsc[subw,"BNPpbs"],pbsnc[subw,"BNP"],pch=20,cex=.2)
+
+```
+    
+##Calculating Genome-wide Fst and comparing
+
+* Will use 2 ways of calculating genome wide Fst
+    + Averaging Fst statistics from Weir & Cockerham windowed estimates of 1kb windows over the genome
+    + Averaging Fst statistics with Hudson estimator from Noah's pi and dxy
+    
+* Starting with my 1kb estimates of genome-wide Fst (Weir&Cockerham)
+
+```{r}
+library("RColorBrewer")
+library("lattice")
+library("gplots")
+#Loaidng list of fst files into a list object ----
+fs <- list.files("~/analysis/data/fst/raw/", "*fst.1kb.bed",full.names=TRUE) # listing all the files for Fst calculated with W&C fst statistic
+
+fst <- list()
+
+for (i in 1:21){
+	fst[[i]] <- read.table(fs[i],stringsAsFactors=FALSE)
+	fst[[i]][,4] <- as.numeric(fst[[i]][,4])
+} #reading in those files
+
+nfs <- gsub(".*\\/","",fs) #renaming the columns by removing the "." in the names
+nfs <- gsub(".fst.*","",nfs) #renaming by removing ".fst.*" from the name
+names(fst)<-nfs
+
+#selecting sites that ahave a minimum representation of 200 snps per region----
+nsnps <-fst[[1]][,5]
+
+for (i in 2:21){
+  
+  nsnps <- nsnps + fst[[i]][,5]
+}
+
+nsnps <- nsnps/21
+
+subw <- nsnps > 20
+
+#calculating FST for all
+
+pops<-c("BB","VB","PB","SJ","BNP","GB","SP")
+fsth<-matrix(nrow = 7,ncol=7) #creating matrix to hold fst data
+colnames(fsth)<-pops
+rownames(fsth)<-pops
+
+for(i in pops){
+  for(j in pops){
+    if(i==j){next()}
+    if(which(pops %in% i) < which(pops %in% j)){
+      fsth[i,j]<-mean(fst[[paste(unique(c(i,j)),collapse=".")]][subw,4],na.rm=TRUE)
+    } else{
+      fsth[i,j]<-mean(fst[[paste(unique(c(j,i)),collapse=".")]][subw,4],na.rm=TRUE)
+    }
+  }
+} #global fst calculation for each pair
+
+#heatfst<-heatmap.2(fsth,Rowv=NA,Colv=NA,scale="none",margins=c(5,10),col=brewer.pal(9,"YlOrRd"),
+                   #density.info="none", trace="none")
+levelplot(fsth,aspect="iso",col.regions=brewer.pal(9,"YlOrRd"),scale=list(x=list(rot=45)),cuts=8) #Better plot than above
+```
+
+* Calculating genome wide Hudson statistic
+
+```{r}
+load("~/analysis/data/comparison/noah_stats.RData")
+subw<-val[,4]>0
+neutsum<-colSums(fst[subw,4:94],na.rm=TRUE) #summing up columns of pi and dxy statistics
+snpsum<-sum(val[subw,4])
+neutbase<-neutsum/snpsum
+
+pops<-c("BB","VB","PB","SJSP","BNP","SP","GB")
+
+fsth<-matrix(nrow = 7,ncol=7) #creating matrix to hold fst data
+rownames(fsth)<- pops
+colnames(fsth)<- pops
+
+for(i in pops){
+  for(j in pops){
+    if(i==j){next()}
+    fsth[i,j]<-1-((neutbase[i]+neutbase[j])/2)/neutbase[paste(sort(unique(c(i,j))),collapse=".")]
+  }
+}
+
+
+levelplot(fsth,aspect="iso",col.regions=brewer.pal(9,"YlOrRd"),scale=list(x=list(rot=45)),cuts=8) #Better plot than above
+
+```
+
+* Calculating W&C with only 24 randomly selected individuals per populations to see if it's a problem of correcting for sample number
+
+```{bash}
+pops=BB\ VB\ PB\ SJ\ BNP\ GB\ SP
+popfile=/data/oziolore/fhet/data/list2/pop_samples
+
+for i in {1..7}
+	do grep -n $pops $popfile | cut -f 1 -d ":" | awk '{s=$1-1}{print s}' | tr '\n' ',' | sed 's/,$//' | tr ',' '\n' | shuf -n 24 | sort | tr '\n' ',' | sed 's/,$//' > /data/oziolore/fhet/data/list2/BB_sub.txt
+
+```
+
+* Made a list of subsampled ones and running W&C on them
+
+```{bash}
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=1
+#PBS -J 1-21
+
+cd /home/oziolore/restoreFromData/fhet/scripts/fst/
+
+pops=BB\ VB\ PB\ SJ\ BNP\ GB\ SP
+outdir=/data/oziolore/fhet/data/fst2/subsample
+popfile=/data/oziolore/fhet/data/list2/pop_samples
+popdir=/data/oziolore/fhet/data/list2
+my_wcfst=/data/oziolore/program/vcflib/bin/wcFst
+my_pfst=/data/oziolore/program/vcflib/bin/pFst
+my_vcf=/data/oziolore/fhet/data/varcall/filtered_chr.vcf.bgz
+my_bgzip=/data/oziolore/program/htslib/bgzip
+
+
+pair=$(for i in {1..6}
+do
+	ii=$(expr $i + 1)
+	for j in $(seq $ii 7)
+	do echo $pops | cut -f $i,$j -d ' '
+done
+done | \
+sed -n "$(echo $PBS_ARRAY_INDEX)p")
+
+echo $PBS_ARRAY_INDEX
+
+pop1=$(echo $pair | cut -f 1 -d ' ')
+pop2=$(echo $pair | cut -f 2 -d ' ')
+
+echo $pop1 $pop2
+
+target=$(cat $popdir/$pop1\_sub.txt)
+
+background=$(cat $popdir/$pop2\_sub.txt)
+
+
+outfile1=$pop1.$pop2.wcfst.bgz
+outfile2=$pop1.$pop2.pfst.bgz
+
+out1=$outdir/$outfile1
+out2=$outdir/$outfile2
+
+echo $out1
+echo $out2
+echo $target
+echo $background
+echo $outfile1
+echo $outfile2
+
+$my_wcfst \
+--target $target \
+--background $background \
+--file $my_vcf \
+--type GL | \
+$my_bgzip>$out1
+
+$my_pfst \
+--target $target \
+--background $background \
+--file $my_vcf \
+--type GL | \
+$my_bgzip>$out2
+```
+
+```{r}
+library("RColorBrewer")
+library("lattice")
+library("gplots")
+#Loaidng list of fst files into a list object ----
+fs <- list.files("~/analysis/data/fst/raw/subsample/", "*fst.1kb.bed",full.names=TRUE) # listing all the files for Fst calculated with W&C fst statistic
+
+fst <- list()
+
+for (i in 1:21){
+	fst[[i]] <- read.table(fs[i],stringsAsFactors=FALSE)
+	fst[[i]][,4] <- as.numeric(fst[[i]][,4])
+} #reading in those files
+
+nfs <- gsub(".*\\/","",fs) #renaming the columns by removing the "." in the names
+nfs <- gsub(".fst.*","",nfs) #renaming by removing ".fst.*" from the name
+names(fst)<-nfs
+
+#selecting sites that ahave a minimum representation of 200 snps per region----
+nsnps <-fst[[1]][,5]
+
+for (i in 2:21){
+  
+  nsnps <- nsnps + fst[[i]][,5]
+}
+
+nsnps <- nsnps/21
+
+subw <- nsnps > 20
+
+#calculating FST for all
+
+pops<-c("BB","VB","PB","SJ","BNP","GB","SP")
+fsth<-matrix(nrow = 7,ncol=7) #creating matrix to hold fst data
+colnames(fsth)<-pops
+rownames(fsth)<-pops
+
+for(i in pops){
+  for(j in pops){
+    if(i==j){next()}
+    if(which(pops %in% i) < which(pops %in% j)){
+      fsth[i,j]<-mean(fst[[paste(unique(c(i,j)),collapse=".")]][subw,4],na.rm=TRUE)
+    } else{
+      fsth[i,j]<-mean(fst[[paste(unique(c(j,i)),collapse=".")]][subw,4],na.rm=TRUE)
+    }
+  }
+} #global fst calculation for each pair
+
+#heatfst<-heatmap.2(fsth,Rowv=NA,Colv=NA,scale="none",margins=c(5,10),col=brewer.pal(9,"YlOrRd"),
+                   #density.info="none", trace="none")
+levelplot(fsth,aspect="iso",col.regions=brewer.pal(9,"YlOrRd"),scale=list(x=list(rot=45)),cuts=8) #Better plot than above
+
+```
+
+* When sampling the same number of individuals, now we have a more IBD like global Fst pattern, pointing to sampling number correction being the cuplrit here
+
+* This suggests that W&C has a genome wide effect, but it still points to similar outliers
+
+* Not a huge problem overall, but to do this properly I will repeat outlier analyses with Hudson estimator instead. It will take a bit, but oh well.
+
+##Neutrality statistics with ANGSD
+* Pi and Theta were calculated with SFS as prior for ANGSD
+    + priors look a bit messed up (clumpy), suggesting they are not the best
+
+```{r}
+sf<-list.files("~/analysis/data/angsd/subsample/","*.sfs",full.names=TRUE)
+cols<-c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3")
+pop<-list("bb","vb","pb","sj","bnp","sp","gb")
+
+for(i in 1:7){
+  pop[[i]]<-scan(sf[[i]])
+}
+
+par(mfrow=c(3,3),mar=c(2,2,2,2))
+for(i in 1:7){
+  plot(log(pop[[i]]),col=cols[i],pch=20,lwd=3)
+}
+
+```
+
+* this is not great. The SFS is used in further estimations of SAF as a prior. We do see genome-wide shifts in theta and pi, but it is possible that those are due to errors in estimating SAF.
+
+* Noah's has calculated pi and dxy on a per site basis, which doesn't rely on SFS. This doesn't show the same pattern of decreasing pi.
+
+###installing ANGSD
+* low coverage data neutral statistics, doing this with both subsample for genome wide estimates and for pop data, full datasets.
 
 ```{bash Installing ANGSD}
 #[cluster]:/data/oziolore/program/
@@ -50,7 +1369,8 @@ cd ..
 
 ```
 
-## Took 10Mb of random regions throughout the genome and plotted coverage over them to decide what is an over-represented site threshold
+### High coverage threshold
+* Took 10Mb of random regions throughout the genome and plotted coverage over them to decide what is an over-represented site threshold
 
 ```{bash Exploring high coverage}
 #Getting coverage over all bases in the genome [cluster]
@@ -82,7 +1402,8 @@ awk -v OFS='\t' {'print $1,$2'} $fai > $genome
 
 ```
 
-## Downloading that to personal computer to use r and make decision on the threshold for high coverage
+### High coverage decision 
+* Downloading that to personal computer to use r and make decision on the threshold for high coverage
 
 ```{bash Copying coverage to computer}
 #downloading from cluster
@@ -106,7 +1427,8 @@ summary(cov[subw,"coverage"])
 
 ```
 
-## applying filter for high coverage sites to genome file in order to only keep normal coverage ones
+### High coverage applying filter
+* applying filter for high coverage sites to genome file in order to only keep normal coverage ones
 
 ```{bash Creating a high coverage file excluding those SNPs}
 #using awk and bedtools merge, I am using
@@ -126,7 +1448,8 @@ sum(hi[,4])
 #Threw out 52Mb of data => 5% of the genome
 ```
 
-## Creating a keepsites file with all bases that have below 200x coverage
+### Creating a keepsites file 
+* with all bases that have below 200x coverage
 
 ```{bash Create the keepsites file and export to computer}
 #[cluster]
@@ -146,7 +1469,8 @@ scp kodiak:/data/oziolore/fhet/data/angsd2/keepsites2.bed ~/analysis/data/angsd/
 
 ```
 
-## Script to pick up 50Mb at random from the keepsites file in order to run SAF and SFS on those for bayesian priors
+### Picking random 50Mb
+* Script to pick up 50Mb at random from the keepsites file in order to run SAF and SFS on those for bayesian priors
 
 ```{r Selecting random 50Mb from it}
 
@@ -166,34 +1490,36 @@ sum(orig[v,3]-orig[v,2]) #checking the total size of bases
 write.table(orig[v,], file="~/analysis/data/angsd/keep50Mb.bed",row.names=FALSE,col.names=FALSE,quote=FALSE)
 ```
 
-## putting that data back into [cluster]
+### putting that data back into [cluster]
 
 ```{bash Copy those selections to computer}
 scp /home/elias/analysis/data/angsd/keep50Mb.bed kodiak:/data/oziolore/fhet/data/angsd2/
 
 ```
 
-## Converting that to a .file
+### Converting that to a .file
 
 ```{bash Convert from bed to file}
 cat /data/oziolore/fhet/data/angsd2/keep50Mb.bed | \
 awk '{OFS="\t"}{s=$2+1}{print $1,s,$3}' > /data/oziolore//fhet/data/angsd2/keep50Mb.file
 ```
 
-## indexing all of those files with ANGSD
+### indexing all of those files with ANGSD
 
 ```{bash Index keepsites}
 /data/oziolore/program/angsd/angsd sites index /data/oziolore/fhet/data/angsd2/keepsites2.file
 /data/oziolore/program/angsd/angsd sites index /data/oziolore/fhet/data/angsd2/keep50Mb.file
 ```
 
-## fixing up lists of all populations .bam files so they can be plugged into ANGSD
+### Lists of populations
+* fixing up lists of all populations .bam files so they can be plugged into ANGSD
 
 ```{bash Fix lists in order to reflect correct directory}
 cat BB2.txt | sed 's/home/data/' | sed 's/restoreFromData\///' | uniq > BB2_new.txt
 ```
 
-## Starting site allele frequency estimation on a 50Mb subsample for each population (to create SFS)
+### SAF (Site Allele Frequency) estimate
+* Starting site allele frequency estimation on a 50Mb subsample for each population (to create SFS)
 
 ```{bash Running Site Allele Frequency estimations on the 50Mb chunk}
 
@@ -227,7 +1553,8 @@ $my_angsd \
 
 ```
 
-## Using the subsampled .saf to create site frequency spectra
+### SFS (Site Frequency Spectra) 
+* Using the subsampled .saf to create site frequency spectra
 
 ```{bash Running Site Frequency Statistic on the 50Mb chunk}
 
@@ -255,7 +1582,8 @@ $my_sfs $in_saf -maxIter 100 -P 8 -nSites 50000000 > $outdir/$out_sfs
 
 ```
 
-##Creating site allele frequencies for full genome of each population
+### SAF full genome 
+* Creating site allele frequencies for full genome of each population
 
 ```{bash Full SAF/Not necessary step}
 #!/bin/bash
@@ -287,13 +1615,14 @@ $my_angsd \
 -out $outfile
 ```
 
-##Once saf and sfs are created, take sfs to R to look at distribution
+### SFS download for R
+* Once saf and sfs are created, take sfs to R to look at distribution
 
 ```{bash Copy SFS to computer to plot}
 scp kodiak:/data/oziolore/fhet/data/angsd2/*.sfs /home/elias/analysis/data/angsd/raw/
 ```
 
-##Plot SFS in R
+### Plot SFS in R
 * starting with folded spectra of subsample (24 per population)
 
 ```{r Plot subsampled SFS}
@@ -362,7 +1691,7 @@ for(i in 1:7){
 }
 ```
 
-##-doThetas seqfault error again
+###!!!! -doThetas seqfault error again
 * that has been throwing segfaults left and right for different people.
 * fix is to change lines in abcSaf.cpp that have:
 r->pLikes[myCounter] =new float[numInds+1]
@@ -370,9 +1699,9 @@ to
 r->pLikes[myCounter] =new float[2*numInds+1]
 * will only use for folded frequency spectra estimations. For unfolded, leave original in /program/angsd_norm/angsd
 
-##Everything works fine on -doSaf unfolded spectra
+####Everything works fine on -doSaf unfolded spectra
 
-##Re-do of SFS for 1 pop (looks like crap)
+### Re-do of SFS for 1 pop (looks like crap)
 
 ```{bash Re-do of crappy SFS}
 #!/bin/bash
@@ -389,7 +1718,8 @@ $my_sfs $in_saf -maxIter 100 -P 8 -nSites 50000000 > $outdir/$out_sfs
 
 ```
 
-##Reading thetas.gz file to a readable state: below is command for folded estimate of subsample
+### Converting readable thetas.gz
+* Reading thetas.gz file to a readable state: below is command for folded estimate of subsample
 
 ```{bash Making the thetas estimates into a readable file}
 #!/bin/bash
@@ -448,9 +1778,9 @@ $my_bedtools map \
 
 ```
     
-## Plotting distribution of neutral estimates 
+### Plotting distribution of neutral estimates 
 
-###Starting with small sample size for the plot of genome wide values
+#### Subsample plots
 
 ```{bash}
 scp kodiak:/data/oziolore/fhet/data/angsd2/theta/subsample/*50kb* /home/elias/analysis/data/angsd/subsample/
@@ -626,7 +1956,7 @@ dev.off()
 
 ```
 
-###full sample size
+###ANGSD full sample size
 * starting with folded samples
 
 ```{bash Copy those files into computer}
@@ -1012,7 +2342,8 @@ box(lwd=7,bty="l")
 ```
 
 
-##Genome-wide Fst plot from Hudson's Fst
+# Divergence statistics #2
+### Genome-wide Fst plot from Hudson's Fst
 * Calculating genome wide Hudson statistic
 
 ```{r}
@@ -1074,7 +2405,731 @@ levelplot(fsth2,aspect="iso",col.regions=brewer.pal(9,"YlOrRd"),scale=list(x=lis
 write.csv(fsth2,"~/analysis/data/fst/fhet_gran_fst.csv")
 ```
 
-##Calculating Hudson's Fst from pi and dxy
+###Script to calculate dxy by site
+
+```{r}
+library(dplyr)
+library(stringr)
+
+cname <- c(
+	"CHROM",
+	"POS",
+	"ID",
+	"REF",
+	"ALT",
+	"QUAL",
+	"FILTER",
+	"INFO",
+	"FORMAT",
+	"BP-10",
+	"BP-11",
+	"BP-12",
+	"BP-13",
+	"BP-14",
+	"BP-15",
+	"BP-16",
+	"BP-17",
+	"BP-18",
+	"BP-19",
+	"BP-1",
+	"BP-20",
+	"BP-21",
+	"BP-22",
+	"BP-23",
+	"BP-24",
+	"BP-25",
+	"BP-26",
+	"BP-27",
+	"BP-28",
+	"BP-29",
+	"BP-2",
+	"BP-30",
+	"BP-31",
+	"BP-32",
+	"BP-33",
+	"BP-34",
+	"BP-38",
+	"BP-39",
+	"BP-3",
+	"BP-40",
+	"BP-41",
+	"BP-42",
+	"BP-43",
+	"BP-44",
+	"BP-45",
+	"BP-46",
+	"BP-47",
+	"BP-48",
+	"BP-49",
+	"BP-4",
+	"BP-50",
+	"BP-51",
+	"BP-52",
+	"BP-53",
+	"BP-5",
+	"BP-6",
+	"BP-7",
+	"BP-8",
+	"BP-9",
+	"ER-11",
+	"ER-12",
+	"ER-13",
+	"ER-14",
+	"ER-15",
+	"ER-16",
+	"ER-17",
+	"ER-18",
+	"ER-19",
+	"ER-20",
+	"ER-21",
+	"ER-22",
+	"ER-23",
+	"ER-24",
+	"ER-25",
+	"ER-26",
+	"ER-27",
+	"ER-28",
+	"ER-29",
+	"ER-30",
+	"ER-31",
+	"ER-32",
+	"ER-33",
+	"ER-34",
+	"ER-35",
+	"ER-36",
+	"ER-38",
+	"ER-39",
+	"ER-40",
+	"ER-41",
+	"ER-42",
+	"ER-43",
+	"ER-44",
+	"ER-45",
+	"ER-46",
+	"ER-47",
+	"ER-48",
+	"ER-49",
+	"ER-50",
+	"ER-51",
+	"ER-52",
+	"ER-53",
+	"ER-54",
+	"ER-55",
+	"ER-56",
+	"ER-57",
+	"ER-58",
+	"ER-59",
+	"ER-60",
+	"F-10",
+	"F-11",
+	"F-12",
+	"F-13",
+	"F-14",
+	"F-15",
+	"F-16",
+	"F-17",
+	"F-18",
+	"F-19",
+	"F-1",
+	"F-20",
+	"F-21",
+	"F-22",
+	"F-23",
+	"F-24",
+	"F-25",
+	"F-26",
+	"F-27",
+	"F-28",
+	"F-29",
+	"F-2",
+	"F-30",
+	"F-31",
+	"F-32",
+	"F-33",
+	"F-34",
+	"F-35",
+	"F-39",
+	"F-40",
+	"F-41",
+	"F-42",
+	"F-43",
+	"F-44",
+	"F-45",
+	"F-46",
+	"F-47",
+	"F-49",
+	"F-4",
+	"F-50",
+	"F-51",
+	"F-52",
+	"F-53",
+	"F-54",
+	"F-5",
+	"F-6",
+	"F-7",
+	"F-8",
+	"F-9",
+	"KC-11",
+	"KC-13",
+	"KC-14",
+	"KC-15",
+	"KC-16",
+	"KC-18",
+	"KC-19",
+	"KC-1",
+	"KC-20",
+	"KC-22",
+	"KC-23",
+	"KC-26",
+	"KC-27",
+	"KC-28",
+	"KC-29",
+	"KC-2",
+	"KC-30",
+	"KC-32",
+	"KC-33",
+	"KC-34",
+	"KC-35",
+	"KC-36",
+	"KC-37",
+	"KC-38",
+	"KC-39",
+	"KC-3",
+	"KC-40",
+	"KC-41",
+	"KC-42",
+	"KC-43",
+	"KC-44",
+	"KC-45",
+	"KC-46",
+	"KC-47",
+	"KC-48",
+	"KC-49",
+	"KC-4",
+	"KC-50",
+	"KC-51",
+	"KC-52",
+	"KC-54",
+	"KC-55",
+	"KC-56",
+	"KC-5",
+	"KC-6",
+	"KC-7",
+	"KC-9",
+	"NYC-10",
+	"NYC-11",
+	"NYC-12",
+	"NYC-13",
+	"NYC-14",
+	"NYC-15",
+	"NYC-16",
+	"NYC-17",
+	"NYC-18",
+	"NYC-19",
+	"NYC-20",
+	"NYC-21",
+	"NYC-22",
+	"NYC-23",
+	"NYC-24",
+	"NYC-25",
+	"NYC-26",
+	"NYC-27",
+	"NYC-28",
+	"NYC-29",
+	"NYC-30",
+	"NYC-31",
+	"NYC-32",
+	"NYC-33",
+	"NYC-34",
+	"NYC-40",
+	"NYC-41",
+	"NYC-42",
+	"NYC-43",
+	"NYC-44",
+	"NYC-45",
+	"NYC-46",
+	"NYC-47",
+	"NYC-48",
+	"NYC-49",
+	"NYC-50",
+	"NYC-51",
+	"NYC-52",
+	"NYC-53",
+	"NYC-54",
+	"NYC-55",
+	"NYC-8",
+	"NYC-9",
+	"SH-14",
+	"SH-15",
+	"SH-16",
+	"SH-17",
+	"SH-18",
+	"SH-19",
+	"SH-1",
+	"SH-201",
+	"SH-202",
+	"SH-203",
+	"SH-204",
+	"SH-205",
+	"SH-206",
+	"SH-207",
+	"SH-208",
+	"SH-209",
+	"SH-20",
+	"SH-210",
+	"SH-211",
+	"SH-212",
+	"SH-213",
+	"SH-21",
+	"SH-22",
+	"SH-23",
+	"SH-24",
+	"SH-25",
+	"SH-26",
+	"SH-27",
+	"SH-28",
+	"SH-29",
+	"SH-2",
+	"SH-30",
+	"SH-31",
+	"SH-32",
+	"SH-33",
+	"SH-34",
+	"SH-35",
+	"SH-36",
+	"SH-37",
+	"SH-38",
+	"SH-39",
+	"SH-3",
+	"SH-40",
+	"SH-41",
+	"SH-42",
+	"SH-4",
+	"SH-5",
+	"SH-6",
+	"SH-7",
+	"SH-8",
+	"BU000004.VB_B",
+	"BU000005.VB_B",
+	"BU000006.VB_B",
+	"BU000007.VB_B",
+	"BU000008.VB_B",
+	"BU000012.SP",
+	"BU000014.SP",
+	"BU000017.SP",
+	"BU000018.SP",
+	"BU000023.SP",
+	"BU000024.SP",
+	"BU000025.SP",
+	"BU000031.SP",
+	"BU000032.SP",
+	"BU000033.SP",
+	"BU000035.SP",
+	"BU000036.SP",
+	"BU000037.SP",
+	"BU000039.SP",
+	"BU000041.SP",
+	"BU000046.SP",
+	"BU000048.SP",
+	"BU000049.SP",
+	"BU000052.SP",
+	"BU000053.SP",
+	"BU000054.SP",
+	"BU000055.SP",
+	"BU000056.SP",
+	"BU000057.SP",
+	"BU000062.GB",
+	"BU000063.GB",
+	"BU000064.GB",
+	"BU000065.GB",
+	"BU000066.GB",
+	"BU000067.GB",
+	"BU000068.GB",
+	"BU000069.GB",
+	"BU000070.GB",
+	"BU000071.GB",
+	"BU000072.GB",
+	"BU000073.GB",
+	"BU000074.GB",
+	"BU000075.GB",
+	"BU000076.GB",
+	"BU000077.GB",
+	"BU000078.GB",
+	"BU000081.GB",
+	"BU000082.GB",
+	"BU000083.GB",
+	"BU000084.GB",
+	"BU000085.GB",
+	"BU000086.GB",
+	"BU000087.GB",
+	"BU000088.GB",
+	"BU000089.GB",
+	"BU000090.GB",
+	"BU000092.GB",
+	"BU000093.GB",
+	"BU000094.GB",
+	"BU000095.GB",
+	"BU000097.GB",
+	"BU000100.GB",
+	"BU000101.GB",
+	"BU000102.GB",
+	"BU000103.GB",
+	"BU000104.GB",
+	"BU000105.GB",
+	"BU000106.GB",
+	"BU000110.GB",
+	"BU000116.GB",
+	"BU000120.GB",
+	"BU000121.GB",
+	"BU000123.GB",
+	"BU000124.GB",
+	"BU000125.GB",
+	"BU000126.GB",
+	"BU000127.GB",
+	"BU000129.VB_A",
+	"BU000130.VB_A",
+	"BU000131.VB_A",
+	"BU000132.VB_A",
+	"BU000133.VB_A",
+	"BU000134.VB_A",
+	"BU000135.VB_A",
+	"BU000136.VB_A",
+	"BU000137.VB_A",
+	"BU000138.VB_A",
+	"BU000139.VB_A",
+	"BU000140.VB_A",
+	"BU000141.VB_A",
+	"BU000142.VB_A",
+	"BU000144.VB_A",
+	"BU000145.VB_A",
+	"BU000148.VB_A",
+	"BU000149.VB_A",
+	"BU000150.VB_A",
+	"BU000151.VB_A",
+	"BU000152.VB_A",
+	"BU000153.VB_A",
+	"BU000155.VB_A",
+	"BU000157.VB_A",
+	"BU000158.VB_A",
+	"BU000160.VB_A",
+	"BU000161.VB_A",
+	"BU000164.VB_A",
+	"BU000165.VB_A",
+	"BU000166.VB_A",
+	"BU000167.VB_A",
+	"BU000168.VB_B",
+	"BU000169.VB_B",
+	"BU000170.VB_B",
+	"BU000171.VB_B",
+	"BU000172.VB_B",
+	"BU000173.VB_B",
+	"BU000174.VB_B",
+	"BU000175.VB_B",
+	"BU000176.VB_B",
+	"BU000177.VB_B",
+	"BU000178.VB_B",
+	"BU000179.VB_B",
+	"BU000180.VB_B",
+	"BU000182.PB_A",
+	"BU000183.PB_A",
+	"BU000184.PB_A",
+	"BU000185.PB_A",
+	"BU000186.PB_A",
+	"BU000187.PB_A",
+	"BU000188.PB_A",
+	"BU000190.PB_A",
+	"BU000191.PB_A",
+	"BU000192.PB_A",
+	"BU000193.PB_A",
+	"BU000194.PB_A",
+	"BU000195.PB_A",
+	"BU000196.PB_A",
+	"BU000197.PB_A",
+	"BU000198.PB_A",
+	"BU000199.PB_A",
+	"BU000200.PB_A",
+	"BU000201.PB_A",
+	"BU000202.PB_A",
+	"BU000203.PB_A",
+	"BU000204.PB_A",
+	"BU000205.PB_A",
+	"BU000206.PB_A",
+	"BU000207.PB_B",
+	"BU000209.PB_B",
+	"BU000210.PB_B",
+	"BU000211.PB_B",
+	"BU000212.PB_B",
+	"BU000213.PB_B",
+	"BU000214.PB_B",
+	"BU000215.PB_B",
+	"BU000217.PB_B",
+	"BU000219.PB_B",
+	"BU000223.PB_B",
+	"BU000225.PB_B",
+	"BU000226.PB_B",
+	"BU000227.PB_B",
+	"BU000228.PB_B",
+	"BU000229.PB_B",
+	"BU000230.PB_B",
+	"BU000231.PB_B",
+	"BU000233.PB_B",
+	"BU000234.PB_B",
+	"BU000235.PB_B",
+	"BU000237.PB_B",
+	"BU000242.PB_B",
+	"BU000244.SP",
+	"BU000245.SP",
+	"BU000246.SP",
+	"BU000248.SP",
+	"BU000249.SP",
+	"BU000250.SP",
+	"BU000252.SP",
+	"BU000253.SP",
+	"BU000254.SP",
+	"BU000255.SP",
+	"BU000256.SP",
+	"BU000257.SP",
+	"BU000259.SP",
+	"BU000260.SP",
+	"BU000261.SP",
+	"BU000262.SP",
+	"BU000263.SP",
+	"BU000264.SP",
+	"BU000265.SP",
+	"BU000266.SP",
+	"BU000269.SP",
+	"BU000270.SP",
+	"BU000271.SP",
+	"BU000272.SP",
+	"BU000318.BNP",
+	"BU000319.BNP",
+	"BU000320.BNP",
+	"BU000321.BNP",
+	"BU000322.BNP",
+	"BU000323.BNP",
+	"BU000324.BNP",
+	"BU000325.BNP",
+	"BU000326.BNP",
+	"BU000327.BNP",
+	"BU000328.BNP",
+	"BU000329.BNP",
+	"BU000330.BNP",
+	"BU000331.BNP",
+	"BU000332.BNP",
+	"BU000333.BNP",
+	"BU000334.BNP",
+	"BU000335.BNP",
+	"BU000336.BNP",
+	"BU000337.BNP",
+	"BU000338.BNP",
+	"BU000339.BNP",
+	"BU000340.BNP",
+	"BU000341.BNP",
+	"BU000343.BNP",
+	"BU000344.BNP",
+	"BU000345.BNP",
+	"BU000346.BNP",
+	"BU000347.BNP",
+	"BU000348.BNP",
+	"BU000349.BNP",
+	"BU000350.BNP",
+	"BU000351.BNP",
+	"BU000352.BNP",
+	"BU000354.BNP",
+	"BU000355.BNP",
+	"BU000356.BNP",
+	"BU000357.BNP",
+	"BU000358.BNP",
+	"BU000359.BNP",
+	"BU000361.BNP",
+	"BU000362.BNP",
+	"BU000364.BNP",
+	"BU000366.BNP",
+	"BU000367.BNP",
+	"BU000372.BNP",
+	"BU000375.BNP",
+	"BU000382.BB",
+	"BU000383.BB",
+	"BU000384.BB",
+	"BU000386.BB",
+	"BU000390.BB",
+	"BU000391.BB",
+	"BU000392.BB",
+	"BU000393.BNP",
+	"BU000397.BB",
+	"BU000398.BB",
+	"BU000400.BB",
+	"BU000402.BB",
+	"BU000403.BB",
+	"BU000405.BB",
+	"BU000406.BB",
+	"BU000407.BB",
+	"BU000408.BB",
+	"BU000409.BB",
+	"BU000410.BB",
+	"BU000411.BB",
+	"BU000413.BB",
+	"BU000414.BB",
+	"BU000415.BB",
+	"BU000416.BB",
+	"BU000417.BB",
+	"BU000418.SJSP",
+	"BU000419.SJSP",
+	"BU000420.SJSP",
+	"BU000421.SJSP",
+	"BU000424.SJSP",
+	"BU000425.SJSP",
+	"BU000426.SJSP",
+	"BU000427.SJSP",
+	"BU000431.SJSP",
+	"BU000432.SJSP",
+	"BU000433.SJSP",
+	"BU000439.SJSP",
+	"BU000441.SJSP",
+	"BU000442.SJSP",
+	"BU000443.SJSP",
+	"BU000444.SJSP",
+	"BU000446.SJSP",
+	"BU000449.SJSP",
+	"BU000451.SJSP",
+	"BU000454.SJSP",
+	"BU000458.SJSP",
+	"BU000460.SJSP",
+	"BU000463.SJSP",
+	"BU000464.SJSP")
+
+
+options(scipen=99)
+# get vector of sample population names
+pop <- cname[10:585] %>% gsub("-.*","",.) %>% gsub(".*\\.","",.) %>% gsub("_.*","",.)
+popu <- unique(pop)
+
+# get vector of north,admixed,south,grandis designations
+sss <- pop
+sss[grep("BP|F",sss)] <- "North"
+sss[grep("NYC|SH",sss)] <- "Admix"
+sss[grep("ER|KC",sss)] <- "South"
+sss[grep("GB|BB|SJSP|SP|BNP|PB|VB",sss)] <- "Grand"
+sssu <- unique(sss)
+
+slist <- list(
+	North=which(sss=="North"),
+	South=which(sss=="South"),
+	Admix=which(sss=="Admix"),
+	Grand=which(sss=="Grand")
+	)
+
+
+# need to calculate pi from short haplotypes. 
+# function "adist" can calculate ins,del,subs in pairwise fashion
+# another option is to use CIGAR strings to reconstruct alignment,tossing out insertions
+# third option is to actually align the sequences using, e.g biostrings?
+
+# going to just use "adist". it's not correct, but good enough I hope. 
+	# only going to count "substitutions" found by adist, equal cost for ins, del, sub
+
+# calculate allele substitution distance matrix. 
+	# alseq is a vector of allele sequences
+	# for compatibility downstream, must contain ALL allele sequences from VCF record
+ad <- function(alseq){
+
+	# distance between alleles
+	ad <- adist(alseq,counts=TRUE,costs=c(ins=2,del=2,subs=1))
+
+	# inferred substitutions only, excluding indels
+	d <- attr(ad,"counts")[,,3]
+
+	return(d)
+
+	}
+
+
+# calculate pi 
+	# for a matrix of allele distances (d)
+	# and a vector of genotypes (alvec, coded 1..n, NOT 0..n) 
+piw <- function(d,alvec){
+
+	# counts of alleles
+	ac <- alvec %>% factor(.,levels=1:dim(d)[1]) %>% table()
+
+	if(length(ac)==1){return(0)}
+
+	# counts of pairwise comparisons among alleles
+	fc <- (ac %>% combn(.,2) %>% apply(.,MAR=2,FUN=prod))
+
+	p <- sum(fc * d[lower.tri(d)])/choose(length(alvec),2)
+
+	return(p)
+
+	}
+
+# calculate pi between two sets of alleles, as above. 
+pib <- function(d,alvec1,alvec2){
+
+	nal <- dim(d)[1]
+	# counts of alleles
+	ac <- c(alvec1,alvec2) %>% factor(.,levels=1:nal) %>% table()
+	# bail out if no variation
+	if(length(ac)==1){return(0)}
+
+	# allele counts per population
+	ac1 <- alvec1 %>% factor(.,levels=1:nal) %>% table()
+	ac2 <- alvec2 %>% factor(.,levels=1:nal) %>% table()
+
+	# counts of pairwise combinations
+	fc <- cbind(ac1) %*% rbind(ac2)
+
+	# calculate pi
+	p <- sum(fc * d)/(length(alvec1) * length(alvec2))
+	return(p)
+	}
+
+
+pis <- c()
+pibs <- c()
+
+f <- file("stdin")
+open(f)
+ind <- 1
+
+while(length(line <- readLines(f,n=1)) > 0) {
+
+	# skip comment lines
+	if(grepl("^#",line)){next()}
+	line <- str_split(line,"\\t") %>% unlist()
+
+	ind <- ind + 1
+
+	# genotype vector
+	gt <- as.numeric(line[10:585])+1
+	
+	# list of vectors of haploid genotypes per population
+	sgt <- lapply(slist,FUN=function(x,v){x <- v[x]; x[!is.na(x)]},v=gt)
+
+	# if sample size doesn't equal at least vector, skip
+	minsam <- c(10,10,10,20)
+	if(!all(sapply(sgt,length)>=minsam)){next()}
+
+	# vector of alleles
+	alleles <- c(line[4],unlist(str_split(line[5],",")))
+	
+	# # distance between alleles
+	d <- ad(alleles)
+	
+	# caculate pi within
+	pis <- sapply(sgt,piw,d=d) %>% round(.,digits=5)
+	pibs <- apply(t(combn(sgt,2)),MAR=1,FUN=function(x){pib(d=d,x[[1]],x[[2]])})  %>% round(.,digits=5)
+	p <- c(line[1],line[2],pis,pibs)
+
+	cat(paste(p,collapse="\t",sep=""),"\n",sep="")
+
+	if((ind %% 1000) == 0){write(ind,stderr())}
+
+}
+
+```
+
+###Calculating Hudson's Fst from pi and dxy
 
 ```{r}
 load("~/analysis/data/comparison/noah_stats.RData") #loading data produced from individual SNP call pi and dxy calculations
@@ -1100,6 +3155,70 @@ for(i in pops){
 
 #fsth<-read.table("~/analysis/data/fst/fsth",header=FALSE) #loading fsth values
 ```
+
+## Intermediate PBS
+* Dependent on running the one above first
+
+```{r}
+pbs <- function(t1,t2,c12){
+  
+  t1 <- -log(1-t1)
+  t2 <- -log(1-t2)
+  c12 <- -log(1-c12)
+  
+  stat <- (t1 + t2 - c12)/2
+  return(stat)
+}
+
+sjpbs <- pbs(fsth["BB.SJSP"],fsth["GB.SJSP"],fsth["BB.GB"])
+
+bnppbs <- pbs(fsth["BB.BNP"],fsth["BNP.GB"],fsth["BB.GB"])
+
+allpbs <- cbind(
+  lift,
+  SJ = sjpbs[],
+  BNP = bnppbs[])
+
+write.table(allpbs,
+            file="~/analysis/data/fst/intermpbs20kb.bed",
+            sep = "\t", 
+            quote = FALSE,
+            row.names = FALSE,
+            col.names = FALSE)
+
+sjc<-quantile(sjpbs[],prob=.99,na.rm=TRUE)
+bnpc<-quantile(bnppbs[],prob=.99,na.rm=TRUE)
+
+all<-sjpbs[]>sjc & bnppbs[]>bnpc
+write.table(na.omit(allpbs[all,1:3]),"~/analysis/data/fst/interm_pbs_shared.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+#source("http://bioconductor.org/biocLite.R")
+#biocLite()
+library("rtracklayer")
+
+bed1=import("~/analysis/data/fst/intermpbs20kb.bed")
+
+bedall=import("~/analysis/data/fst/interm_pbs_shared.bed")
+bed1overlall=bed1[bed1 %over% bedall]
+hitsall<-findOverlaps(bedall,bed1)
+allhit<-subjectHits(hitsall)
+
+allpbs<-cbind(allpbs,0)
+newn<-c("Chr","start","end","sj","bnp","all")
+colnames(allpbs)<-newn
+allpbs[allhit,"all"]<-allpbs[allhit,"all"]+1
+
+allpbsc<-allpbs %>% 
+  filter(str_detect(Chr,"chr"))
+
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/intermediates.jpeg",width=1000,height=800)
+palette(c("grey50","grey90"))
+par(mfrow=c(2,1),mar=c(0,3,0,0))
+plot(allpbsc[,"sj"],pch=20,cex=.5,col=ifelse(allpbs[,"all"]>0,"red",sort(as.factor(allpbs[,1]))),ylim=c(-1,1),xaxt='n')
+plot(allpbsc[,"bnp"],pch=20,cex=.5,col=ifelse(allpbs[,"all"]>0,"red",sort(as.factor(allpbs[,1]))),ylim=c(-1,1),xaxt='n')
+dev.off()
+```
+
+# Combined Z statistics
 ##Caclulating Z statistic from the fst values
 
 ```{r}
@@ -1128,7 +3247,7 @@ for (i in 1:21){
 #zfst<-read.table("~/analysis/data/fst/zfst_hud_1kb",header=FALSE)
 ```
 
-##Subtraction of pi and conversion to z statistic
+##Pi subtraction and Z statistic
 
 ```{r}
 pi<-read.csv("~/analysis/data/angsd/pi",stringsAsFactors=TRUE) #taking only pi values for F. grandis from dataframe
@@ -1172,7 +3291,7 @@ colnames(zpi)<-colnames(pidiff)
 #write.table(zpi,"~/analysis/data/angsd/zpi_20kb",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
 ```
 
-##Messing around with pi
+##Plotting pi
 
 ```{r}
 library('reshape')
@@ -1194,7 +3313,8 @@ ggplot(mpi,
 
 ```
 
-## Merging z statistics into a common one (high z would mean high fst and low pi)
+## Merging z statistics 
+* into a common one (high z would mean high fst and low pi)
 
 ```{r}
 #zfst<-read.table("~/analysis/data/fst/zfst_hud_1kb",sep='\t')
@@ -1219,7 +3339,7 @@ zmerge<-zmerge_temp %>% mutate(keep=as.numeric(subw)) #Adds that filter column a
 
 ```
 
-## Doing a PBS analysis with Z statistics
+## PBS analysis with Z statistics
 
 ```{r}
 #zmerge<-read.table("~/analysis/data/dfst/zmerge_1kb",header=FALSE)
@@ -1275,7 +3395,7 @@ write.table(zpbsn,"~/analysis/data/dfst/zpbs_20kb",row.names = FALSE,col.names =
 
 ```
 
-##Looking at 1% outlier regions
+## Looking at 1% outlier regions
 
 ```{r}
 col<-c() #figuring outliers
@@ -1288,7 +3408,7 @@ print(col)
 
 ```
 
-##Creating outlier regions of interest
+## Creating outlier regions of interest
 
 ```{bash}
 cat ~/analysis/data/dfst/zpbs_20kb | grep -v NA | \
@@ -1299,7 +3419,7 @@ awk '$4>3.231165 || $5>2.609672  || $6>3.752385 || $7>3.139116 || $8>2.731015' |
 -g <(cut -f 1-2 ~/analysis/data/genome/unsplit_merge.fasta.fai) > ~/analysis/data/dfst/zregions_max_20kb.bed
 ```
 
-##Now let's plot up some figures with the merged z statistics
+## Now let's plot up some figures with the merged z statistics
 
 ```{r}
 zpbsn<-read.table("~/analysis/data/dfst/zpbs_20kb",sep='\t',header=FALSE)
@@ -1392,6 +3512,7 @@ dev.off()
 
 ```
 
+#Combined fst and pi
 ##Plotting FST vs PI
 
 ```{r}
@@ -1545,12 +3666,12 @@ dev.off()
 
 ```
 
-## Decisions
+# Decisions
 
 * I think we ahve decided at this point to thoroughly go with PBS statistics for the paper, so I will use outliers from the PBS statistic to look at haplotype comparisons.
 
-### Let's start by creating and plotting pbs outliers
-
+# Divergence #3: Outliers
+## PBS outlier plots
 
 ```{r}
 
@@ -1600,7 +3721,8 @@ for(i in 1:5){
 
 ```
 
-## Using bedtools to merge outliers of these pbs statistics; removing non-mapped regions (noise for the most part)
+## Merging PBS outliers
+* Using bedtools to merge outliers of these pbs statistics; removing non-mapped regions (noise for the most part)
 
 ```{bash}
 #grabbing the table file (remember that it needs to be in bed format);
@@ -1629,9 +3751,9 @@ awk '$4>0.18202835 || $5>0.14889788  || $6>0.22912063 || $7>0.08587848 || $8>0.0
 
 ```
 
-## Now taking these merged windows and plotting them to find common outliers
+## Common outliers PBS
 
-###First for summed regions
+### First for summed regions
 
 ```{r}
 PBSout<-read.table("~/analysis/data/fst/hudson_pbsmergeoutliers.bed",stringsAsFactors=FALSE) # Reading in the maximum outlier regions of interest
@@ -1682,7 +3804,7 @@ legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red"
 
 ```
 
-###second for max regions
+### Second for max regions
 
 ```{r}
 PBSout<-read.table("~/analysis/data/fst/hudson_pbsmergeoutliers_max.bed",stringsAsFactors=FALSE) # Reading in the maximum outlier regions of interest
@@ -1716,7 +3838,7 @@ legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red"
 
 ```
 
-## Grabbing those regions and putting them on pbs plots (for sum regions)
+## Sum regions: plotting
 ```{r}
 pbs<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",header=FALSE,stringsAsFactors = FALSE) #reading in the windowed pbs estimates
 pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs") #naming columns
@@ -1885,68 +4007,35 @@ plot(pbsc[,8],pch=20,cex=2,
 dev.off()
 ```
 
-
-## Grabbing those regions and putting them on pbs plots (for max regions)
+## Unique for Intermediates?
+* Breaking these up into 1kb windows and observing whether they are unique
 
 ```{r}
-pbs<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",header=FALSE,stringsAsFactors = FALSE) #reading in the windowed pbs estimates
-pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs") #naming columns
-colnames(pbs)<-pbsname
+###Plotting outliers vs each other-----------
+pbsct<-pbs %>% filter(str_detect(Scaf,"chr")) #getting only scaffolds mapped onto chromosomes here
 
-col<-c()# finding 1% outliers
-for (i in 1:5){
-  col[i]<-quantile(pbs[,i+3],prob=.99,na.rm=TRUE)
-}
+pbsc<-na.omit(pbsc[,1:8]) #removing NA values from them
 
-pbsc<-pbs %>% filter(str_detect(Scaf,"chr")) #only selecting chromosomes
+#checking for whether those are outliers in different groups
+all<-pbsc[,4]>col[1] & pbsc[,5]>col[2] & pbsc[,6]>col[3] & pbsc[,7]>col[4] & pbsc[,8]>col[5]
+res<-pbsc[,4]>col[1] & pbsc[,5]>col[2] & pbsc[,6]>col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+interm<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]>col[4] & pbsc[,8]>col[5]
+bbu<-pbsc[,4]>col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+vbu<-pbsc[,4]<col[1] & pbsc[,5]>col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+pbu<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]>col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
+sju<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]>col[4] & pbsc[,8]<col[5]
+bnpu<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]>col[5]
 
-#removing the crappy scaffold that has the first 141 windows of chromosome 16 (mismapped from chr1); this is discovered in dxy.r script in introgression folder
-chr16<-str_detect(pbsc$Scaf,"chr16") #grab chr16
-ord<-order(pbsc[chr16,"BBpbs"],decreasing=TRUE) #pick highest value of chr16
-pbsc16<-pbsc[chr16,] #make an object
-chr16rows<-as.numeric(rownames(pbsc[chr16,])) #grab rownames for it
-crappyrows<-chr16rows[1:300] #get the first 141 rows which contain scaffold "crappy"
-pbsct<-pbsc[-c(crappyrows),] #remove thos rows from total
-chr16.2<-str_detect(pbsc$Scaf,"chr16") #do it again
-head(pbsct[chr16,])
-pbsc<-pbsct
-head(pbsc[chr16,])
-
-#Grabbing regions that are put together pretty well/widely----
-pbs_out_temp<-read.table("~/analysis/data/fst/hudson_pbsmergeoutliers_max.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
-names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount")
-colnames(pbs_out_temp)<-names
-
-pbs_out<-pbs_out_temp %>% filter(str_detect(Scaf,"chr")) #selecting only chromosome mapped scaffolds
-
-#checking for whether those are outliers in different groups--------
-all<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
-res<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
-interm<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
-bbu<-pbs_out[,4]>col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
-vbu<-pbs_out[,4]<col[1] & pbs_out[,6]>col[2] & pbs_out[,8]<col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
-pbu<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]>col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
-sju<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]>col[4] & pbs_out[,12]<col[5]
-bnpu<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]<col[4] & pbs_out[,12]>col[5]
-
-write.table(pbsc[,1:3],"~/analysis/data/fst/PBS_keep_1kb.bed",
-            row.names = FALSE,col.names = FALSE,quote=FALSE,sep="\t")
-write.table(pbs_out[all,1:3],"~/analysis/data/fst/pbs_regions_sharedall.bed",
-            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[res,1:3],"~/analysis/data/fst/pbs_regions_sharedres.bed",
-            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[interm,1:3],"~/analysis/data/fst/pbs_regions_sharedinterm.bed",
-            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[bbu,1:3],"~/analysis/data/fst/pbs_regions_sharedbbu.bed",
-            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[vbu,1:3],"~/analysis/data/fst/pbs_regions_sharedvbu.bed",
-            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[pbu,1:3],"~/analysis/data/fst/pbs_regions_sharedpbu.bed",
-            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[sju,1:3],"~/analysis/data/fst/pbs_regions_sharedsju.bed",
-            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[bnpu,1:3],"~/analysis/data/fst/pbs_regions_sharedbnpu.bed",
-            row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
+#as before, checking which of those regions of divergence maps to specific windows of divergence
+write.table(pbsc[,1:3],"~/analysis/data/fst/PBS_keep_1kb.bed",row.names = FALSE,col.names = FALSE,quote=FALSE,sep='\t')
+write.table(na.omit(pbsc[all,1:3]),"~/analysis/data/fst/pbs_regions_sharedall.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[res,1:3]),"~/analysis/data/fst/pbs_regions_sharedres.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[interm,1:3]),"~/analysis/data/fst/pbs_regions_sharedinterm.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[bbu,1:3]),"~/analysis/data/fst/pbs_regions_sharedbbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[vbu,1:3]),"~/analysis/data/fst/pbs_regions_sharedvbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[pbu,1:3]),"~/analysis/data/fst/pbs_regions_sharedpbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[sju,1:3]),"~/analysis/data/fst/pbs_regions_sharedsju.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(pbsc[bnpu,1:3]),"~/analysis/data/fst/pbs_regions_sharedbnpu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
 
 
 #source("http://bioconductor.org/biocLite.R")
@@ -1956,14 +4045,14 @@ write.table(pbs_out[bnpu,1:3],"~/analysis/data/fst/pbs_regions_sharedbnpu.bed",
 #Finding the overlaps in full data---------
 library("rtracklayer")
 
-bed1=import("~/analysis/data/fst/PBS_keep_1kb.bed") #importing the windows in which we are searching
+#summarizing these outlier windows, instead of by regions, by 1kb windows - look behind if confused about script (previous chunk)
+bed1=import("~/analysis/data/fst/PBS_keep_1kb.bed")
 
-bedall=import("~/analysis/data/fst/pbs_regions_sharedall.bed") #importing shared outliers
-bed1overlall=bed1[bed1 %over% bedall] #Making overlapping regions into genome file
-hitsall<-findOverlaps(bedall,bed1) #finding overlaps as hits
-allhit<-subjectHits(hitsall) #making them into a true false vector
+bedall=import("~/analysis/data/fst/pbs_regions_sharedall.bed")
+bed1overlall=bed1[bed1 %over% bedall]
+hitsall<-findOverlaps(bedall,bed1)
+allhit<-subjectHits(hitsall)
 
-#same for the rest of the comparisons
 bedres=import("~/analysis/data/fst/pbs_regions_sharedres.bed")
 bed1overlres=bed1[bed1 %over% bedres]
 hitsres<-findOverlaps(bedres,bed1)
@@ -1995,189 +4084,6 @@ hitssju<-findOverlaps(bedsju,bed1)
 sjuhit<-subjectHits(hitssju)
 
 bedbnpu=import("~/analysis/data/fst/pbs_regions_sharedbnpu.bed")
-bed1overlbnpu=bed1[bed1 %over% bedbnpu]
-hitsbnpu<-findOverlaps(bedbnpu,bed1)
-bnpuhit<-subjectHits(hitsbnpu)
-
-pbsc<-cbind(pbsc,0,0,0,0,0,0,0,0) #adding columns to the dataframe of pbs values
-newn<-c("Scaf","start","end","BB","VB","PB","SJ","BNP","all","res","interm","bbu","vbu","pbu","sju","bnpu") #giving them names
-colnames(pbsc)<-newn
-pbsc[allhit,"all"]<-pbsc[allhit,"all"]+1 #adding 1s for true values in hits parameter
-pbsc[reshit,"res"]<-pbsc[reshit,"res"]+1
-pbsc[intermhit,"interm"]<-pbsc[intermhit,"interm"]+1
-pbsc[bbuhit,"bbu"]<-pbsc[bbuhit,"bbu"]+1
-pbsc[vbuhit,"vbu"]<-pbsc[vbuhit,"vbu"]+1
-pbsc[pbuhit,"pbu"]<-pbsc[pbuhit,"pbu"]+1
-pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
-pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
-
-#plotting those results by using the pbs_out vector; too messy, let's just plot with shared type outliers-------------
-# pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
-#                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
-#                                      "chr20","chr21","chr22","chr23","chr24")) #ordering factor levels
-# palette(c("grey40","grey80"))
-# par(mfrow=c(5,1),mar=c(0,3,0,0))
-# plot(pbsc[,4],pch=20,cex=1.2,
-#      col=ifelse(pbsc[,"all"]>0,"purple",
-#                 ifelse(pbsc[,"res"]>0,"black",
-#                        ifelse(pbsc[,"interm"]>0,"firebrick2",
-#                               ifelse(pbsc[,"bbu"]>0,"gold2",
-#                                      ifelse(pbsc[,4]>col[1],"green2",as.factor(pbsc[,1])))))),
-#      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
-# 
-# plot(pbsc[,5],pch=20,cex=1.2,
-#      col=ifelse(pbsc[,"all"]>0,"purple",
-#                 ifelse(pbsc[,"res"]>0,"black",
-#                        ifelse(pbsc[,"interm"]>0,"firebrick2",
-#                               ifelse(pbsc[,"vbu"]>0,"gold2",
-#                                      ifelse(pbsc[,5]>col[2],"green2",as.factor(pbsc[,1])))))),
-#      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
-# 
-# plot(pbsc[,6],pch=20,cex=1.2,
-#      col=ifelse(pbsc[,"all"]>0,"purple",
-#                 ifelse(pbsc[,"res"]>0,"black",
-#                        ifelse(pbsc[,"interm"]>0,"firebrick2",
-#                               ifelse(pbsc[,"pbu"]>0,"gold2",
-#                                      ifelse(pbsc[,6]>col[3],"green2",as.factor(pbsc[,1])))))),
-#      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
-# 
-# plot(pbsc[,7],pch=20,cex=1.2,
-#      col=ifelse(pbsc[,"all"]>0,"purple",
-#                 ifelse(pbsc[,"res"]>0,"black",
-#                        ifelse(pbsc[,"interm"]>0,"firebrick2",
-#                               ifelse(pbsc[,"sju"]>0,"gold2",
-#                                      ifelse(pbsc[,7]>col[4],"green2",as.factor(pbsc[,1])))))),
-#      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
-# 
-# plot(pbsc[,8],pch=20,cex=1.2,
-#      col=ifelse(pbsc[,"all"]>0,"purple",
-#                 ifelse(pbsc[,"res"]>0,"black",
-#                        ifelse(pbsc[,"interm"]>0,"firebrick2",
-#                               ifelse(pbsc[,"bnpu"]>0,"gold2",
-#                                      ifelse(pbsc[,8]>col[5],"green2",as.factor(pbsc[,1])))))),
-#      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-.5,3.8),yaxs="i")
-
-#Simplified to fewer outliers----
-
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pbs.jpg",width=1000,height=800)
-pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
-                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
-                                     "chr20","chr21","chr22","chr23","chr24"))
-palette(c("grey90","grey50"))
-par(mfrow=c(5,1),mar=c(0,3,0,0))
-plot(pbsc[,4],pch=20,cex=2,
-     col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",
-                              as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
-
-plot(pbsc[,5],pch=20,cex=2,
-     col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",
-                            as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
-
-plot(pbsc[,6],pch=20,cex=2,
-     col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",
-                              as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
-
-plot(pbsc[,7],pch=20,cex=2,
-     col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",
-                              as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
-
-plot(pbsc[,8],pch=20,cex=2,
-     col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",
-                              as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
-dev.off()
-```
-
-## Breaking these up into 1kb windows and observing whether they are unique
-
-```{r}
-###Plotting outliers vs each other-----------
-pbsct<-pbs %>% filter(str_detect(Scaf,"chr")) #getting only scaffolds mapped onto chromosomes here
-
-pbsc<-na.omit(pbsc[,1:8]) #removing NA values from them
-
-#checking for whether those are outliers in different groups
-all<-pbsc[,4]>col[1] & pbsc[,5]>col[2] & pbsc[,6]>col[3] & pbsc[,7]>col[4] & pbsc[,8]>col[5]
-res<-pbsc[,4]>col[1] & pbsc[,5]>col[2] & pbsc[,6]>col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
-interm<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]>col[4] & pbsc[,8]>col[5]
-bbu<-pbsc[,4]>col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
-vbu<-pbsc[,4]<col[1] & pbsc[,5]>col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
-pbu<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]>col[3] & pbsc[,7]<col[4] & pbsc[,8]<col[5]
-sju<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]>col[4] & pbsc[,8]<col[5]
-bnpu<-pbsc[,4]<col[1] & pbsc[,5]<col[2] & pbsc[,6]<col[3] & pbsc[,7]<col[4] & pbsc[,8]>col[5]
-
-#as before, checking which of those regions of divergence maps to specific windows of divergence
-write.table(pbsc[,1:3],"~/analysis/data/fst/subsample/PBS_keep_1kb.bed",row.names = FALSE,col.names = FALSE,quote=FALSE,sep='\t')
-write.table(na.omit(pbsc[all,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedall.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
-write.table(na.omit(pbsc[res,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedres.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
-write.table(na.omit(pbsc[interm,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedinterm.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
-write.table(na.omit(pbsc[bbu,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedbbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
-write.table(na.omit(pbsc[vbu,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedvbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
-write.table(na.omit(pbsc[pbu,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedpbu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
-write.table(na.omit(pbsc[sju,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedsju.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
-write.table(na.omit(pbsc[bnpu,1:3]),"~/analysis/data/fst/subsample/pbs_regions_sharedbnpu.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
-
-
-#source("http://bioconductor.org/biocLite.R")
-#biocLite()
-#biocLite('rtracklayer')
-
-#Finding the overlaps in full data---------
-library("rtracklayer")
-
-#summarizing these outlier windows, instead of by regions, by 1kb windows - look behind if confused about script (previous chunk)
-bed1=import("~/analysis/data/fst/subsample/PBS_keep_1kb.bed")
-
-bedall=import("~/analysis/data/fst/subsample/pbs_regions_sharedall.bed")
-bed1overlall=bed1[bed1 %over% bedall]
-hitsall<-findOverlaps(bedall,bed1)
-allhit<-subjectHits(hitsall)
-
-bedres=import("~/analysis/data/fst/subsample/pbs_regions_sharedres.bed")
-bed1overlres=bed1[bed1 %over% bedres]
-hitsres<-findOverlaps(bedres,bed1)
-reshit<-subjectHits(hitsres)
-
-bedinterm=import("~/analysis/data/fst/subsample/pbs_regions_sharedinterm.bed")
-bed1overlinterm=bed1[bed1 %over% bedinterm]
-hitsinterm<-findOverlaps(bedinterm,bed1)
-intermhit<-subjectHits(hitsinterm)
-
-bedbbu=import("~/analysis/data/fst/subsample/pbs_regions_sharedbbu.bed")
-bed1overlbbu=bed1[bed1 %over% bedbbu]
-hitsbbu<-findOverlaps(bedbbu,bed1)
-bbuhit<-subjectHits(hitsbbu)
-
-bedvbu=import("~/analysis/data/fst/subsample/pbs_regions_sharedvbu.bed")
-bed1overlvbu=bed1[bed1 %over% bedvbu]
-hitsvbu<-findOverlaps(bedvbu,bed1)
-vbuhit<-subjectHits(hitsvbu)
-
-bedpbu=import("~/analysis/data/fst/subsample/pbs_regions_sharedpbu.bed")
-bed1overlpbu=bed1[bed1 %over% bedpbu]
-hitspbu<-findOverlaps(bedpbu,bed1)
-pbuhit<-subjectHits(hitspbu)
-
-bedsju=import("~/analysis/data/fst/subsample/pbs_regions_sharedsju.bed")
-bed1overlsju=bed1[bed1 %over% bedsju]
-hitssju<-findOverlaps(bedsju,bed1)
-sjuhit<-subjectHits(hitssju)
-
-bedbnpu=import("~/analysis/data/fst/subsample/pbs_regions_sharedbnpu.bed")
 bed1overlbnpu=bed1[bed1 %over% bedbnpu]
 hitsbnpu<-findOverlaps(bedbnpu,bed1)
 bnpuhit<-subjectHits(hitsbnpu)
@@ -2238,7 +4144,8 @@ plot(pbsc[,"BNP"],pbsc[,"SJ"],pch=20,cex=.7,
 abline(h=0,v=0)
 ```
 
-## Test for finding if they are truly different by simulating 1000 random regions of the same size from the genome
+## Simulation with 1000 iterations
+* Test for finding if they are truly different by simulating 1000 random regions of the same size from the genome
 
 ```{r}
 
@@ -2271,6 +4178,7 @@ nam<-c("BB","VB","PB","SJ","BNP")
 colnames(rimeans)<-nam
 cols<-c("black","black","black","firebrick2","firebrick2")
 
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pbs_interm_random.jpg",width=1000,height=800)
 par(mfrow=c(2,3),mar=c(4,4,2,2))
 for(i in 1:length(nam)){
   hist(rimeans[,i],main='',breaks=30,xlim=c(range(rimeans[,i]-.1,na.rm=TRUE)[[1]],intermeans[i]+.5),
@@ -2278,6 +4186,7 @@ for(i in 1:length(nam)){
   abline(v=intermeans[i],lwd=3,col="green")
   box(bty='l',lwd=3)
 }
+dev.off()
 
 #plotting histogram for resistant only regions----
 
@@ -2326,9 +4235,21 @@ for(i in 1:length(nam)){
 ```
 
 
-## Plotting specific regions of the genome based on divergence - messed up for now, will have to re-do
+## Plotting specific regions of the genome  - messed up for now, will have to re-do
 
+###AHR1a/2a Introgressed region
 ```{r}
+pbs<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",header=FALSE,stringsAsFactors = FALSE) #reading in the windowed pbs estimates
+pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs") #naming columns
+colnames(pbs)<-pbsname
+
+col<-c()# finding 1% outliers
+for (i in 1:5){
+  col[i]<-quantile(pbs[,i+3],prob=.99,na.rm=TRUE)
+}
+
+pbsc<-pbs %>% filter(str_detect(Scaf,"chr")) #only selecting chromosomes
+
 #smoothing funciton----
 subsmooth <- function(vec,by=10,width=11){
   
@@ -2355,15 +4276,46 @@ subsmooth <- function(vec,by=10,width=11){
 ###Plotting CHR1/AHR region------------
 pbsc1<-pbsc %>% filter(str_detect(Scaf,"\\bchr1\\b"))
 
+jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/Ahr1a2a.jpg",width=1000,height=800)
 par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
-
 for(i in 1:5){
   plot(subsmooth(pbsc1[1:5000,i+3]),pch=20,cex=.8,ylim=c(0,1.8),bty='l',cex.axis=2,ylab='',xlab='')
   box(bty='l',lwd=3)
   abline(v=c(50,60),col="red",lty=2,lwd=1.5)
 }
+dev.off()
+```
+```{bash}
+#!/bin/bash
 
-###Plotting Chr10/ARNT introgressed region----
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=01:00:00
+
+#programs & files
+my_tabix=/data/oziolore/program/htslib/tabix
+my_bgz=/data/oziolore/program/htslib/bgzip
+
+my_vcf=/data/oziolore/fhet/data/varcall/filtered_chr.vcf.bgz
+my_list=/data/oziolore/fhet/data/outliers/ahr1a2a.txt
+my_out=/data/oziolore/fhet/data/outliers/ahr1a2a.vcf.bgz
+
+$my_tabix -fh $my_vcf chr1:0-1 | $my_bgz > $my_out
+xargs -a $my_list -I {} $my_tabix -f $my_vcf {} | $my_bgz >> $my_out
+```
+
+```{bash}
+scp kodiak:/data/oziolore/fhet/data/outliers/ahr1a2a.vcf.bgz /home/elias/analysis/data/fst/
+```
+
+```{bash}
+zcat ~/analysis/data/fst/ahr1a2a.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/ahr1a2a_haplo.vcf.gz
+```
+
+
+
+###ARNT Chr10/ introgressed region
+
+```{r}
 pbsc10<-pbsc %>% filter(str_detect(Scaf,"\\bchr10\\b"))
 
 par(mfrow=c(3,1),mar=c(3,3,0,0),mgp=c(1,1,0))
@@ -2376,7 +4328,7 @@ for(i in 1:3){
 }
 
 ```
-
+###ARNT Chr8 outlier
 ```{r}
 #plotting ARNT chr8----
 pbsc8<-pbsc %>% filter(str_detect(Scaf,"\\bchr8\\b"))
@@ -2389,7 +4341,10 @@ for(i in 1:5){
   abline(v=c(170,173),col="red",lty=2,lwd=1.5)
 }
 
+```
 
+### AIP chr2
+```{r}
 #plotting AIP chr2----
 pbsc2<-pbsc %>% filter(str_detect(Scaf,"\\bchr2\\b"))
 
@@ -2401,6 +4356,10 @@ for(i in 1:5){
   abline(v=c(140,142),col="red",lty=2,lwd=1.5)
 }
 
+```
+
+###AQP chr 24
+```{r}
 #plotting AQP3
 
 pbsc24<-pbsc %>% filter(str_detect(Scaf,"\\bchr24\\b"))
@@ -2413,22 +4372,11 @@ for(i in 1:5){
   abline(v=c(159,162),col="red",lty=2,lwd=1.5)
 }
 
-#plotting AQP3
-
-pbsc11<-pbsc %>% filter(str_detect(Scaf,"\\bchr11\\b"))
-
-par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
-
-for(i in 1:5){
-  plot(subsmooth(pbsc11[27000:28940,i+3]),pch=20,cex=.5,ylim=c(0,.5),bty='l',cex.axis=2,ylab='',xlab='')
-  box(bty='l',lwd=3)
-  abline(v=c(181,188),col="red",lty=2,lwd=1.5)
-}
-
 ```    
 
-##Looking at MDS of haplotypes
+## Looking at MDS of haplotypes
 
+### Formatting outlier lists
 * removing regions of introgression from considered regions (Chr 1 and 10) and converting to tabix readable format
 
 ```{bash}
@@ -2447,6 +4395,7 @@ awk '{OFS=""}{b=":"}{s="-"}{print $1,b,$2,s,$3}' > ~/analysis/data/fst/hudson_ou
 
 ```
 
+### Creating VCF of those regions
 * Then I grab all those regions from the vcf file in order to haploidize the genotype likelihoods
 
 ```{bash}
@@ -2525,6 +4474,7 @@ scp kodiak:/data/oziolore/fhet/data/outliers/hudson*.vcf.bgz /home/elias/analysi
 
 ```
 
+### Haploidizing function
 * I used a script (based on Noah Reid's script) that haploidizes genotypes based of low coverage data and just pass each file through them. Script below is called haploidize_gran_mine.r
 
 ```{r}
@@ -2573,6 +4523,7 @@ while(length(line <- readLines(f,n=1)) > 0) {
 }
 ```
 
+### Haploidizing all of those regions
 * using bash to haploidize each vcf file
 
 ```{bash}
@@ -2581,9 +4532,11 @@ zcat ~/analysis/data/fst/hudson_out_all.vcf.bgz | ~/analysis/scripts/haplo/haplo
 zcat ~/analysis/data/fst/hudson_out_res.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/hudson_out_res_haplo.vcf.bgz
 
 zcat ~/analysis/data/fst/hudson_out_interm.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/hudson_out_interm_haplo.vcf.bgz
+
+zcat ~/analysis/data/fst/hudson_out_all_intr.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/hudson_out_all_intr_haplo.vcf.bgz
 ```
 
-* plotting haplotypes
+## Plotting haplotypes
   + starting with resistant only haplotypes (because they finished first)
 ```{r}
 #install.packages("Rphylip")
@@ -2835,7 +4788,8 @@ legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
 
 ```
 
-## Running admixture on the data
+# Admixture 
+##Running admixture on the data
 
 ```{bash}
 #starting by converting vcf to bed file through plink
@@ -3014,7 +4968,8 @@ axis(side=1,at= ax2[5:6], labels = c("",""),tck=-0,lwd=4,
 abline(v=vert,col="khaki2",lty=1,lwd=2.5)
 ```
 
-##Decided to run NGS admix to figure out proportion that came from BB and GB (most fst divergent populations)
+## NGSadmix
+* Decided to run NGS admix to figure out proportion that came from BB and GB (most fst divergent populations)
 
 ```{bash}
 #start by creating a reference panel for ngs admix (two most highly divergent fst pops)
@@ -3116,6 +5071,7 @@ for i in {004..464}; do cat BU000$i*.qopt | head -n2 | grep -v "K1" >> combined_
 
 ```
 
+### Plotting NGSadmix
 * take this out into r and plot the probabilities
 
 ```{r}
@@ -3261,7 +5217,57 @@ write.table(a,"~/analysis/data/fastngs/alpha",quote=FALSE,row.names=FALSE)
 
 * this gave us an expectation for all allele frequencies for outlier regions.
 
-* now let's see if those match what the frequencies actually are
+# Plink MDS
+
+## Full genome MDS
+```{bash}
+#!/bin/bash
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=2:00:00
+
+
+/data/oziolore/program/plink/plink \
+-vcf /data/oziolore/fhet/data/varcall/filtered_chr.vcf.bgz \
+--allow-extra-chr \
+--cluster \
+--mds-plot 5 \
+--out /data/oziolore/fhet/data/plink/full.genome
+
+```
+
+##Plotting full genome MDS
+
+```{r}
+#R script to start new scaffold analysis in R
+read.table("~/analysis/data/plink/full.genome/full.genome.mds",stringsAsFactors=FALSE)->full
+read.table("~/analysis/data/plink/metadata",stringsAsFactors=FALSE,sep="\t")->meta
+row.names(meta)<-meta[,1]
+read.table("~/analysis/data/plink/popcolors.txt",stringsAsFactors=FALSE,sep="\t")->pops
+row.names(pops)<-pops[,1]
+plot(full[,4:5],pch=20,cex=.8,col=pops[meta[full[,1],2],2])
+library(scatterplot3d)
+scatterplot3d(full[,4:6],pch=20,color=pops[meta[full[,1],2],2])
+
+#Separating by sex
+read.table("~/analysis/data/plink/popcolors_sex.txt",stringsAsFactors=FALSE,sep="\t")->pops_sex
+row.names(pops_sex)<-pops_sex[,1]
+plot(full[,4:5],pch=20,cex=.8,col=pops_sex[meta[full[,1],3],2])
+scatterplot3d(full[,4:6],pch=20,color=pops_sex[meta[full[,1],3],2])
+
+
+#Separating by collection year
+read.table("~/share/metadata_2.txt",stringsAsFactors=FALSE,sep="\t")->meta
+row.names(meta)<-meta[,1]
+read.table("~/share/popcolors_2.txt",stringsAsFactors=FALSE,sep="\t")->pops
+row.names(pops)<-pops[,1]
+plot(full[,4:5],pch=20,cex=.8,col=pops[meta[full[,1],3],2])
+library(scatterplot3d)
+scatterplot3d(full[,4:6],pch=20,color=pops[meta[full[,1],3],2])
+
+```
+
+# Outliers frequency
+##Frequency vs. expected frequency
 
 ```{r}
 library(viridis)
@@ -3282,8 +5288,8 @@ for (i in 1:5){
 }
 
 
-z<-read.table("~/analysis/data/expectations/hudson_pbsmergeoutliers_max.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
-names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount")
+z<-read.table("~/analysis/data/expectations/hudson_pbsmergeoutliers.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
+names<-c("Scaf","start","end","BBsum","BBcount","VBsum","VBcount","PBsum","PBcount","SJsum","SJcount","BNPsum","BNPcount")
 colnames(z)<-names
 
 all<-z[,4]>col[1] & z[,6]>col[2] & z[,8]>col[3] & z[,10]>col[4] & z[,12]>col[5]
@@ -3469,7 +5475,7 @@ legend("topright",legend=c(chr[,1]),col=c(chr[,2]),pch=20,cex=1)
 ```
 
 #Introgression models
-###Plotting models of introgression
+##Plotting models of introgression
 
 ```{r}
 
@@ -3513,8 +5519,7 @@ dev.off()
 
 ```
 
-##Introgression
-###Plotting dxy
+##Plotting genome wide dxy
 
 ```{r}
 library(stringr)
@@ -3571,7 +5576,7 @@ total_chr10<-cbind(head(chr10_intr[,1:2],n=1),tail(chr10_intr[,3],n=1)) #merging
 write.table(total_chr10,"~/analysis/data/intro_models/chr10_region.txt",col.names = FALSE,row.names = FALSE,quote = FALSE) #writing it down
 ``` 
 
-### Introgression MDS plots of AHR
+## Introgression MDS plots of AHR
 
 ```{r}
 library(viridis)
@@ -3616,7 +5621,7 @@ dev.off()
 
 ```
 
-### Blocks of introgression
+## Blocks of introgression
 
 ```{r}
 library('ggplot2')
@@ -3662,17 +5667,18 @@ ggplot(counts2,
 dev.off()
 ```
 
-## Deletion plotting for both species
+# Deletion
 
-* Getting the sample names from the vcf file
+## Plotting for both species
+
+### Getting the sample names from the vcf file
 
 ```{bash}
 zcat hetgran.vcf.gz | grep -v "##" | head -n 1 > header.txt
 
 ```
 
-* downloaded depth file from Noah
-
+### Downloaded depth file from Noah
 
 ```{r}
 library(viridis)
@@ -4149,9 +6155,9 @@ nodelabels(trbootN$BP)
 
 ```
 
-##Physiology data
+#Physiology data
 
-###Starting with CYP1A activity
+##Starting with CYP1A activity
 
 ```{r}
 
@@ -4232,7 +6238,8 @@ m
 
 ```
 
-##Recombination rates chromosome 10
+# Collaborators
+## Recombination rates chromosome 10
 
 Downloaded chr10 table from https://github.com/jthmiller/Reco_rate on June 27th
 
@@ -4249,10 +6256,13 @@ write.table(chr10_1mb,"~/analysis/data/introgression/chr10_recrate_1mb_window.cs
 
 ```
 
-##Getting chr10 introgressed region in order to determine haplotype frequencies
+## Freq of introgression in pops
+
+* Getting chr10 introgressed region in order to determine haplotype frequencies
 
 * Obtained haplotype region from ##Plotting dxy chunk of code
 
+###Getting VCF of chr10 introgressed region
 ```{bash}
 #!/bin/bash -l
 
@@ -4273,6 +6283,8 @@ $my_tabix -fh $my_vcf chr10:0-1 | bgzip > $my_out
 $my_tabix -f $my_vcf chr10:21507785-29010051 | bgzip >> $my_out
 ```
 
+### Only keeping individuals needed
+
 ```{bash}
 #created a small vcf for only individuals I need (three resistant pops and 1 reference)
 
@@ -4290,7 +6302,7 @@ $my_tabix -f $my_vcf chr10:21507785-29010051 | bgzip >> $my_out
 my_vcftools=/home/eoziolor/program/vcftools/bin/vcftools
 my_varcall=/home/eoziolor/fgran/data/introgression/chr10_intr.vcf.bgz
 outdir=/home/eoziolor/fgran/data/introgression
-list=/home/eoziolor/fgran/data/varcall/pops/R1-3.S2.txt
+list=/home/eoziolor/fgran/data/varcall/pops/R2.S2.txt
 
 outfile=chr10_small.vcf.bgz
 
@@ -4302,14 +6314,7 @@ bgzip >  $outdir/$outfile
 
 ```
 
-```{bash}
-scp -P 2022 farm:/home/eoziolor/fgran/data/introgression/chr10_small.vcf.bgz ~/analysis/data/intro_models/
-
-zcat ~/analysis/data/intro_models/chr10_small.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine_large.r | gzip > ~/analysis/data/intro_models/chr10_small_haplo.vcf.bgz
-
-```
-
-* the function I am using to haploidize
+### Haploidize function the function I am using to haploidize
 
 ```{r}
 #what is in haploidize_gran_mine_large.r
@@ -4340,8 +6345,17 @@ while(length(line <- readLines(f,n=1)) > 0) {
 }
 ```
 
+### Haploidize the introgressed region on chr10
 
-## Getting allele frequencies for Chromosome 10 for populations considered under introgression
+```{bash}
+scp -P 2022 farm:/home/eoziolor/fgran/data/introgression/chr10_small.vcf.bgz ~/analysis/data/intro_models/
+
+zcat ~/analysis/data/intro_models/chr10_small.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine_large.r | gzip > ~/analysis/data/intro_models/chr10_small_haplo.vcf.bgz
+
+```
+
+## Chr10 introgressed population allele frequencies 
+* Getting allele frequencies for Chromosome 10 for populations considered under introgression
 
 ```{bash}
 #making Chr10.vcf.bgz
@@ -4467,7 +6481,9 @@ done
 
 ```
 
-## Looking at haploidized introgression region of CHR10
+## Frequency of introgression in R2
+
+### Load haploidized vcf
 
 ```{r}
 #install.packages("Rphylip")
@@ -4481,10 +6497,12 @@ library(stringr)
 vcf<-read.table("~/analysis/data/intro_models/chr10_verysmall_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
 ```
 
+### Get header for vcf
 ```{bash}
 zcat chr10_verysmall.vcf.bgz | grep -v "##" | head -n 1 > chr10_verysmall_header.txt
 ```
 
+### Plot introgression frequency
 ```{r}
 sexscore<-scan("~/analysis/data/intro_models/chr10_verysmall_header.txt",sep='\t',what="character")
 #toss sites that happen to have more than one allele
