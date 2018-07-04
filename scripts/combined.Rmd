@@ -4237,6 +4237,16 @@ for(i in 1:length(nam)){
 
 ## Plotting specific regions of the genome  - messed up for now, will have to re-do
 
+###Regions used
+
+```{r}
+      Scaf    start      end
+1     chr1        0  2903297
+321   chr8 16458074 17415074
+436  chr10 23911854 26893527
+1057 chr24 26047741 26157741
+72    chr2 26988885 27613885
+```
 ###AHR1a/2a Introgressed region
 ```{r}
 pbs<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",header=FALSE,stringsAsFactors = FALSE) #reading in the windowed pbs estimates
@@ -4285,6 +4295,7 @@ for(i in 1:5){
 }
 dev.off()
 ```
+
 ```{bash}
 #!/bin/bash
 
@@ -4311,7 +4322,86 @@ scp kodiak:/data/oziolore/fhet/data/outliers/ahr1a2a.vcf.bgz /home/elias/analysi
 zcat ~/analysis/data/fst/ahr1a2a.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/ahr1a2a_haplo.vcf.gz
 ```
 
+```{r}
+#install.packages("Rphylip")
+library(viridis)
+library(dplyr)
+library(magrittr)
+library(Rphylip)
+library(ape)
+library(stringr)
+vcf<-read.table("~/analysis/data/fst/ahr1a2a_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
+colnames(vcf)<-cname
 
+#toss sites that happen to have more than one allele
+keep<-!grepl(",",vcf[,5]) #none because of the way I've called haplotypes table to check that
+
+gt<-as.matrix(vcf[,10:297])
+class(gt)<-"numeric"
+
+#toss individuals with greater than 90% missing data
+keep<-colMeans(is.na(gt))<0.9
+gt<-gt[,keep]
+
+#population identifiers
+pop<-ifelse(grepl("BB",sexscore[,1]),"BB",
+            ifelse(grepl("VB",sexscore[,1]),"VB",
+                   ifelse(grepl("PB",sexscore[,1]),"PB",
+                          ifelse(grepl("SJ",sexscore[,1]),"SJ",
+                                 ifelse(grepl("BNP",sexscore[,1]),"BNP",
+                                        ifelse(grepl("SP",sexscore[,1]),"SP",
+                                               ifelse(grepl("GB",sexscore[,1]),"GB","WRONG")))))))
+popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
+            ifelse(grepl("VB",sexscore[,1]),"black",
+                   ifelse(grepl("PB",sexscore[,1]),"black",
+                          ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
+                                 ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
+                                        ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
+                                               ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
+popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
+               ifelse(grepl("VB",sexscore[,1]),"grey40",
+                      ifelse(grepl("PB",sexscore[,1]),"grey80",
+                             ifelse(grepl("SJ",sexscore[,1]),"red",
+                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
+                                           ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
+                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+
+pop2<-pop[keep]
+popcol2<-popcol[keep]
+popfill2<-popfill[keep]
+
+popname<-c("BB","VB","PB","SJ","BNP","SP","GB")
+popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3")
+#distance matrix and nj tree
+d <- t(gt) %>% dist()
+#dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
+mds <- cmdscale(d)
+tr <- nj(d)
+
+#plotting tree
+plot(tr,"unrooted",show.tip.label=FALSE)
+tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
+
+#plotting mds
+par(mfrow=c(1,1),mar=c(3,3,0,0))
+plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
+     bg=popfill2,bty='l')
+box(bty='l',lwd=5)
+
+legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),
+       pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))
+
+#Plotting both
+par(mfrow=c(1,2))
+plot(tr,"unrooted",show.tip.label=FALSE)
+tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+plot(mds,pch=20,col=popcol2)
+legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
+
+```
 
 ###ARNT Chr10/ introgressed region
 
@@ -4326,6 +4416,114 @@ for(i in 1:3){
   box(bty='l',lwd=3)
   abline(h=0,v=c(941,964),col="red",lty=2,lwd=1.5)
 }
+
+```
+
+```{bash}
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=01:00:00
+
+#programs & files
+my_tabix=/data/oziolore/program/htslib/tabix
+my_bgz=/data/oziolore/program/htslib/bgzip
+
+my_vcf=/data/oziolore/fhet/data/varcall/filtered_chr.vcf.bgz
+my_list=/data/oziolore/fhet/data/outliers/arnt_chr10.txt
+my_out=/data/oziolore/fhet/data/outliers/arnt_chr10.vcf.bgz
+
+$my_tabix -fh $my_vcf chr1:0-1 | $my_bgz > $my_out
+xargs -a $my_list -I {} $my_tabix -f $my_vcf {} | $my_bgz >> $my_out
+
+```
+
+```{bash}
+scp kodiak:/data/oziolore/fhet/data/outliers/arnt_chr10.vcf.bgz ~/analysis/data/fst/
+```
+
+```{bash}
+zcat ~/analysis/data/fst/arnt_chr10.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/arnt_chr10_haplo.vcf.gz
+```
+
+```{r}
+#install.packages("Rphylip")
+library(viridis)
+library(dplyr)
+library(magrittr)
+library(Rphylip)
+library(ape)
+library(stringr)
+vcf<-read.table("~/analysis/data/fst/arnt_chr10_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
+colnames(vcf)<-cname
+
+#toss sites that happen to have more than one allele
+keep<-!grepl(",",vcf[,5]) #none because of the way I've called haplotypes table to check that
+
+gt<-as.matrix(vcf[,10:297])
+class(gt)<-"numeric"
+
+#toss individuals with greater than 90% missing data
+keep<-colMeans(is.na(gt))<0.9
+gt<-gt[,keep]
+
+#population identifiers
+pop<-ifelse(grepl("BB",sexscore[,1]),"BB",
+            ifelse(grepl("VB",sexscore[,1]),"VB",
+                   ifelse(grepl("PB",sexscore[,1]),"PB",
+                          ifelse(grepl("SJ",sexscore[,1]),"SJ",
+                                 ifelse(grepl("BNP",sexscore[,1]),"BNP",
+                                        ifelse(grepl("SP",sexscore[,1]),"SP",
+                                               ifelse(grepl("GB",sexscore[,1]),"GB","WRONG")))))))
+popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
+            ifelse(grepl("VB",sexscore[,1]),"black",
+                   ifelse(grepl("PB",sexscore[,1]),"black",
+                          ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
+                                 ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
+                                        ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
+                                               ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
+popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
+               ifelse(grepl("VB",sexscore[,1]),"grey40",
+                      ifelse(grepl("PB",sexscore[,1]),"grey80",
+                             ifelse(grepl("SJ",sexscore[,1]),"red",
+                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
+                                           ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
+                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+
+pop2<-pop[keep]
+popcol2<-popcol[keep]
+popfill2<-popfill[keep]
+
+popname<-c("BB","VB","PB","SJ","BNP","SP","GB")
+popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3")
+#distance matrix and nj tree
+d <- t(gt) %>% dist()
+#dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
+mds <- cmdscale(d)
+tr <- nj(d)
+
+#plotting tree
+plot(tr,"unrooted",show.tip.label=FALSE)
+tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
+
+#plotting mds
+par(mfrow=c(1,1),mar=c(3,3,0,0))
+plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
+     bg=popfill2,bty='l')
+box(bty='l',lwd=5)
+
+legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),
+       pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))
+
+#Plotting both
+par(mfrow=c(1,2))
+plot(tr,"unrooted",show.tip.label=FALSE)
+tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+plot(mds,pch=20,col=popcol2)
+legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
 
 ```
 ###ARNT Chr8 outlier
@@ -4343,6 +4541,114 @@ for(i in 1:5){
 
 ```
 
+```{bash}
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=01:00:00
+
+#programs & files
+my_tabix=/data/oziolore/program/htslib/tabix
+my_bgz=/data/oziolore/program/htslib/bgzip
+
+my_vcf=/data/oziolore/fhet/data/varcall/filtered_chr.vcf.bgz
+my_list=/data/oziolore/fhet/data/outliers/arnt_chr8.txt
+my_out=/data/oziolore/fhet/data/outliers/arnt_chr8.vcf.bgz
+
+$my_tabix -fh $my_vcf chr1:0-1 | $my_bgz > $my_out
+xargs -a $my_list -I {} $my_tabix -f $my_vcf {} | $my_bgz >> $my_out
+```
+
+```{bash}
+scp kodiak:/data/oziolore/fhet/data/outliers/arnt_chr8.vcf.bgz ~/analysis/data/fst/
+```
+
+```{bash}
+zcat ~/analysis/data/fst/arnt_chr8.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/arnt_chr8_haplo.vcf.gz
+```
+
+```{r}
+#install.packages("Rphylip")
+library(viridis)
+library(dplyr)
+library(magrittr)
+library(Rphylip)
+library(ape)
+library(stringr)
+vcf<-read.table("~/analysis/data/fst/arnt_chr8_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
+colnames(vcf)<-cname
+
+#toss sites that happen to have more than one allele
+keep<-!grepl(",",vcf[,5]) #none because of the way I've called haplotypes table to check that
+
+gt<-as.matrix(vcf[,10:297])
+class(gt)<-"numeric"
+
+#toss individuals with greater than 90% missing data
+keep<-colMeans(is.na(gt))<0.9
+gt<-gt[,keep]
+
+#population identifiers
+pop<-ifelse(grepl("BB",sexscore[,1]),"BB",
+            ifelse(grepl("VB",sexscore[,1]),"VB",
+                   ifelse(grepl("PB",sexscore[,1]),"PB",
+                          ifelse(grepl("SJ",sexscore[,1]),"SJ",
+                                 ifelse(grepl("BNP",sexscore[,1]),"BNP",
+                                        ifelse(grepl("SP",sexscore[,1]),"SP",
+                                               ifelse(grepl("GB",sexscore[,1]),"GB","WRONG")))))))
+popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
+            ifelse(grepl("VB",sexscore[,1]),"black",
+                   ifelse(grepl("PB",sexscore[,1]),"black",
+                          ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
+                                 ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
+                                        ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
+                                               ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
+popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
+               ifelse(grepl("VB",sexscore[,1]),"grey40",
+                      ifelse(grepl("PB",sexscore[,1]),"grey80",
+                             ifelse(grepl("SJ",sexscore[,1]),"red",
+                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
+                                           ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
+                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+
+pop2<-pop[keep]
+popcol2<-popcol[keep]
+popfill2<-popfill[keep]
+
+popname<-c("BB","VB","PB","SJ","BNP","SP","GB")
+popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3")
+#distance matrix and nj tree
+d <- t(gt) %>% dist()
+#dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
+mds <- cmdscale(d)
+tr <- nj(d)
+
+#plotting tree
+plot(tr,"unrooted",show.tip.label=FALSE)
+tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
+
+#plotting mds
+par(mfrow=c(1,1),mar=c(3,3,0,0))
+plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
+     bg=popfill2,bty='l')
+box(bty='l',lwd=5)
+
+legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),
+       pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))
+
+#Plotting both
+par(mfrow=c(1,2))
+plot(tr,"unrooted",show.tip.label=FALSE)
+tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+plot(mds,pch=20,col=popcol2)
+legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
+
+```
+
+
 ### AIP chr2
 ```{r}
 #plotting AIP chr2----
@@ -4355,6 +4661,113 @@ for(i in 1:5){
   box(bty='l',lwd=3)
   abline(v=c(140,142),col="red",lty=2,lwd=1.5)
 }
+
+```
+
+```{bash}
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=01:00:00
+
+#programs & files
+my_tabix=/data/oziolore/program/htslib/tabix
+my_bgz=/data/oziolore/program/htslib/bgzip
+
+my_vcf=/data/oziolore/fhet/data/varcall/filtered_chr.vcf.bgz
+my_list=/data/oziolore/fhet/data/outliers/aip_chr2.txt
+my_out=/data/oziolore/fhet/data/outliers/aip_chr2.vcf.bgz
+
+$my_tabix -fh $my_vcf chr1:0-1 | $my_bgz > $my_out
+xargs -a $my_list -I {} $my_tabix -f $my_vcf {} | $my_bgz >> $my_out
+```
+
+```{bash}
+scp kodiak:/data/oziolore/fhet/data/outliers/aip_chr2.vcf.bgz ~/analysis/data/fst/
+```
+
+```{bash}
+zcat ~/analysis/data/fst/aip_chr2.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/aip_chr2_haplo.vcf.gz
+```
+
+```{r}
+#install.packages("Rphylip")
+library(viridis)
+library(dplyr)
+library(magrittr)
+library(Rphylip)
+library(ape)
+library(stringr)
+vcf<-read.table("~/analysis/data/fst/aip_chr2_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
+colnames(vcf)<-cname
+
+#toss sites that happen to have more than one allele
+keep<-!grepl(",",vcf[,5]) #none because of the way I've called haplotypes table to check that
+
+gt<-as.matrix(vcf[,10:297])
+class(gt)<-"numeric"
+
+#toss individuals with greater than 90% missing data
+keep<-colMeans(is.na(gt))<0.9
+gt<-gt[,keep]
+
+#population identifiers
+pop<-ifelse(grepl("BB",sexscore[,1]),"BB",
+            ifelse(grepl("VB",sexscore[,1]),"VB",
+                   ifelse(grepl("PB",sexscore[,1]),"PB",
+                          ifelse(grepl("SJ",sexscore[,1]),"SJ",
+                                 ifelse(grepl("BNP",sexscore[,1]),"BNP",
+                                        ifelse(grepl("SP",sexscore[,1]),"SP",
+                                               ifelse(grepl("GB",sexscore[,1]),"GB","WRONG")))))))
+popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
+            ifelse(grepl("VB",sexscore[,1]),"black",
+                   ifelse(grepl("PB",sexscore[,1]),"black",
+                          ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
+                                 ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
+                                        ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
+                                               ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
+popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
+               ifelse(grepl("VB",sexscore[,1]),"grey40",
+                      ifelse(grepl("PB",sexscore[,1]),"grey80",
+                             ifelse(grepl("SJ",sexscore[,1]),"red",
+                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
+                                           ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
+                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+
+pop2<-pop[keep]
+popcol2<-popcol[keep]
+popfill2<-popfill[keep]
+
+popname<-c("BB","VB","PB","SJ","BNP","SP","GB")
+popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3")
+#distance matrix and nj tree
+d <- t(gt) %>% dist()
+#dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
+mds <- cmdscale(d)
+tr <- nj(d)
+
+#plotting tree
+plot(tr,"unrooted",show.tip.label=FALSE)
+tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
+
+#plotting mds
+par(mfrow=c(1,1),mar=c(3,3,0,0))
+plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
+     bg=popfill2,bty='l')
+box(bty='l',lwd=5)
+
+legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),
+       pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))
+
+#Plotting both
+par(mfrow=c(1,2))
+plot(tr,"unrooted",show.tip.label=FALSE)
+tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+plot(mds,pch=20,col=popcol2)
+legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
 
 ```
 
@@ -4373,6 +4786,114 @@ for(i in 1:5){
 }
 
 ```    
+
+
+```{bash}
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=01:00:00
+
+#programs & files
+my_tabix=/data/oziolore/program/htslib/tabix
+my_bgz=/data/oziolore/program/htslib/bgzip
+
+my_vcf=/data/oziolore/fhet/data/varcall/filtered_chr.vcf.bgz
+my_list=/data/oziolore/fhet/data/outliers/aqp3_chr24.txt
+my_out=/data/oziolore/fhet/data/outliers/aqp3_chr24.vcf.bgz
+
+$my_tabix -fh $my_vcf chr1:0-1 | $my_bgz > $my_out
+xargs -a $my_list -I {} $my_tabix -f $my_vcf {} | $my_bgz >> $my_out
+```
+
+```{bash}
+scp kodiak:/data/oziolore/fhet/data/outliers/aqp3_chr24.vcf.bgz ~/analysis/data/fst/
+```
+
+```{bash{}
+zcat ~/analysis/data/fst/aqp3_chr24.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/aqp3_chr24_haplo.vcf.gz
+```
+
+```{r}
+#install.packages("Rphylip")
+library(viridis)
+library(dplyr)
+library(magrittr)
+library(Rphylip)
+library(ape)
+library(stringr)
+vcf<-read.table("~/analysis/data/fst/aqp3_chr24_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
+colnames(vcf)<-cname
+
+#toss sites that happen to have more than one allele
+keep<-!grepl(",",vcf[,5]) #none because of the way I've called haplotypes table to check that
+
+gt<-as.matrix(vcf[,10:297])
+class(gt)<-"numeric"
+
+#toss individuals with greater than 90% missing data
+keep<-colMeans(is.na(gt))<0.9
+gt<-gt[,keep]
+
+#population identifiers
+pop<-ifelse(grepl("BB",sexscore[,1]),"BB",
+            ifelse(grepl("VB",sexscore[,1]),"VB",
+                   ifelse(grepl("PB",sexscore[,1]),"PB",
+                          ifelse(grepl("SJ",sexscore[,1]),"SJ",
+                                 ifelse(grepl("BNP",sexscore[,1]),"BNP",
+                                        ifelse(grepl("SP",sexscore[,1]),"SP",
+                                               ifelse(grepl("GB",sexscore[,1]),"GB","WRONG")))))))
+popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
+            ifelse(grepl("VB",sexscore[,1]),"black",
+                   ifelse(grepl("PB",sexscore[,1]),"black",
+                          ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
+                                 ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
+                                        ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
+                                               ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
+popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
+               ifelse(grepl("VB",sexscore[,1]),"grey40",
+                      ifelse(grepl("PB",sexscore[,1]),"grey80",
+                             ifelse(grepl("SJ",sexscore[,1]),"red",
+                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
+                                           ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
+                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+
+pop2<-pop[keep]
+popcol2<-popcol[keep]
+popfill2<-popfill[keep]
+
+popname<-c("BB","VB","PB","SJ","BNP","SP","GB")
+popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3")
+#distance matrix and nj tree
+d <- t(gt) %>% dist()
+#dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
+mds <- cmdscale(d)
+tr <- nj(d)
+
+#plotting tree
+plot(tr,"unrooted",show.tip.label=FALSE)
+tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
+
+#plotting mds
+par(mfrow=c(1,1),mar=c(3,3,0,0))
+plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
+     bg=popfill2,bty='l')
+box(bty='l',lwd=5)
+
+legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),
+       pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))
+
+#Plotting both
+par(mfrow=c(1,2))
+plot(tr,"unrooted",show.tip.label=FALSE)
+tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
+plot(mds,pch=20,col=popcol2)
+legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
+
+```
 
 ## Looking at MDS of haplotypes
 
@@ -5288,7 +5809,7 @@ for (i in 1:5){
 }
 
 
-z<-read.table("~/analysis/data/expectations/hudson_pbsmergeoutliers.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
+z<-read.table("~/analysis/data/fst/hudson_pbsmergeoutliers.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
 names<-c("Scaf","start","end","BBsum","BBcount","VBsum","VBcount","PBsum","PBcount","SJsum","SJcount","BNPsum","BNPcount")
 colnames(z)<-names
 
@@ -5446,9 +5967,9 @@ par(mar=c(4,4,2,2))
 plot(efr[,1],ylim=c(-.2,.4),type='n',xaxt='n',
      ylab="Deviation from expected allele frequencies due to admixture",bty='l')
 for(i in 1:dim(efr)[[2]]){
-  lines(efr[,i],ylim=c(0,.5),lwd=ifelse(zn[i,1]=="chr1",3,
+  lines(efr[,i],ylim=c(0,.5),lwd=ifelse(zn[i,1]=="chr1"&zn[i,2]==0,3,
                                         ifelse(zn[i,1]=="chr8",3,0.8))
-        ,col=ifelse(zn[i,1]=="chr1","blue",
+        ,col=ifelse(zn[i,1]=="chr1"&zn[i,2]==0,"blue",
                     ifelse(zn[i,1]=="chr8","green","black")))
 }
 axis(side=1,at=1:7,labels=c(rownames(efr)))
