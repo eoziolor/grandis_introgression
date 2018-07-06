@@ -6834,7 +6834,7 @@ write.table(chr10_1mb,"~/analysis/data/introgression/chr10_recrate_1mb_window.cs
 
 my_tabix=/home/eoziolor/program/htslib/tabix
 
-my_vcf=/home/eoziolor/fgran/data/varcall/chr10_ordered_filtered.vcf.bgz
+my_vcf=/home/eoziolor/fgran/data/varcall/chr10_filtered_060218.vcf.bgz
 my_out=/home/eoziolor/fgran/data/introgression/chr10_intr.vcf.bgz 
 
 $my_tabix -fh $my_vcf chr10:0-1 | bgzip > $my_out
@@ -6934,21 +6934,6 @@ cat \
 <(cat header.txt) |\
 bgzip > chr10.vcf.bgz
 
-#getting out complex SNPs
-
-#!/bin/bash -l
-#SBATCH -J chr10sub
-#SBATCH -o chr10sub-%A-%a.output
-#SBATCH -e chr10sub-%A-%a.output
-#SBATCH -N 1
-#SBATCH --cpus-per-task=8
-#SBATCH -t 24:00:00
-#SBATCH --mem=60000
-
-/home/eoziolor/program/vcflib/bin/vcfallelicprimitives \
-/home/eoziolor/fgran/data/varcall/chr10.vcf.bgz |\
-bgzip > /home/eoziolor/fgran/data/varcall/chr10_biallelic.vcf.bgz
-
 #Filtering out non-biallelic snps
 
 #!/bin/bash -l
@@ -6964,9 +6949,9 @@ bgzip > /home/eoziolor/fgran/data/varcall/chr10_biallelic.vcf.bgz
 my_vcftools=/home/eoziolor/program/vcftools/bin/vcftools
 
 
-my_varcall=/home/eoziolor/fgran/data/varcall/chr10_biallelic.vcf.bgz
+my_varcall=/home/eoziolor/fgran/data/varcall/chr10.vcf.bgz
 outdir=/home/eoziolor/fgran/data/varcall
-outfile=chr10_filtered.vcf.bgz
+outfile=chr10_filtered_060218.vcf.bgz
 
 $my_vcftools --gzvcf $my_varcall \
 --minQ 100 \
@@ -6989,7 +6974,7 @@ bgzip > $outdir/$outfile
 #SBATCH --mem=60000
 
 #files and programs
-my_vcf=/home/eoziolor/fgran/data/varcall/chr10_filtered.vcf.bgz
+my_vcf=/home/eoziolor/fgran/data/varcall/chr10_filtered_060218.vcf.bgz
 dir=/home/eoziolor/fgran/data/varcall/pops/
 
 pops=VB\ SP\ ER\ KC\ BP\ F\ BB\ PB
@@ -7017,7 +7002,7 @@ mv newSP.txt > SP.txt
 
 #files and programs
 my_vcftools=/home/eoziolor/program/vcftools/bin/vcftools
-my_varcall=/home/eoziolor/fgran/data/varcall/chr10_filtered.vcf.bgz
+my_varcall=/home/eoziolor/fgran/data/varcall/chr10_filtered_060218.vcf.bgz
 outdir=/home/eoziolor/fgran/data/varcall
 pops=VB\ SP\ ER\ KC\ F\ BP
 listdir=/home/eoziolor/fgran/data/varcall/pops
@@ -7033,13 +7018,44 @@ outfile=chr10_freqs.$theone
 $my_vcftools --gzvcf $my_varcall \
 --keep $theonefile \
 --freq \
---out $outdir/$outfile
+--out $outdir/$outfile\_060218
 
 done
+
+#only selecting VB and SP to figure out which individuals are with introgression
+#!/bin/bash -l
+
+#SBATCH -J freqfilter
+#SBATCH -o freqfilter-%j.output
+#SBATCH -e freqfilter-%j.output
+#SBATCH -N 1
+#SBATCH --cpus-per-task=8
+#SBATCH -t 24:00:00
+#SBATCH --mem=30000
+
+#files and programs
+my_vcftools=/home/eoziolor/program/vcftools/bin/vcftools
+my_varcall=/home/eoziolor/fgran/data/varcall/chr10_filtered_060218.vcf.bgz
+outdir=/home/eoziolor/fgran/data/introgression
+list=/home/eoziolor/fgran/data/varcall/pops/R2.S2.txt
+
+outfile=chr10_verysmall_060218.vcf.bgz
+
+$my_vcftools --gzvcf $my_varcall \
+--keep $list \
+--recode \
+--stdout |\
+bgzip >  $outdir/$outfile
 
 ```
 
 ## Frequency of introgression in R2
+
+###Haploidizing the small vcf
+
+```{bash}
+zcat ~/analysis/data/intro_models/chr10_verysmall_060218.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine2_verysmall.r | gzip > ~/analysis/data/intro_models/chr10_verysmall_060218_haplo.vcf.gz
+```
 
 ### Load haploidized vcf
 
@@ -7052,12 +7068,12 @@ library(Rphylip)
 library(ape)
 library(stringr)
 
-vcf<-read.table("~/analysis/data/intro_models/chr10_verysmall_haplo2.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+vcf<-read.table("~/analysis/data/intro_models/chr10_verysmall_060218_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
 ```
 
 ### Get header for vcf
 ```{bash}
-zcat chr10_verysmall.vcf.bgz | grep -v "##" | head -n 1 > chr10_verysmall_header.txt
+zcat ~/analysis/data/intro_models/chr10_verysmall_060218.vcf.bgz | grep -v "##" | head -n 1 > chr10_verysmall_header.txt
 ```
 
 ### Plot introgression frequency
@@ -7142,10 +7158,10 @@ vb<-grepl("VB",names(indfr))
 sp<-grepl("SP",names(indfr))
 
 plot(indfr,col=ifelse(vb==TRUE,"black","cadetblue3"))
-abline(h=.41)
+abline(h=.4)
 
-intr<-indfr[indfr<0.41] #getting introgressed ind
-nonintr<-indfr[indfr>0.41] #getting non-introgressed ind
+intr<-indfr[indfr<0.4] #getting introgressed ind
+nonintr<-indfr[indfr>0.4] #getting non-introgressed ind
 vbintr<-intr[grepl("VB",names(intr))] #getting only VB introgressed ind
 spnonintr<-nonintr[grepl("SP",names(nonintr))] #getting only SP non-intr ind
 
@@ -7156,10 +7172,76 @@ gt_spnonintr<-gt[,names(spnonintr)]
 #getting population frequencies for VB intr
 popfr_vbintr<-cbind(vcf[,1:2])
 nam<-c("chr","pos","VB")
-
-for(i in dim(gt_vbintr)[[1]]){
-  freq[i]<-as.numeric(sum(gt_vbintr[i,],na.rm=TRUE))/length(gt_vbintr[i,!is.na(gt_vbintr[i,])])
+freq<-c()
+for(i in 1:dim(gt_vbintr)[[1]]){
+  freq[i]<-sum(gt_vbintr[i,],na.rm=TRUE)/length(gt_vbintr[i,!is.na(gt_vbintr[i,])])
 }
 popfr_vbintr<-cbind(popfr_vbintr,freq)
 colnames(popfr_vbintr)<-c("chr","pos","VBintr")
+
+#getting those for SP non-intr
+popfr_spnonintr<-cbind(vcf[,1:2])
+nam<-c("chr","pos","VB")
+freq<-c()
+for(i in 1:dim(gt_spnonintr)[[1]]){
+  freq[i]<-sum(gt_spnonintr[i,],na.rm=TRUE)/length(gt_spnonintr[i,!is.na(gt_spnonintr[i,])])
+}
+popfr_spnonintr<-cbind(popfr_spnonintr,freq)
+colnames(popfr_spnonintr)<-c("chr","pos","SPnonintr")
+
+#writing list of individuals (VBintr and SPnonintr) so that we can get frequencies for the whole chr10
+vbintrlist<-names(vbintr)
+spnonintrlist<-names(spnonintr)
+
+write.table(vbintrlist,"~/analysis/data/intro_models/vbintr.txt",sep='\n',quote = FALSE,row.names = FALSE,col.names = FALSE)
+write.table(spnonintrlist,"~/analysis/data/intro_models/spnonintr.txt",sep='\n',quote = FALSE,row.names = FALSE,col.names = FALSE)
+```
+
+###Chr10 frequencies for only VB introgressed and SP nonintrogressed individuals
+* import those into farm
+
+```{bash}
+scp -P 2022 /home/elias/analysis/data/intro_models/*intr.txt farm:/home/eoziolor/fgran/data/varcall/pops/
+```
+
+* do these only for VB intr and SP nonintr
+
+```{bash}
+#!/bin/bash -l
+
+#SBATCH -J freqfilter
+#SBATCH -o freqfilter-%j.output
+#SBATCH -e freqfilter-%j.output
+#SBATCH -N 1
+#SBATCH --cpus-per-task=8
+#SBATCH -t 24:00:00
+#SBATCH --mem=30000
+
+#files and programs
+my_vcftools=/home/eoziolor/program/vcftools/bin/vcftools
+my_varcall=/home/eoziolor/fgran/data/varcall/chr10_filtered_060218.vcf.bgz
+outdir=/home/eoziolor/fgran/data/varcall
+pops=vbintr\ spnonintr
+listdir=/home/eoziolor/fgran/data/varcall/pops
+
+for i in {1..2}
+
+do theone=$(echo $pops | cut -f $i -d ' ')
+
+theonefile=$listdir/$theone.txt
+
+outfile=chr10_freqs_060218.$theone
+
+$my_vcftools --gzvcf $my_varcall \
+--keep $theonefile \
+--freq \
+--out $outdir/$outfile
+
+done
+```
+
+* copy into computer to send to Sivan
+
+```{bash}
+scp -P 2022 farm:/home/eoziolor/fgran/data/varcall/*intr.frq /home/elias/analysis/data/intro_models/
 ```
