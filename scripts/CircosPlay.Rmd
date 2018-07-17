@@ -1,0 +1,88 @@
+---
+title: "circos play"
+author: "Elias"
+date: "July 13, 2018"
+output: html_document
+---
+
+Playing around with installing Rcircos and some plots
+===
+# Install
+```{r}
+#install.packages('circlize')
+library(circlize)
+library(magrittr)
+library(dplyr)
+library(stringr)
+```
+
+##Plugging in the PBS data
+```{r}
+pbs<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",stringsAsFactors=FALSE) #importing PBS statistics
+colnames(pbs)<-c("chr","start","end","BB","VB","PB","SJ","BNP") #naming colnames
+
+pbsc<-pbs %>% 
+  filter(str_detect(chr,"chr")) %>% 
+  filter(!is.na(BB)&!is.na(VB)&!is.na(PB)&!is.na(SJ)&!is.na(BNP))
+
+pbsc$chr<-factor(pbsc$chr,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
+                                     "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
+                                     "chr20","chr21","chr22","chr23","chr24"))
+
+pbsc<-pbsc %>% 
+  mutate(seq=seq(1:dim(pbsc)[[1]]))
+
+```
+
+#Circlize
+
+```{r}
+#initializing a plot; doesn't work yet
+
+circos.par("track.height" = 0.15)
+circos.initialize(factors = pbsc$chr, x = pbsc$seq)
+#circos.track(factors = pbsc$chr, y = pbsc$BB)
+circos.track(factors = pbsc$chr, y = pbsc$BB,
+    panel.fun = function(x, y) {
+        circos.text(CELL_META$xcenter, CELL_META$cell.ylim[2] + uy(5, "mm"), 
+            CELL_META$sector.index)
+})
+circos.trackPoints(pbsc$chr, pbsc$seq, pbsc$BB, pch = 20, cex = 0.01)
+
+circos.track(factors = pbsc$chr, y = pbsc$VB)
+circos.trackLines(pbsc$chr, pbsc$seq, pbsc$VB, pch = 20, cex = 0.1)
+
+circos.track(factors = pbsc$chr, y = pbsc$PB)
+circos.trackPoints(pbsc$chr, pbsc$seq, pbsc$PB, pch = 20, cex = 0.1)
+
+circos.track(factors = pbsc$chr, y = pbsc$SJ)
+circos.trackPoints(pbsc$chr, pbsc$seq, pbsc$SJ, pch = 20, cex = 0.1)
+
+circos.track(factors = pbsc$chr, y = pbsc$BNP)
+circos.trackPoints(pbsc$chr, pbsc$seq, pbsc$BNP, pch = 20, cex = 0.1)
+
+# circos.text(-1, 0.5, "text", sector.index = "a", track.index = 1)
+
+```
+
+##Example
+
+```{r}
+set.seed(999)
+n = 1000
+df = data.frame(factors = sample(letters[1:8], n, replace = TRUE),
+    x = rnorm(n), y = runif(n))
+circos.par("track.height" = 0.1)
+circos.initialize(factors = df$factors, x = df$x)
+circos.track(factors = df$factors, y = df$y,
+    panel.fun = function(x, y) {
+        circos.text(CELL_META$xcenter, CELL_META$cell.ylim[2] + uy(5, "mm"), 
+            CELL_META$sector.index)
+        circos.axis(labels.cex = 0.6)
+})
+col = rep(c("#FF0000", "#00FF00"), 4)
+circos.trackPoints(df$factors, df$x, df$y, col = col, pch = 16, cex = 0.5)
+circos.text(-1, 0.5, "text", sector.index = "a", track.index = 1)
+
+```
+
