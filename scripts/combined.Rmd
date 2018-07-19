@@ -6814,6 +6814,14 @@ write.table(chr10_1mb,"~/analysis/data/introgression/chr10_recrate_1mb_window.cs
 
 ```
 
+### Checking on weir high reco rate in the end of region
+
+```{r}
+#install.packages('qtl')
+library(qtl)
+
+```
+
 ## Freq of introgression in pops
 
 * Getting chr10 introgressed region in order to determine haplotype frequencies
