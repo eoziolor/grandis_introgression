@@ -1914,9 +1914,9 @@ library('gridExtra')
 
 #loading neutrality stats----
 
-theta<-read.table("~/analysis/data/angsd/sample_comparison/thetas_sub",header=TRUE, sep=',') #reading in summary statistics
-pi<-read.table("~/analysis/data/angsd/sample_comparison/pi_sub", header=TRUE, sep=',')
-taj<-read.table("~/analysis/data/angsd/sample_comparison/taj_sub",header=TRUE, sep=',')
+theta<-read.table("~/fgfh_post/data/angsd/sample_comparison/thetas_sub",header=TRUE, sep=',') #reading in summary statistics
+pi<-read.table("~/fgfh_post/data/angsd/sample_comparison/pi_sub", header=TRUE, sep=',')
+taj<-read.table("~/fgfh_post/data/angsd/sample_comparison/taj_sub",header=TRUE, sep=',')
 
 subw<-pi[,"keep"]>0 #applying filter of low coverage
 
@@ -1926,13 +1926,13 @@ library(reshape2)
 
 mpi<-melt(pi[,1:10],id=c("scaf","start","end"))
 
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pi.jpg",width=1000,height=600)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/pi.jpg",width=1000,height=600)
 ggplot(mpi,
        aes(x=variable,y=value,fill=variable,color=variable))+
   geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
   scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
   scale_color_manual(values=c("grey40",rep("black",6)))+
-  scale_y_continuous(limits=c(0,.015))+
+  scale_y_continuous(limits=c(0.001,.012))+
   theme_classic()+
   labs(y="",x="")+
   theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
@@ -1941,7 +1941,7 @@ dev.off()
 
 mtaj<-melt(taj[,1:10],id=c("scaf","start","end"))
 
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/taj.jpg",width=1000,height=600)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/taj.jpg",width=1000,height=600)
 ggplot(mtaj,
        aes(x=variable,y=value,fill=variable,color=variable))+
   geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
@@ -2226,9 +2226,9 @@ library('dplyr')
 
 #loading neutrality stats----
 
-theta<-read.table("~/analysis/data/angsd/thetas",header=TRUE, sep=',') #reading in summary statistics
-pi<-read.table("~/analysis/data/angsd/pi", header=TRUE, sep=',')
-taj<-read.table("~/analysis/data/angsd/taj",header=TRUE, sep=',')
+theta<-read.table("~/fgfh_post/data/angsd/thetas",header=TRUE, sep=',') #reading in summary statistics
+pi<-read.table("~/fgfh_post/data/angsd/pi", header=TRUE, sep=',')
+taj<-read.table("~/fgfh_post//data/angsd/taj",header=TRUE, sep=',')
 
 subw<-pi[,"keep"]>0 #applying filter of low coverage
 
@@ -2238,16 +2238,19 @@ library(reshape2)
 
 mpi<-melt(pi[,1:10],id=c("scaf","start","end"))
 
+jpeg(filename="/Users/eoziolor/Documents/UCD/Projects/Adaptation + Introgression/draft/images/pi.jpeg",width=1000,height=600)
 ggplot(mpi,
        aes(x=variable,y=value,fill=variable,color=variable))+
   geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
   scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
   scale_color_manual(values=c("grey40",rep("black",6)))+
-  scale_y_continuous(limits=c(0,.015))+
+  scale_y_continuous(limits=c(0.001,.012))+
   theme_classic()+
   labs(y="",x="")+
   theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
   theme(axis.text.y=element_text(color="black",size=40))
+dev.off()
+
 
 mtaj<-melt(taj[,1:10],id=c("scaf","start","end"))
 
@@ -3521,7 +3524,7 @@ library("RColorBrewer")
 require('gridExtra')
 
 #loading fst and finding representative windows----
-load("~/analysis/data/comparison/noah_stats.RData") #loading data produced from individual SNP call pi and dxy calculations
+load("~/fgfh_post/data/comparison/noah_stats.RData") #loading data produced from individual SNP call pi and dxy calculations
 
 pops<-c("BB","VB","PB","SJSP","BNP","GB","SP") #creating a vector of names for our populations
 
@@ -3542,125 +3545,127 @@ for(i in pops){
 
 fsth<-fsth[-1,]
 
-#loading pi and theta and finding their rep windows----
-theta<-read.table("~/analysis/data/angsd/thetas",header=TRUE, sep=',') #reading in summary statistics
-pi<-read.table("~/analysis/data/angsd/pi", header=TRUE, sep=',')
+fsth_temp<-fsth>0 & fsth<1
 
-subz<-pi[,"keep"]>0
+#loading pi and theta and finding their rep windows----
+theta<-read.table("~/fgfh_post/data/angsd/thetas",header=TRUE, sep=',') #reading in summary statistics
+pi<-read.table("~/fgfh_post/data/angsd/pi", header=TRUE, sep=',')
+
+subz<-pi[,"keep"]>0 & fsth>0 & fsth<1
 
 #plotting them all in ggplot
 a<-ggplot(pi[subz,],
        aes(x=bb,y=gb)) +
-  geom_point(size=fsth[subz,"BB.GB"],
+  geom_point(size=fsth[subz,"BB.GB"]*2,
     aes(colour=fsth[subz,"BB.GB"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 b<-ggplot(pi[subz,],
-       aes(x=bb,y=gb)) +
+       aes(x=vb,y=gb)) +
   geom_point(size=fsth[subz,"GB.VB"],
     aes(colour=fsth[subz,"GB.VB"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 c<-ggplot(pi[subz,],
-       aes(x=bb,y=gb)) +
+       aes(x=pb,y=gb)) +
   geom_point(size=fsth[subz,"GB.PB"],
     aes(colour=fsth[subz,"GB.PB"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 d<-ggplot(pi[subz,],
-       aes(x=bb,y=gb)) +
+       aes(x=sj,y=gb)) +
   geom_point(size=fsth[subz,"GB.SJSP"],
     aes(colour=fsth[subz,"GB.SJSP"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 e<-ggplot(pi[subz,],
-       aes(x=bb,y=gb)) +
+       aes(x=bnp,y=gb)) +
   geom_point(size=fsth[subz,"BNP.GB"],
     aes(colour=fsth[subz,"BNP.GB"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 f<-ggplot(pi[subz,],
-       aes(x=bb,y=gb)) +
+       aes(x=sp,y=gb)) +
   geom_point(size=fsth[subz,"GB.SP"],
     aes(colour=fsth[subz,"GB.SP"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 a2<-ggplot(pi[subz,],
-       aes(x=bb,y=gb)) +
+       aes(x=bb,y=sp)) +
   geom_point(size=fsth[subz,"BB.SP"],
     aes(colour=fsth[subz,"BB.SP"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 b2<-ggplot(pi[subz,],
-       aes(x=bb,y=gb)) +
+       aes(x=vb,y=sp)) +
   geom_point(size=fsth[subz,"SP.VB"],
     aes(colour=fsth[subz,"SP.VB"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 c2<-ggplot(pi[subz,],
-       aes(x=bb,y=gb)) +
+       aes(x=pb,y=sp)) +
   geom_point(size=fsth[subz,"PB.SP"],
     aes(colour=fsth[subz,"PB.SP"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 d2<-ggplot(pi[subz,],
-       aes(x=bb,y=gb)) +
+       aes(x=sj,y=sp)) +
   geom_point(size=fsth[subz,"SJSP.SP"],
     aes(colour=fsth[subz,"SJSP.SP"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 e2<-ggplot(pi[subz,],
-       aes(x=bb,y=gb)) +
+       aes(x=bnp,y=sp)) +
   geom_point(size=fsth[subz,"BNP.SP"],
     aes(colour=fsth[subz,"BNP.SP"])) +
-  scale_color_gradient(low="yellow",high="black") +
+  scale_color_gradient(name="Fst",low="gold2",high="firebrick2",limits=c(0,0.2),oob = scales::squish) +
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
   geom_abline(slope=1,lty=2)
 
 
-tiff(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/fst_pi.tiff",width=800,height=1400,units="px")
+tiff(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/fst_pi.tiff",width=1000,height=1400,units="px")
 grid.arrange(grobs=list(a,b,c,d,e,f,a2,b2,c2,d2,e2),ncol=2)
 dev.off()
 
@@ -5804,7 +5809,7 @@ library(ggplot2)
 library(ggsci)
 library(reshape2)
 
-pbs_dist<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",header=FALSE)
+pbs_dist<-read.table("~/fgfh_post/data/fst/hudsonpbs_1kb.bed",header=FALSE)
 distnames<-c("Scaf","start","end","bb","vb","pb","sj","bnp")
 colnames(pbs_dist)<-distnames
 col<-c()
@@ -5813,15 +5818,15 @@ for (i in 1:5){
 }
 
 
-z<-read.table("~/analysis/data/fst/hudson_pbsmergeoutliers.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
+z<-read.table("~/fgfh_post/data/fst/hudson_pbsmergeoutliers.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
 names<-c("Scaf","start","end","BBsum","BBcount","VBsum","VBcount","PBsum","PBcount","SJsum","SJcount","BNPsum","BNPcount")
 colnames(z)<-names
 
 all<-z[,4]>col[1] & z[,6]>col[2] & z[,8]>col[3] & z[,10]>col[4] & z[,12]>col[5]
 
 ###Reading in VCF for outlier regions that include introgression, formatting ----
-vcf<-read.table("~/analysis/data/fst/hudson_out_all_intr_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
-sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+vcf<-read.table("~/fgfh_post/data/fst/hudson_out_all_intr_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/fgfh_post/scripts/depth/sexscore",header=TRUE)
 #vcf<-cbind(vcf[,1],vcf[,2]-1,vcf[,2:297]) #Converting the first three columns into bed type format
 cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
@@ -5845,7 +5850,7 @@ nam<-c("chr","pos","BB","VB","PB","SJ","BNP","SP","GB")
 
 for(j in 1:length(nam[-1:-2])){
   b<-gt[,grepl(nam[j+2],colnames(gt))]
-  f<-as.numeric(rowSums(gt[,grepl(nam[j+2],colnames(gt))],na.rm=TRUE)/ncol(b))
+  f<-as.numeric(rowSums(gt[,grepl(nam[j+2],colnames(gt))],na.rm=TRUE)/ncol(!is.na(b)))
   popfr<-cbind(popfr,f)
   print(nam[j+2])
   print(ncol(b))
@@ -5880,13 +5885,13 @@ nam<-c("chr","start","end")
 colnames(zn)<-nam
 
 vcfo<-cbind(vcfo[,1],vcfo[,2]-1,vcfo[,2:297]) #making vcfo into a bed file
-write.table(vcfo[,1:3],"~/analysis/data/expectations/vcf_hudpbs_out.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
-write.table(zn[,1:3],"~/analysis/data/expectations/hudpbs_shared_all.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(vcfo[,1:3],"~/fgfh_post/data/expectations/vcf_hudpbs_out.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(zn[,1:3],"~/fgfh_post/data/expectations/hudpbs_shared_all.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
 
 library(rtracklayer)
 
-bed1=import("~/analysis/data/expectations/vcf_hudpbs_out.bed")
-bedall=import("~/analysis/data/expectations/hudpbs_shared_all.bed")
+bed1=import("~/fgfh_post/data/expectations/vcf_hudpbs_out.bed")
+bedall=import("~/fgfh_post/data/expectations/hudpbs_shared_all.bed")
 bed1overlall=bed1[bed1 %over% bedall]
 hitsall<-countOverlaps(bedall,bed1) #creating a vector of overlap counts - # SNPs present in that overlap
 
@@ -5947,7 +5952,7 @@ pfr<-t(pfr[4:10])
 # }
 
 #Seeing if those frequencies meet expectations from admixture----
-a<-read.table("~/analysis/data/fastngs/alpha",header=TRUE)
+a<-read.table("~/fgfh_post/data/fastngs/alpha",header=TRUE)
 a<-as.numeric(a)
 
 e<-c() #creating a vector e of expected values for each allele
@@ -5967,7 +5972,7 @@ efr<-pfr-e
 colnames(efr)<-(zn[subw,1])
 efr1<-efr[,grepl("chr",colnames(efr))]
 
-tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/outlier_freqs.tiff",width=1000,height=600)
+tiff("~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/outlier_freqs.tiff",width=1000,height=600)
 par(mar=c(4,4,2,2))
 plot(efr[,1],ylim=c(-.2,.4),type='n',xaxt='n',
      ylab="Deviation from expected allele frequencies due to admixture",bty='l')
@@ -5982,7 +5987,7 @@ box(lwd=4,bty='l')
 abline(h=1,lwd=3,lty=2,col="black")
 dev.off()
 
-tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/outlier_freqs2.tiff",width=800,height=800)
+tiff("~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/outlier_freqs2.tiff",width=800,height=800)
 efrm<-melt(efr) #putting it in a dataframe more readable by ggplot
 colnames(efrm)<-c("pop","chr","freq")
 
@@ -5997,7 +6002,7 @@ ggplot(efrm,
   theme(axis.line = element_line(size=3))
 dev.off()
 
-tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/outlier_main.tiff",width=1000,height=400)
+tiff("~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/outlier_main.tiff",width=1000,height=400)
 efrm<-melt(efr) #putting it in a dataframe more readable by ggplot
 colnames(efrm)<-c("pop","chr","freq")
 
@@ -6037,13 +6042,13 @@ legend("topright",legend=c(chr[,1]),col=c(chr[,2]),pch=20,cex=1)
 
 ```{r}
 
-cl_mig_stagSweeps = readRDS("~/analysis/data/intro_models/compLikelihood_mig_stagSweeps.RDS")
-cl_neutral = readRDS("~/analysis/data/intro_models/compLikelihood_neutral.RDS")
-cl_sv = readRDS("~/analysis/data/intro_models/compLikelihood_stdVar.RDS")
+cl_mig_stagSweeps = readRDS("~/fgfh_post/data/intro_models/compLikelihood_mig_stagSweeps.RDS")
+cl_neutral = readRDS("~/fgfh_post/data/intro_models/compLikelihood_neutral.RDS")
+cl_sv = readRDS("~/fgfh_post/data/intro_models/compLikelihood_stdVar.RDS")
 
-sels = readRDS("~/analysis/data/intro_models/sels.RDS")
-times = readRDS("~/analysis/data/intro_models/times.RDS")
-gs = readRDS("~/analysis/data/intro_models/gs.RDS")
+sels = readRDS("~/fgfh_post/data/intro_models/sels.RDS")
+times = readRDS("~/fgfh_post/data/intro_models/times.RDS")
+gs = readRDS("~/fgfh_post/data/intro_models/gs.RDS")
 
 
 maxCL_mig_stagSweeps.sels = sapply(1 : length(sels), function(i) max(unlist(cl_mig_stagSweeps[[i]])))
@@ -6058,16 +6063,16 @@ times18_scaled = (times[1:18] - times[1]) / (times[18] - times[1]) #get last tim
 yMin = min(c(maxCL_mig_stagSweeps.sels, maxCL_sv.sels) - cl_neutral)
 yMax = max(c(maxCL_mig_stagSweeps.sels, maxCL_sv.sels) - cl_neutral)
 
-jpeg("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/intro_models.jpeg",width=600,height=400)
-par(oma = c(1,1.5,2,1.5),mar=c(3,3,3,3),mgp=c(1,2,0))
-plot(sels18_scaled, maxCL_mig_stagSweeps.sels[18:31] - cl_neutral, 
-     cex.axis = 1.3, ylab = "", ylim = c(4.8e5, yMax), 
-     type = "l", col = "seagreen3", xlim = c(0, 1), xaxt = "none", xlab = "", lwd = 6, cex.lab = 1.1)
-box(lwd=6)
-lines(sels18_scaled, maxCL_sv.sels[18:31] - cl_neutral, col = "seagreen3", lwd = 6, lty = 2)
-axis(1, at = seq(0, 1, length.out = 6), labels = seq(0.5, 1, length.out = 6), col = "seagreen3", lwd = 6, cex.axis = 2.8)
-lines(times18_scaled, maxCL_mig_stagSweeps.times[1:18] - cl_neutral, col = "gold2", lwd = 6, lty = 1)
-axis(3, lwd = 6, at = seq(0, 1, length.out = 6), labels = seq(times[1]+11, times[18]+11, length.out = 6), col = "gold2", cex.axis = 2.8)
+jpeg("~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/intro_models.jpeg",width=600,height=400)
+  par(oma = c(1,1.5,2,1.5),mar=c(3,3,3,3),mgp=c(1,2,0))
+  plot(sels18_scaled, maxCL_mig_stagSweeps.sels[18:31] - cl_neutral, 
+       cex.axis = 1.3, ylab = "", ylim = c(4.8e5, yMax), 
+       type = "l", col = "seagreen3", xlim = c(0, 1), xaxt = "none", xlab = "", lwd = 6, cex.lab = 1.1)
+  box(lwd=6)
+  lines(sels18_scaled, maxCL_sv.sels[18:31] - cl_neutral, col = "seagreen3", lwd = 6, lty = 2)
+  axis(1, at = seq(0, 1, length.out = 6), labels = seq(0.5, 1, length.out = 6), col = "seagreen3", lwd = 6, cex.axis = 2.8)
+  lines(times18_scaled, maxCL_mig_stagSweeps.times[1:18] - cl_neutral, col = "gold2", lwd = 6, lty = 1)
+  axis(3, lwd = 6, at = seq(0, 1, length.out = 6), labels = seq(times[1]+18, times[18]+18, length.out = 6), col = "gold2", cex.axis = 2.8)
 
 #legend("bottomright", lty = c(1,2), legend = c("Introgression", "ILS"), lwd = 6)
 #mtext(line = 3, side = 1, text = "selection coefficient", cex = 1.3)
@@ -6247,12 +6252,12 @@ library(ape)
 library(stringr)
 
 #colnames(gts)[1] <- "pos"
-col<-scan("~/analysis/data/depth/header.txt",sep='\t',what = "character") #grabbing names of all individuals
-dep<-read.table("~/analysis/data/depth/NW_012234474.1_550000-800000.depth.txt.gz",stringsAsFactors=FALSE) #grabbing depth vector made by samtools
+col<-scan("~/fgfh_post/data/depth/header.txt",sep='\t',what = "character") #grabbing names of all individuals
+dep<-read.table("~/fgfh_post/data/depth/NW_012234474.1_550000-800000.depth.txt.gz",stringsAsFactors=FALSE) #grabbing depth vector made by samtools
 sexscore0<-col[-c(1:9)] #removing non-individual fields
-sexscore<-gsub("SJSP","SJ",sexscore)
+sexscore<-gsub("SJSP","SJ",sexscore0)
 names(sexscore)<-sexscore # for counting later
-mat<-read.table("~/analysis/data/plink/popcolors.txt",stringsAsFactors=FALSE,sep="\t") #getting colors for later
+mat<-read.table("~/fgfh_post/data/plink/popcolors.txt",stringsAsFactors=FALSE,sep="\t") #getting colors for later
 
 pops0 <- gsub("-.*||_.*||.*\\.","",sexscore) #getting a vector of all pops for the individuals
 pops<-gsub("SJSP","SJ",pops0) #renaming SJSP because it causes problems for grepping SP
@@ -6458,10 +6463,10 @@ copies_per_ind[,1] <- as.numeric(copies_per_ind[,1])
 #                        ylab='',cex.axis = 2.5,cex.names = 1.5)})
 par(mfrow=c(1,1),mar=c(2,4,2,4))
 copies<-as.array(table(copies_per_ind[,c(1,2)]) %>% 
-                (function(x){x[,c("GB","SP","BNP","SJ","PB","VB","BB")]}) )
+                (function(x){x[,c("BB","VB","PB","SJ","BNP","SP","GB")]}) )
 copies.prop<-prop.table(copies,2)*100 
 
-tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/deletion_freq.tiff",width=1000,height=400)
+tiff("~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/deletion_freq.tiff",width=1000,height=400)
 par(lwd=3)
 barplot(copies.prop,beside=TRUE,col=c("white","mediumorchid1","purple3"),
        ylab='',cex.axis = 2.2,cex.names = 1.5,lwd=3)
