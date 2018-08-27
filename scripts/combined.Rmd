@@ -3845,7 +3845,7 @@ legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red"
 
 ## Sum regions: plotting
 ```{r}
-pbs<-read.table("~/analysis/data/fst/hudsonpbs_1kb.bed",header=FALSE,stringsAsFactors = FALSE) #reading in the windowed pbs estimates
+pbs<-read.table("~/fgfh_post/data/fst/hudsonpbs_1kb.bed",header=FALSE,stringsAsFactors = FALSE) #reading in the windowed pbs estimates
 pbsname<-c("Scaf","start","end","BBpbs","VBpbs","PBpbs","SJpbs","BNPpbs") #naming columns
 colnames(pbs)<-pbsname
 
@@ -3869,7 +3869,7 @@ pbsc<-pbsct
 head(pbsc[chr16,])
 
 #Grabbing regions that are put together pretty well/widely----
-pbs_out_temp<-read.table("~/analysis/data/fst/hudson_pbsmergeoutliers.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
+pbs_out_temp<-read.table("~/fgfh_post/data/fst/hudson_pbsmergeoutliers.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
 names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount")
 colnames(pbs_out_temp)<-names
 
@@ -3885,23 +3885,23 @@ pbu<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]>col[3] & pbs_out[,10]
 sju<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]>col[4] & pbs_out[,12]<col[5]
 bnpu<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]<col[4] & pbs_out[,12]>col[5]
 
-write.table(pbsc[,1:3],"~/analysis/data/fst/PBS_keep_1kb.bed",
+write.table(pbsc[,1:3],"~/fgfh_post/data/fst/PBS_keep_1kb.bed",
             row.names = FALSE,col.names = FALSE,quote=FALSE,sep="\t")
-write.table(pbs_out[all,1:3],"~/analysis/data/fst/pbs_regions_sharedall.bed",
+write.table(pbs_out[all,1:3],"~/fgfh_post/data/fst/pbs_regions_sharedall.bed",
             row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[res,1:3],"~/analysis/data/fst/pbs_regions_sharedres.bed",
+write.table(pbs_out[res,1:3],"~/fgfh_post/data/fst/pbs_regions_sharedres.bed",
             row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[interm,1:3],"~/analysis/data/fst/pbs_regions_sharedinterm.bed",
+write.table(pbs_out[interm,1:3],"~/fgfh_post/data/fst/pbs_regions_sharedinterm.bed",
             row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[bbu,1:3],"~/analysis/data/fst/pbs_regions_sharedbbu.bed",
+write.table(pbs_out[bbu,1:3],"~/fgfh_post/data/fst/pbs_regions_sharedbbu.bed",
             row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[vbu,1:3],"~/analysis/data/fst/pbs_regions_sharedvbu.bed",
+write.table(pbs_out[vbu,1:3],"~/fgfh_post/data/fst/pbs_regions_sharedvbu.bed",
             row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[pbu,1:3],"~/analysis/data/fst/pbs_regions_sharedpbu.bed",
+write.table(pbs_out[pbu,1:3],"~/fgfh_post/data/fst/pbs_regions_sharedpbu.bed",
             row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[sju,1:3],"~/analysis/data/fst/pbs_regions_sharedsju.bed",
+write.table(pbs_out[sju,1:3],"~/fgfh_post/data/fst/pbs_regions_sharedsju.bed",
             row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
-write.table(pbs_out[bnpu,1:3],"~/analysis/data/fst/pbs_regions_sharedbnpu.bed",
+write.table(pbs_out[bnpu,1:3],"~/fgfh_post/data/fst/pbs_regions_sharedbnpu.bed",
             row.names = FALSE,col.names = FALSE,quote = FALSE, sep="\t")
 
 
@@ -3912,45 +3912,45 @@ write.table(pbs_out[bnpu,1:3],"~/analysis/data/fst/pbs_regions_sharedbnpu.bed",
 #Finding the overlaps in full data---------
 library("rtracklayer")
 
-bed1=import("~/analysis/data/fst/PBS_keep_1kb.bed") #importing the windows in which we are searching
+bed1=import("~/fgfh_post/data/fst/PBS_keep_1kb.bed") #importing the windows in which we are searching
 
-bedall=import("~/analysis/data/fst/pbs_regions_sharedall.bed") #importing shared outliers
+bedall=import("~/fgfh_post/data/fst/pbs_regions_sharedall.bed") #importing shared outliers
 bed1overlall=bed1[bed1 %over% bedall] #Making overlapping regions into genome file
 hitsall<-findOverlaps(bedall,bed1) #finding overlaps as hits
 allhit<-subjectHits(hitsall) #making them into a true false vector
 
 #same for the rest of the comparisons
-bedres=import("~/analysis/data/fst/pbs_regions_sharedres.bed")
+bedres=import("~/fgfh_post/data/fst/pbs_regions_sharedres.bed")
 bed1overlres=bed1[bed1 %over% bedres]
 hitsres<-findOverlaps(bedres,bed1)
 reshit<-subjectHits(hitsres)
 
-bedinterm=import("~/analysis/data/fst/pbs_regions_sharedinterm.bed")
+bedinterm=import("~/fgfh_post/data/fst/pbs_regions_sharedinterm.bed")
 bed1overlinterm=bed1[bed1 %over% bedinterm]
 hitsinterm<-findOverlaps(bedinterm,bed1)
 intermhit<-subjectHits(hitsinterm)
 
-bedbbu=import("~/analysis/data/fst/pbs_regions_sharedbbu.bed")
+bedbbu=import("~/fgfh_post/data/fst/pbs_regions_sharedbbu.bed")
 bed1overlbbu=bed1[bed1 %over% bedbbu]
 hitsbbu<-findOverlaps(bedbbu,bed1)
 bbuhit<-subjectHits(hitsbbu)
 
-bedvbu=import("~/analysis/data/fst/pbs_regions_sharedvbu.bed")
+bedvbu=import("~/fgfh_post/data/fst/pbs_regions_sharedvbu.bed")
 bed1overlvbu=bed1[bed1 %over% bedvbu]
 hitsvbu<-findOverlaps(bedvbu,bed1)
 vbuhit<-subjectHits(hitsvbu)
 
-bedpbu=import("~/analysis/data/fst/pbs_regions_sharedpbu.bed")
+bedpbu=import("~/fgfh_post/data/fst/pbs_regions_sharedpbu.bed")
 bed1overlpbu=bed1[bed1 %over% bedpbu]
 hitspbu<-findOverlaps(bedpbu,bed1)
 pbuhit<-subjectHits(hitspbu)
 
-bedsju=import("~/analysis/data/fst/pbs_regions_sharedsju.bed")
+bedsju=import("~/fgfh_post/data/fst/pbs_regions_sharedsju.bed")
 bed1overlsju=bed1[bed1 %over% bedsju]
 hitssju<-findOverlaps(bedsju,bed1)
 sjuhit<-subjectHits(hitssju)
 
-bedbnpu=import("~/analysis/data/fst/pbs_regions_sharedbnpu.bed")
+bedbnpu=import("~/fgfh_post/data/fst/pbs_regions_sharedbnpu.bed")
 bed1overlbnpu=bed1[bed1 %over% bedbnpu]
 hitsbnpu<-findOverlaps(bedbnpu,bed1)
 bnpuhit<-subjectHits(hitsbnpu)
@@ -3969,7 +3969,7 @@ pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
 #Simplified to fewer outliers----
 
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pbs_sum.jpg",width=1000,height=800)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/pbs_sum.jpg",width=1000,height=800)
 pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
                                      "chr20","chr21","chr22","chr23","chr24"))
@@ -4909,18 +4909,18 @@ legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
 * removing regions of introgression from considered regions (Chr 1 and 10) and converting to tabix readable format
 
 ```{bash}
-cat ~/analysis/data/fst/pbs_regions_sharedall.bed | grep -v -w "chr1" | grep -v "chr10" |\
-awk '{OFS=""}{b=":"}{s="-"}{print $1,b,$2,s,$3}' > ~/analysis/data/fst/hudson_out_all.txt
+cat ~/fgfh_post/data/fst/pbs_regions_sharedall.bed | grep -v -w "chr1" | grep -v "chr10" |\
+awk '{OFS=""}{b=":"}{s="-"}{print $1,b,$2,s,$3}' > ~/fgfh_post/data/fst/hudson_out_all.txt
 
 #will use the one with introgressed regions for expectations
-cat ~/analysis/data/fst/pbs_regions_sharedall.bed | \
-awk '{OFS=""}{b=":"}{s="-"}{print $1,b,$2,s,$3}' > ~/analysis/data/fst/hudson_out_all_intr.txt
+cat ~/fgfh_post/data/fst/pbs_regions_sharedall.bed | \
+awk '{OFS=""}{b=":"}{s="-"}{print $1,b,$2,s,$3}' > ~/fgfh_post/data/fst/hudson_out_all_intr.txt
 
-cat ~/analysis/data/fst/pbs_regions_sharedres.bed | grep -v -w "chr1" | grep -v "chr10" |\
-awk '{OFS=""}{b=":"}{s="-"}{print $1,b,$2,s,$3}' > ~/analysis/data/fst/hudson_out_res.txt
+cat ~/fgfh_post/data/fst/pbs_regions_sharedres.bed | grep -v -w "chr1" | grep -v "chr10" |\
+awk '{OFS=""}{b=":"}{s="-"}{print $1,b,$2,s,$3}' > ~/fgfh_post/data/fst/hudson_out_res.txt
 
-cat ~/analysis/data/fst/pbs_regions_sharedinterm.bed | grep -v -w "chr1" | grep -v "chr10" |\
-awk '{OFS=""}{b=":"}{s="-"}{print $1,b,$2,s,$3}' > ~/analysis/data/fst/hudson_out_interm.txt
+cat ~/fgfh_post/data/fst/pbs_regions_sharedinterm.bed | grep -v -w "chr1" | grep -v "chr10" |\
+awk '{OFS=""}{b=":"}{s="-"}{print $1,b,$2,s,$3}' > ~/fgfh_post/data/fst/hudson_out_interm.txt
 
 ```
 
@@ -5056,13 +5056,13 @@ while(length(line <- readLines(f,n=1)) > 0) {
 * using bash to haploidize each vcf file
 
 ```{bash}
-zcat ~/analysis/data/fst/hudson_out_all.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/hudson_out_all_haplo.vcf.bgz
+zcat < ~/fgfh_post/data/fst/hudson_out_all.vcf.bgz | ~/fgfh_post/scripts/haplo/haploidize_gran_mine.r | gzip > ~/fgfh_post/data/fst/hudson_out_all_haplo.vcf.bgz
 
-zcat ~/analysis/data/fst/hudson_out_res.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/hudson_out_res_haplo.vcf.bgz
+zcat < ~/fgfh_post/data/fst/hudson_out_res.vcf.bgz | ~/fgfh_post/scripts/haplo/haploidize_gran_mine.r | gzip > ~/fgfh_post/data/fst/hudson_out_res_haplo.vcf.bgz
 
-zcat ~/analysis/data/fst/hudson_out_interm.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/hudson_out_interm_haplo.vcf.bgz
+zcat < ~/fgfh_post/data/fst/hudson_out_interm.vcf.bgz | ~/fgfh_post/scripts/haplo/haploidize_gran_mine.r | gzip > ~/fgfh_post/data/fst/hudson_out_interm_haplo.vcf.bgz
 
-zcat ~/analysis/data/fst/hudson_out_all_intr.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/hudson_out_all_intr_haplo.vcf.bgz
+zcat < ~/fgfh_post/data/fst/hudson_out_all_intr.vcf.bgz | ~/fgfh_post/scripts/haplo/haploidize_gran_mine.r | gzip > ~/fgfh_post/data/fst/hudson_out_all_intr_haplo.vcf.bgz
 ```
 
 ## Plotting haplotypes
@@ -5242,8 +5242,8 @@ library(magrittr)
 library(Rphylip)
 library(ape)
 library(stringr)
-vcf<-read.table("~/analysis/data/fst/hudson_out_interm_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
-sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+vcf<-read.table("~/fgfh_post/data/fst/hudson_out_interm_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/fgfh_post/scripts/depth/sexscore",header=TRUE)
 cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
 
@@ -5299,7 +5299,7 @@ tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
 legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
 
 #plotting mds
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pbs_intermout.jpg",width=1000,height=400)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/pbs_intermout.jpg",width=1000,height=400)
 par(mfrow=c(1,1),mar=c(3,3,0,0))
 plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
      bg=popfill2,bty='l')
