@@ -1970,13 +1970,13 @@ scp kodiak:/data/oziolore/fhet/data/angsd2/theta/*_1kb* /home/elias/analysis/dat
 ```{r First data wrangling with R}
 ###Buffalo Bayou loding pi(column6), theta(column4), and counts(columns 5,7)
 
-bb<-read.table("~/analysis/data/angsd/raw/BB_neut_1kb.bed",stringsAsFactors=FALSE) #reading in all files
-vb<-read.table("~/analysis/data/angsd/raw/VB_neut_1kb.bed",stringsAsFactors=FALSE)
-pb<-read.table("~/analysis/data/angsd/raw/PB_neut_1kb.bed",stringsAsFactors=FALSE)
-sj<-read.table("~/analysis/data/angsd/raw/SJ_neut_1kb.bed",stringsAsFactors=FALSE)
-bnp<-read.table("~/analysis/data/angsd/raw/BNP_neut_1kb.bed",stringsAsFactors=FALSE)
-sp<-read.table("~/analysis/data/angsd/raw/SP_neut_1kb.bed",stringsAsFactors=FALSE)
-gb<-read.table("~/analysis/data/angsd/raw/GB_neut_1kb.bed",stringsAsFactors=FALSE)
+bb<-read.table("~/fgfh_post/data/angsd/raw/BB_neut_1kb.bed",stringsAsFactors=FALSE) #reading in all files
+vb<-read.table("~/fgfh_post/data/angsd/raw/VB_neut_1kb.bed",stringsAsFactors=FALSE)
+pb<-read.table("~/fgfh_post/data/angsd/raw/PB_neut_1kb.bed",stringsAsFactors=FALSE)
+sj<-read.table("~/fgfh_post/data/angsd/raw/SJ_neut_1kb.bed",stringsAsFactors=FALSE)
+bnp<-read.table("~/fgfh_post/data/angsd/raw/BNP_neut_1kb.bed",stringsAsFactors=FALSE)
+sp<-read.table("~/fgfh_post/data/angsd/raw/SP_neut_1kb.bed",stringsAsFactors=FALSE)
+gb<-read.table("~/fgfh_post/data/angsd/raw/GB_neut_1kb.bed",stringsAsFactors=FALSE)
 
 colnam<-c("scaf","Start","End","Theta","Tcount","Pi","Pcount") #giving them column names
 colnames(bb)<-colnam
@@ -2011,29 +2011,32 @@ nsnps <- nsnps/7 #dividing by number of populations and only using sites that ha
 subw <- nsnps > 50 #filter to be saved for these windows
 
 #calculating mean and median pi----
-pimean<-c() #calculating mean/something is wrong here. check
+pimean<-c() #calculating mean
 for(i in popnames){
   pimean[i]<-sum(pops[[i]][subw,6],na.rm=TRUE)/sum(pops[[i]][subw,7],na.rm=TRUE)
 }
+popnames[8]<-"het"
+pimean[8]<-0.018
+names(pimean)<-popnames
 
 #calculating effective population size
 #Theta(pi)=4Ne*u => Ne=theta(pi)/4u
 
 u1<-3.5e-9 #mutation rate from cichlids
 u2<-1.5e-9 #mutation rate from flounder
-u3<-2.2e-9 #average eukaryotic mutation rate
+u3<-2e-9 #average herring mutation rate
 
 mut<-c(u1,u2,u3)
 
-Ne<-matrix(nrow=7,ncol=3)
+Ne<-matrix(nrow=8,ncol=3)
 rownames(Ne)<-names(pimean)
-colnames(Ne)<-c("cichlid u","flounder u","euk u")
+colnames(Ne)<-c("cichlid u","flounder u","herring u")
   
 for(i in 1:3){
   Ne[,i]<-as.numeric(pimean/(4*mut[i]))
 }
 
-write.table(Ne,"~/analysis/data/angsd/Ne_estimates.csv",quote=FALSE)
+write.table(Ne[,3],"~/fgfh_post/data/angsd/Ne_estimates.csv",quote=FALSE)
 
 #Slide function----
 #This basically takes width number of windows and takes an average pi of them
@@ -4183,15 +4186,15 @@ nam<-c("BB","VB","PB","SJ","BNP")
 colnames(rimeans)<-nam
 cols<-c("black","black","black","firebrick2","firebrick2")
 
-#jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pbs_interm_random.jpg",width=1000,height=800)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/pbs_interm_random.jpg",width=1000,height=800)
 par(mfrow=c(2,3),mar=c(4,4,2,2))
 for(i in 1:length(nam)){
-  hist(rimeans[,i],main='',breaks=30,xlim=c(range(rimeans[,i]-.1,na.rm=TRUE)[[1]],intermeans[i]+.5),
+  hist(rimeans[,i],main='',breaks=30,xlim=c(range(rimeans[,i],na.rm=TRUE)[[1]]-.01,intermeans[i]+.01),
        bty='l',col=cols[i],border=cols[i],xlab=nam[i],cex.axis=3,ylab='')
   abline(v=intermeans[i],lwd=3,col="green")
   box(bty='l',lwd=3)
 }
-#dev.off()
+dev.off()
 
 #plotting histogram for resistant only regions----
 
@@ -4414,16 +4417,19 @@ legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
 ###ARNT Chr10/ introgressed region
 
 ```{r}
+#chr10 23911854 26893527
+
 pbsc10<-pbsc %>% filter(str_detect(Scaf,"\\bchr10\\b"))
 
-par(mfrow=c(3,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/Arnt_chr10.jpg",width=1000,height=800)
+par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
 
-for(i in 1:3){
-  plot(pbsc10[23000:25000,i+3],pch=20,cex=.5,ylim=c(0,1.8),bty='l',cex.axis=2,ylab='',xlab='',
-       col=ifelse(pbsc10[23000:25000,2]>23926932 & pbsc10[23000:25000,2]<23951650,"red","black"))
+for(i in 1:5){
+  plot(pbsc10[20000:30000,i+3],pch=20,cex=.5,ylim=c(0,.6),bty='l',cex.axis=2,ylab='',xlab='', col="black")
   box(bty='l',lwd=3)
-  abline(h=0,v=c(941,964),col="red",lty=2,lwd=1.5)
+  abline(v=c(3940,3965),col="red",lty=2,lwd=1.5)
 }
+dev.off()
 
 ```
 
@@ -4462,8 +4468,8 @@ library(magrittr)
 library(Rphylip)
 library(ape)
 library(stringr)
-vcf<-read.table("~/analysis/data/fst/arnt_chr10_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
-sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+vcf<-read.table("~/fgfh_post/data/fst/arnt_chr10_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/fgfh_post/scripts/depth/sexscore",header=TRUE)
 cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
 
@@ -4513,18 +4519,18 @@ mds <- cmdscale(d)
 tr <- nj(d)
 
 #plotting tree
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr10_NJ.jpg",width=400,height=1000)
 plot(tr,"unrooted",show.tip.label=FALSE)
-tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
-legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
+tiplabels(pch=21,col=popcol2,bg=popfill2,cex=1.2)
+dev.off()
 
 #plotting mds
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr10_MDS.jpg",width=1000,height=600)
 par(mfrow=c(1,1),mar=c(3,3,0,0))
 plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
      bg=popfill2,bty='l')
 box(bty='l',lwd=5)
-
-legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),
-       pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))
+dev.off()
 
 #Plotting both
 par(mfrow=c(1,2))
