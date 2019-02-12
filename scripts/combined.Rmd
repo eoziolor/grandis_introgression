@@ -4575,13 +4575,13 @@ mds <- cmdscale(d)
 tr <- nj(d)
 
 #plotting tree
-jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr10_NJ.jpg",width=400,height=1000)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/review/arnt_chr10_NJ.jpg",width=400,height=1000)
 plot(tr,"unrooted",show.tip.label=FALSE)
 tiplabels(pch=20,col=popcol2,cex=1.2)
 dev.off()
 
 #plotting mds
-jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr10_MDS.jpg",width=1000,height=600)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/review/arnt_chr10_MDS.jpg",width=1000,height=600)
 par(mfrow=c(1,1),mar=c(3,3,0,0))
 plot(mds,col=popcol2,cex=2,cex.axis=2,pch=20,bty='l')
 box(bty='l',lwd=5)
