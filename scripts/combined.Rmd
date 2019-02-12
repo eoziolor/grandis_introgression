@@ -21,7 +21,6 @@ library(naturalsort)
 library(RCurl)
 library(ggplot2)
 library(reshape2)
-
 ```
 
 ## Downloaded .bam files to computer
@@ -43,7 +42,7 @@ mput BU*
 java -jar ~/Computing/Trimmomatic-0.33/trimmomatic-0.33.jar PE
 -basein ~/share/Project_Project1/Sample_BU(write_out)/*R1_001.fastq.gz
 -baseout ~/share/Project_Project1/Sample_BU(write_out)/BU(write_out).fastq.gz
-ILLUMINACLIP:Computing/Trimmomatic-0.33/adapters/TruSeq3-PE-2.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36 HEADCROP:6
+ILLUMINACLIP:Computing/Trimmomatic-0.33/adapters/TruSeq3-PE-2.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36 HEADCROP:10
 ```
 
 #Mapping and variant calling
@@ -61,7 +60,7 @@ stools=/home/oziolore/restoreFromData/program/samtools-1.5/samtools
 
 for i in {004..050}
         do
-	fq1=/home/oziolore/restoreFromData/fhet/data/unmapped/combined1P_BU000$i.fastq.gz
+	      fq1=/home/oziolore/restoreFromData/fhet/data/unmapped/combined1P_BU000$i.fastq.gz
         fq2=/home/oziolore/restoreFromData/fhet/data/unmapped/combined2P_BU000$i.fastq.gz
         sam=$(echo $fq1 | grep -oP "BU[0-9]+")
         pop=$(cat /home/oziolore/restoreFromData/fhet/data/list/pop_samples | grep $sam | cut -f 2)
@@ -74,6 +73,15 @@ for i in {004..050}
         $stools sort -T $outdir/$outroot - > $outdir/$outroot.bam
 done
 
+```
+
+## Merge bam
+
+```{r}
+#!/bin/bash
+
+/home/oziolore/restoreFromData/program/bamtools/bin/bamtools merge \
+-list /home/oziolore/restoreFromData/fhet/data/align2/merged_bams2.list -out /home/oziolore/restoreFromData/fhet/data/align2/all_merged2.bam
 ```
 
 ## Excluding high coverage regions
@@ -107,9 +115,8 @@ awk -v OFS='\t' {'print $1,$2'} $fai > $genome
 * Plot it to see distribution
 
 ```{r}
-setwd("~/analysis/data/admixture/")
-cov<-read.table("~/analysis/data/angsd/cov_10Mbrand.txt.gz",header=F)
-names<-c("chrom","pos","cov")
+cov<-read.table("~/fgfh_post/data/angsd/cov_10Mbrand.txt.gz",header=F)
+names(cov)<-c("chrom","pos","cov")
 
 hist(cov$cov,breaks=1000)
 
@@ -3815,7 +3822,7 @@ legend('topright',legend=c("BB","VB","PB","SJ","BNP"),col=c("black","grey","red"
 ### Second for max regions
 
 ```{r}
-PBSout<-read.table("~/analysis/data/fst/hudson_pbsmergeoutliers_max.bed",stringsAsFactors=FALSE) # Reading in the maximum outlier regions of interest
+PBSout<-read.table("~/fgfh_post/data/fst/hudson_pbsmergeoutliers_max.bed",stringsAsFactors=FALSE) # Reading in the maximum outlier regions of interest
 colnames(PBSout)<- c("Scaf","start","end","BBsum", "BBcount","VBsum","VBcount","PBsum","PBcount","SJsum","SJcount","BNPsum","BNPcount") #assigning them column names (we chose columns to be printed earlier)
 
 BBtot<-sum(PBSout[,4]) #summing total level of divergence in these regions
@@ -3970,9 +3977,28 @@ pbsc[pbuhit,"pbu"]<-pbsc[pbuhit,"pbu"]+1
 pbsc[sjuhit,"sju"]<-pbsc[sjuhit,"sju"]+1
 pbsc[bnpuhit,"bnpu"]<-pbsc[bnpuhit,"bnpu"]+1
 
-#Simplified to fewer outliers----
 
-jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/pbs_sum.jpg",width=1000,height=800)
+# Color function ----
+t_col <- function(color, percent = 50, name = NULL) {
+#	  color = color name
+#	percent = % transparency
+#	   name = an optional name for the color
+## Get RGB values for named color
+  rgb.val <- col2rgb(color)
+## Make new color using input color as base and alpha set by transparency
+  t.col <- rgb(rgb.val[1], rgb.val[2], rgb.val[3],
+               max = 255,
+               alpha = (100-percent)*255/100,
+               names = name)
+## Save the color
+  invisible(t.col)
+
+}
+
+mycol <- t_col("pink", perc = 100, name = "lt.pink")
+
+#Simplified to fewer outliers----
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/review/pbs_sum.jpg",width=1000,height=800)
 pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
                                      "chr20","chr21","chr22","chr23","chr24"))
@@ -3984,6 +4010,9 @@ plot(pbsc[,4],pch=20,cex=2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               as.factor(pbsc[,1])))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
+points(pbsc[,4],pch=20,cex=2,col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",mycol))))
 
 plot(pbsc[,5],pch=20,cex=2,
      col=ifelse(pbsc[,"all"]>0,"purple",
@@ -3991,6 +4020,9 @@ plot(pbsc[,5],pch=20,cex=2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                             as.factor(pbsc[,1])))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
+points(pbsc[,5],pch=20,cex=2,col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",mycol))))
 
 plot(pbsc[,6],pch=20,cex=2,
      col=ifelse(pbsc[,"all"]>0,"purple",
@@ -3998,6 +4030,9 @@ plot(pbsc[,6],pch=20,cex=2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               as.factor(pbsc[,1])))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
+points(pbsc[,6],pch=20,cex=2,col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",mycol))))
 
 plot(pbsc[,7],pch=20,cex=2,
      col=ifelse(pbsc[,"all"]>0,"purple",
@@ -4005,6 +4040,9 @@ plot(pbsc[,7],pch=20,cex=2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               as.factor(pbsc[,1])))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
+points(pbsc[,7],pch=20,cex=2,col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",mycol))))
 
 plot(pbsc[,8],pch=20,cex=2,
      col=ifelse(pbsc[,"all"]>0,"purple",
@@ -4012,6 +4050,9 @@ plot(pbsc[,8],pch=20,cex=2,
                        ifelse(pbsc[,"interm"]>0,"firebrick2",
                               as.factor(pbsc[,1])))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
+points(pbsc[,8],pch=20,cex=2,col=ifelse(pbsc[,"all"]>0,"purple",
+                ifelse(pbsc[,"res"]>0,"black",
+                       ifelse(pbsc[,"interm"]>0,"firebrick2",mycol))))
 dev.off()
 ```
 
@@ -4416,6 +4457,10 @@ legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
 
 ###ARNT Chr10/ introgressed region
 
+* have to move this to farm cluster since I don't have access to kodiak.
+
+* Selecting the introgressed region with borders chr10:23911854-26893527
+
 ```{r}
 #chr10 23911854 26893527
 
@@ -4434,30 +4479,45 @@ dev.off()
 ```
 
 ```{bash}
-#!/bin/bash
+#!/bin/bash -l
 
-#PBS -l nodes=1:ppn=8
-#PBS -l walltime=01:00:00
+#SBATCH -J arnt_intr
+#SBATCH -e arnt_intr-%j.o
+#SBATCH -o arnt_intr-%j.o
+#SBASTCH -n 8
+#SBATCH --mem=16000
+#SBATCH -p high
+#SBATCH -t 1-00:00
+#SBATCH --no-requeue
 
 #programs & files
-my_tabix=/data/oziolore/program/htslib/tabix
-my_bgz=/data/oziolore/program/htslib/bgzip
+my_tabix=/home/eoziolor/program/htslib/tabix
+my_bgz=/home/eoziolor/program/htslib/bgzip
 
-my_vcf=/data/oziolore/fhet/data/varcall/filtered_chr.vcf.bgz
-my_list=/data/oziolore/fhet/data/outliers/arnt_chr10.txt
-my_out=/data/oziolore/fhet/data/outliers/arnt_chr10.vcf.bgz
+my_vcf=/home/eoziolor/fgran/data/varcall/chr10.vcf.bgz
+my_list=/home/eoziolor/fgran/data/introgression/arnt_chr10.txt
+my_out=/home/eoziolor/fgran/data/introgression/arnt_chr10_fgfh.vcf.bgz
 
-$my_tabix -fh $my_vcf chr1:0-1 | $my_bgz > $my_out
+$my_tabix -fh $my_vcf chr10:0-1 | $my_bgz > $my_out
 xargs -a $my_list -I {} $my_tabix -f $my_vcf {} | $my_bgz >> $my_out
 
 ```
 
 ```{bash}
-scp kodiak:/data/oziolore/fhet/data/outliers/arnt_chr10.vcf.bgz ~/analysis/data/fst/
+scp -P 2022 farm:/home/eoziolor/fgran/data/introgression/arnt_chr10_fgfh.vcf.bgz ~/fgfh_post/data/fst/
 ```
 
+* Since the vcf is already haploidized, no need for the following step
+
 ```{bash}
-zcat ~/analysis/data/fst/arnt_chr10.vcf.bgz | ~/analysis/scripts/haplo/haploidize_gran_mine.r | gzip > ~/analysis/data/fst/arnt_chr10_haplo.vcf.gz
+#zcat ~/fgfh_post/data/fst/arnt_chr10.vcf.bgz | ~/fgfh_post/scripts/haplo/haploidize_gran_mine.r | gzip > ~/fgfh_post/data/fst/arnt_chr10_haplo.vcf.gz
+```
+
+#### Creating new sexscore
+
+```{bash}
+zcat < arnt_chr10_fgfh.vcf.bgz | grep -v "##" | head -n 1 | tr '\t' '\n' | sed 's/\./\-/g' | tr '-' '\t' | grep -v "BU" | awk '{print $1}' >> sexscore
+zcat < arnt_chr10_fgfh.vcf.bgz | grep -v "##" | head -n 1 | tr '\t' '\n' | sed 's/\./\-/g' | tr '-' '\t' | grep "BU" | awk '{print $2}' >> sexscore
 ```
 
 ```{r}
@@ -4468,15 +4528,15 @@ library(magrittr)
 library(Rphylip)
 library(ape)
 library(stringr)
-vcf<-read.table("~/fgfh_post/data/fst/arnt_chr10_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
-sexscore<-read.table("~/fgfh_post/scripts/depth/sexscore",header=TRUE)
-cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
+vcf<-read.table("~/fgfh_post/data/fst/arnt_chr10_fgfh.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/fgfh_post/data/fst/sexscore",header=TRUE)
+cname<-c(as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
 
 #toss sites that happen to have more than one allele
 keep<-!grepl(",",vcf[,5]) #none because of the way I've called haplotypes table to check that
 
-gt<-as.matrix(vcf[,10:297])
+gt<-as.matrix(vcf[,10:585])
 class(gt)<-"numeric"
 
 #toss individuals with greater than 90% missing data
@@ -4484,34 +4544,30 @@ keep<-colMeans(is.na(gt))<0.9
 gt<-gt[,keep]
 
 #population identifiers
-pop<-ifelse(grepl("BB",sexscore[,1]),"BB",
-            ifelse(grepl("VB",sexscore[,1]),"VB",
-                   ifelse(grepl("PB",sexscore[,1]),"PB",
-                          ifelse(grepl("SJ",sexscore[,1]),"SJ",
-                                 ifelse(grepl("BNP",sexscore[,1]),"BNP",
-                                        ifelse(grepl("SP",sexscore[,1]),"SP",
-                                               ifelse(grepl("GB",sexscore[,1]),"GB","WRONG")))))))
-popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
-            ifelse(grepl("VB",sexscore[,1]),"black",
-                   ifelse(grepl("PB",sexscore[,1]),"black",
-                          ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
-                                 ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
-                                        ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
-                                               ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
-popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
-               ifelse(grepl("VB",sexscore[,1]),"grey40",
-                      ifelse(grepl("PB",sexscore[,1]),"grey80",
-                             ifelse(grepl("SJ",sexscore[,1]),"red",
-                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
-                                           ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
-                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+popcol<-ifelse(grepl("BB",cname),"black",
+                      ifelse(grepl("VB",cname),"black",
+                             ifelse(grepl("PB",cname),"black",
+                                    ifelse(grepl("SJ",cname),"firebrick2",
+                                           ifelse(grepl("BNP",cname),"firebrick2",
+                                                  ifelse(grepl("SP",cname),"cadetblue3",
+                                                         ifelse(grepl("GB",cname),"cadetblue3","seagreen3")))))))
+popcol2<-ifelse(grepl("BB",cname),"black",
+                      ifelse(grepl("VB",cname),"grey40",
+                             ifelse(grepl("PB",cname),"grey80",
+                                    ifelse(grepl("SJ",cname),"firebrick2",
+                                           ifelse(grepl("BNP",cname),"lightpink",
+                                                  ifelse(grepl("SP",cname),"cadetblue3",
+                                                         ifelse(grepl("GB",cname),"cadetblue1","seagreen3")))))))              
+#popsym<-ifelse(grepl("d2",pop2),"23",
+#               ifelse(grepl("d1",pop2),"24",
+#                      ifelse(grepl("d0",pop2),"21","22")))
 
-pop2<-pop[keep]
+
+#pop2<-pop[keep]
 popcol2<-popcol[keep]
-popfill2<-popfill[keep]
 
-popname<-c("BB","VB","PB","SJ","BNP","SP","GB")
-popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3")
+popname<-c("BB","VB","PB","SJ","BNP","SP","GB","FH")
+popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3","seagreen3")
 #distance matrix and nj tree
 d <- t(gt) %>% dist()
 #dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
@@ -4521,14 +4577,13 @@ tr <- nj(d)
 #plotting tree
 jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr10_NJ.jpg",width=400,height=1000)
 plot(tr,"unrooted",show.tip.label=FALSE)
-tiplabels(pch=21,col=popcol2,bg=popfill2,cex=1.2)
+tiplabels(pch=20,col=popcol2,cex=1.2)
 dev.off()
 
 #plotting mds
 jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr10_MDS.jpg",width=1000,height=600)
 par(mfrow=c(1,1),mar=c(3,3,0,0))
-plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
-     bg=popfill2,bty='l')
+plot(mds,col=popcol2,cex=2,cex.axis=2,pch=20,bty='l')
 box(bty='l',lwd=5)
 dev.off()
 
@@ -5217,8 +5272,8 @@ library(magrittr)
 library(Rphylip)
 library(ape)
 library(stringr)
-vcf<-read.table("~/analysis/data/fst/hudson_out_res_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
-sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+vcf<-read.table("~/fgfh_post/data/fst/hudson_out_res_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/fgfh_post/scripts/depth/sexscore",header=TRUE)
 cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
 
@@ -5300,8 +5355,8 @@ library(magrittr)
 library(Rphylip)
 library(ape)
 library(stringr)
-vcf<-read.table("~/analysis/data/fst/hudson_out_all_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
-sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+vcf<-read.table("~/fgfh_post/data/fst/hudson_out_all_haplo.vcf.bgz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/fgfh_post/scripts/depth/sexscore",header=TRUE)
 cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
 
@@ -6184,9 +6239,9 @@ legend("topright",legend=c(chr[,1]),col=c(chr[,2]),pch=20,cex=1)
 
 ```{r}
 
-cl_mig_stagSweeps = readRDS("~/fgfh_post/data/intro_models/compLikelihood_mig_stagSweeps.RDS")
-cl_neutral = readRDS("~/fgfh_post/data/intro_models/compLikelihood_neutral.RDS")
-cl_sv = readRDS("~/fgfh_post/data/intro_models/compLikelihood_stdVar.RDS")
+cl_mig_stagSweeps = readRDS("~/fgfh_post/data/runDMC/compLikelihood_mig_stagSweeps_AHR.RDS")
+cl_neutral = readRDS("~/fgfh_post/data/runDMC/compLikelihood_neutral_AHR.RDS")
+cl_sv = readRDS("~/fgfh_post/data/runDMC/compLikelihood_stdVar_AHR.RDS")
 
 sels = readRDS("~/fgfh_post/data/intro_models/sels.RDS")
 times = readRDS("~/fgfh_post/data/intro_models/times.RDS")
@@ -6208,7 +6263,7 @@ yMax = max(c(maxCL_mig_stagSweeps.sels, maxCL_sv.sels) - cl_neutral)
 jpeg("~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/intro_models.jpeg",width=600,height=400)
   par(oma = c(1,1.5,2,1.5),mar=c(3,3,3,3),mgp=c(1,2,0))
   plot(sels18_scaled, maxCL_mig_stagSweeps.sels[18:31] - cl_neutral, 
-       cex.axis = 1.3, ylab = "", ylim = c(4.8e5, yMax), 
+       cex.axis = 1.3, ylab = "", ylim = c(1e5, yMax), 
        type = "l", col = "seagreen3", xlim = c(0, 1), xaxt = "none", xlab = "", lwd = 6, cex.lab = 1.1)
   box(lwd=6)
   lines(sels18_scaled, maxCL_sv.sels[18:31] - cl_neutral, col = "seagreen3", lwd = 6, lty = 2)
@@ -6231,7 +6286,7 @@ library(stringr)
 library(dplyr)
 library(gtools)
 library('naturalsort')
-load("~/analysis/scripts/introgression/dxyscan.Rdata") #loading data into R
+load("~/fgfh_post/scripts/introgression/dxyscan.Rdata") #loading data into R
 
 
 subw<-dxyscan[,"keep"]==TRUE
@@ -6263,7 +6318,7 @@ dxy4$chr<-factor(dxy4$chr,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","ch
                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
                                      "chr20","chr21","chr22","chr23","chr24"))
 
-tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/introgression_dxy.tiff",width=1200,height=600)
+tiff("~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/introgression_dxy.tiff",width=1200,height=600)
 palette(c("grey40","grey80"))
 par(mfrow=c(3,1),mar=c(0,4,0,0))
 plot(dxy4[,"BB"],pch=20,cex=1,col=ifelse(dxy4[,"BB"]<col[2],"seagreen3",as.factor(dxy4[,"chr"])),bty='n',
@@ -6278,7 +6333,7 @@ dev.off()
 
 chr10_intr<-dxy4[dxy4$chr=="chr10" & dxy4[,"VB"]<col[1],4:6] #taking only introgressed region
 total_chr10<-cbind(head(chr10_intr[,1:2],n=1),tail(chr10_intr[,3],n=1)) #merging the start and end of that region
-write.table(total_chr10,"~/analysis/data/intro_models/chr10_region.txt",col.names = FALSE,row.names = FALSE,quote = FALSE) #writing it down
+write.table(total_chr10,"~/fgfh_post/data/intro_models/chr10_region.txt",col.names = FALSE,row.names = FALSE,quote = FALSE) #writing it down
 ``` 
 
 ## Introgression MDS plots of AHR
@@ -6867,9 +6922,9 @@ nodelabels(trbootN$BP)
 ```{r}
 
 #loading in the file----
-setwd("~/backup/Elias/Baylor/Papers/11. Gradient and Introgression - DRAFT/Deformity and EROD")
+setwd("~/Documents/Elias/Baylor/Papers/11. Gradient and Introgression - DRAFT/Deformity and EROD")
 
-cyp1a<-read.csv("PCB_erod_0.1ppt.csv",header=T)
+cyp1a<-read.csv("~/Documents/Elias/Baylor/Papers/11. Gradient and Introgression - DRAFT/Deformity and EROD/PCB_erod_0.1ppt.csv",header=T)
 
 library(ggplot2)
 library(dplyr)
@@ -7399,4 +7454,13 @@ done
 
 ```{bash}
 scp -P 2022 farm:/home/eoziolor/fgran/data/varcall/*intr.frq /home/elias/analysis/data/intro_models/
+```
+
+## Mutation rates
+
+```{r}
+mut<-c(2.00E-09, 3.50E-09, 1.20E-08, 1.48E-08, 1.27E-08, 1.13E-08, 1.66E-08, 8.80E-09, 8.14E-09, 3.90E-09, 1.17E-08, 4.60E-09, 3.60E-09, 2.90E-09, 2.80E-09)
+
+
+hist(mut,breaks=8)
 ```
