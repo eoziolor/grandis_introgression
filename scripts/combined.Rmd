@@ -1912,6 +1912,7 @@ write.csv(cov,file="~/analysis/data/angsd/cov_sub",quote=FALSE,row.names = FALSE
 
 ```
 
+## Correct pi and taj
 ```{r Plotting subsampled data}
 library('tidyr')
 library('tibble')
@@ -1937,8 +1938,8 @@ jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/
 ggplot(mpi,
        aes(x=variable,y=value,fill=variable,color=variable))+
   geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
-  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
-  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_fill_manual(values=c("black","black","black","firebrick2","firebrick2","cadetblue3","cadetblue3"))+
+  scale_color_manual(values=c(rep("grey40",3),rep("black",4)))+
   scale_y_continuous(limits=c(0.001,.012))+
   theme_classic()+
   labs(y="",x="")+
@@ -1952,8 +1953,8 @@ jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/
 ggplot(mtaj,
        aes(x=variable,y=value,fill=variable,color=variable))+
   geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
-  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
-  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_fill_manual(values=c("black","black","black","firebrick2","firebrick2","cadetblue3","cadetblue3"))+
+  scale_color_manual(values=c(rep("grey40",3),rep("black",4)))+
   scale_y_continuous(limits=c(-.25,.05))+
   theme_classic()+
   labs(y="",x="")+
@@ -2252,8 +2253,8 @@ jpeg(filename="/Users/eoziolor/Documents/UCD/Projects/Adaptation + Introgression
 ggplot(mpi,
        aes(x=variable,y=value,fill=variable,color=variable))+
   geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
-  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
-  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_fill_manual(values=c("black","black","black","firebrick2","firebrick2","cadetblue3","cadetblue3"))+
+  scale_color_manual(values=c(rep("grey40",3),rep("black",4)))+
   scale_y_continuous(limits=c(0.001,.012))+
   theme_classic()+
   labs(y="",x="")+
@@ -2264,17 +2265,18 @@ dev.off()
 
 mtaj<-melt(taj[,1:10],id=c("scaf","start","end"))
 
+jpeg(filename="/Users/eoziolor/Documents/UCD/Projects/Adaptation + Introgression/draft/images/taj.jpeg",width=1000,height=600)
 ggplot(mtaj,
        aes(x=variable,y=value,fill=variable,color=variable))+
   geom_violin(trim=FALSE,draw_quantiles = 0.5,lwd=2)+
-  scale_fill_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue1","cadetblue3"))+
-  scale_color_manual(values=c("grey40",rep("black",6)))+
+  scale_fill_manual(values=c("black","black","black","firebrick2","firebrick2","cadetblue3","cadetblue3"))+
+  scale_color_manual(values=c(rep("grey40",3),rep("black",4)))+
   scale_y_continuous(limits=c(-.35,.1))+
   theme_classic()+
   labs(y="",x="")+
   theme(axis.line.y=element_line(color="black",size=5),axis.line=element_line(color="black",size=5))+
   theme(axis.text.y=element_text(color="black",size=40))
-
+dev.off()
 #visualizing pi distribution----
 
 bbp<-density(pi[subw,4],na.rm=TRUE)
@@ -3263,7 +3265,7 @@ for (i in 1:21){
 ##Pi subtraction and Z statistic
 
 ```{r}
-pi<-read.csv("~/analysis/data/angsd/pi",stringsAsFactors=TRUE) #taking only pi values for F. grandis from dataframe
+pi<-read.csv("~/fgfh_post/data/angsd/pi",stringsAsFactors=TRUE) #taking only pi values for F. grandis from dataframe
 pops<-c("bb","vb","pb","sj","bnp","sp","gb") #creating a vector of names for our populations
 
 head(val) # vector of # of SNPs evaluated to come to a summary statistic per window
@@ -3572,7 +3574,8 @@ a<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 b<-ggplot(pi[subz,],
        aes(x=vb,y=gb)) +
@@ -3582,7 +3585,8 @@ b<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 c<-ggplot(pi[subz,],
        aes(x=pb,y=gb)) +
@@ -3592,7 +3596,8 @@ c<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 d<-ggplot(pi[subz,],
        aes(x=sj,y=gb)) +
@@ -3602,7 +3607,8 @@ d<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 e<-ggplot(pi[subz,],
        aes(x=bnp,y=gb)) +
@@ -3612,7 +3618,8 @@ e<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 f<-ggplot(pi[subz,],
        aes(x=sp,y=gb)) +
@@ -3622,7 +3629,8 @@ f<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 a2<-ggplot(pi[subz,],
        aes(x=bb,y=sp)) +
@@ -3632,7 +3640,8 @@ a2<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 b2<-ggplot(pi[subz,],
        aes(x=vb,y=sp)) +
@@ -3642,7 +3651,8 @@ b2<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 c2<-ggplot(pi[subz,],
        aes(x=pb,y=sp)) +
@@ -3652,7 +3662,8 @@ c2<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 d2<-ggplot(pi[subz,],
        aes(x=sj,y=sp)) +
@@ -3662,7 +3673,8 @@ d2<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 e2<-ggplot(pi[subz,],
        aes(x=bnp,y=sp)) +
@@ -3672,8 +3684,8 @@ e2<-ggplot(pi[subz,],
   theme_classic()+
   scale_x_continuous(limits=c(0,0.1))+
   scale_y_continuous(limits=c(0,0.1))+
-  geom_abline(slope=1,lty=2)
-
+  geom_abline(slope=1,lty=2)+
+  theme(axis.text=element_text(size=18))
 
 tiff(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/fst_pi.tiff",width=1000,height=1400,units="px")
 grid.arrange(grobs=list(a,b,c,d,e,f,a2,b2,c2,d2,e2),ncol=2)
@@ -3998,61 +4010,36 @@ t_col <- function(color, percent = 50, name = NULL) {
 mycol <- t_col("pink", perc = 100, name = "lt.pink")
 
 #Simplified to fewer outliers----
-jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/review/pbs_sum.jpg",width=1000,height=800)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/review/pbs_sum.jpg",width=1150,height=800)
 pbsc$Scaf<-factor(pbsc$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
                                      "chr20","chr21","chr22","chr23","chr24"))
 palette(c("grey90","grey50"))
-par(mfrow=c(5,1),mar=c(0,3,0,0))
-plot(pbsc[,4],pch=20,cex=2,
-     col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",
-                              as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
-points(pbsc[,4],pch=20,cex=2,col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",mycol))))
+par(mfrow=c(5,1),mar=c(0,4,0,0))
+plot(pbsc[,4],pch=20,cex=3,
+     col=ifelse(pbsc[,"all"]>0,"purple",as.factor(pbsc[,1])),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=4,bty="n",ylim=c(-.5,3.8),yaxs="i",ylab='')
+points(pbsc[,4],pch=20,cex=3,col=ifelse(pbsc[,"all"]>0,"purple",mycol))
 
-plot(pbsc[,5],pch=20,cex=2,
-     col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",
-                            as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
-points(pbsc[,5],pch=20,cex=2,col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",mycol))))
+plot(pbsc[,5],pch=20,cex=3,
+     col=ifelse(pbsc[,"all"]>0,"purple", as.factor(pbsc[,1])),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=4,bty="n",ylim=c(-.5,3.8),yaxs="i",ylab='')
+points(pbsc[,5],pch=20,cex=3,col=ifelse(pbsc[,"all"]>0,"purple",mycol))
 
-plot(pbsc[,6],pch=20,cex=2,
-     col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",
-                              as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
-points(pbsc[,6],pch=20,cex=2,col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",mycol))))
+plot(pbsc[,6],pch=20,cex=3,
+     col=ifelse(pbsc[,"all"]>0,"purple", as.factor(pbsc[,1])),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=4,bty="n",ylim=c(-.5,3.8),yaxs="i",ylab='')
+points(pbsc[,6],pch=20,cex=3,col=ifelse(pbsc[,"all"]>0,"purple",mycol))
 
-plot(pbsc[,7],pch=20,cex=2,
-     col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",
-                              as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
-points(pbsc[,7],pch=20,cex=2,col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",mycol))))
+plot(pbsc[,7],pch=20,cex=3,
+     col=ifelse(pbsc[,"all"]>0,"purple",as.factor(pbsc[,1])),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=4,bty="n",ylim=c(-.5,3.8),yaxs="i",ylab='')
+points(pbsc[,7],pch=20,cex=3,col=ifelse(pbsc[,"all"]>0,"purple",mycol))
 
-plot(pbsc[,8],pch=20,cex=2,
-     col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",
-                              as.factor(pbsc[,1])))),
-     xlab="",xaxt='n',cex.lab=1,cex.axis=3,bty="n",ylim=c(-.5,3.8),yaxs="i")
-points(pbsc[,8],pch=20,cex=2,col=ifelse(pbsc[,"all"]>0,"purple",
-                ifelse(pbsc[,"res"]>0,"black",
-                       ifelse(pbsc[,"interm"]>0,"firebrick2",mycol))))
+plot(pbsc[,8],pch=20,cex=3,
+     col=ifelse(pbsc[,"all"]>0,"purple",as.factor(pbsc[,1])),
+     xlab="",xaxt='n',cex.lab=1,cex.axis=4,bty="n",ylim=c(-.5,3.8),yaxs="i",ylab='')
+points(pbsc[,8],pch=20,cex=3,col=ifelse(pbsc[,"all"]>0,"purple",mycol))
 dev.off()
 ```
 
@@ -4284,7 +4271,7 @@ for(i in 1:length(nam)){
 ```
 
 
-## Plotting specific regions of the genome  - messed up for now, will have to re-do
+## Plotting specific regions
 
 ###Regions used
 
@@ -4382,7 +4369,7 @@ library(Rphylip)
 library(ape)
 library(stringr)
 vcf<-read.table("~/fgfh_post/data/fst/ahr1a2a_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
-sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+sexscore<-read.table("~/fgfh_post/scripts/depth/sexscore",header=TRUE)
 cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
 
@@ -4412,12 +4399,12 @@ popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
                                         ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
                                                ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
 popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
-               ifelse(grepl("VB",sexscore[,1]),"grey40",
-                      ifelse(grepl("PB",sexscore[,1]),"grey80",
-                             ifelse(grepl("SJ",sexscore[,1]),"red",
-                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
+               ifelse(grepl("VB",sexscore[,1]),"black",
+                      ifelse(grepl("PB",sexscore[,1]),"black",
+                             ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
+                                    ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
                                            ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
-                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
 
 pop2<-pop[keep]
 popcol2<-popcol[keep]
@@ -4432,14 +4419,14 @@ mds <- cmdscale(d)
 tr <- nj(d)
 
 #plotting tree
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/ahr1a2a_NJ.jpg",width=400,height=1000)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/ahr1a2a_NJ.jpg",width=400,height=1000)
 plot(tr,"unrooted",show.tip.label=FALSE)
 tiplabels(pch=21,col=popcol2,bg=popfill2,cex=1.2)
 legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
 dev.off()
 
 #plotting mds
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/ahr1a2a_MDS.jpg",width=1000,height=600)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/ahr1a2a_MDS.jpg",width=1000,height=600)
 par(mfrow=c(1,1),mar=c(3,3,0,0))
 plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
      bg=popfill2,bty='l')
@@ -4550,14 +4537,14 @@ popcol<-ifelse(grepl("BB",cname),"black",
                                     ifelse(grepl("SJ",cname),"firebrick2",
                                            ifelse(grepl("BNP",cname),"firebrick2",
                                                   ifelse(grepl("SP",cname),"cadetblue3",
-                                                         ifelse(grepl("GB",cname),"cadetblue3","seagreen3")))))))
+                                                         ifelse(grepl("GB",cname),"cadetblue3","orchid1")))))))
 popcol2<-ifelse(grepl("BB",cname),"black",
-                      ifelse(grepl("VB",cname),"grey40",
-                             ifelse(grepl("PB",cname),"grey80",
+                      ifelse(grepl("VB",cname),"black",
+                             ifelse(grepl("PB",cname),"black",
                                     ifelse(grepl("SJ",cname),"firebrick2",
-                                           ifelse(grepl("BNP",cname),"lightpink",
+                                           ifelse(grepl("BNP",cname),"firebrick2",
                                                   ifelse(grepl("SP",cname),"cadetblue3",
-                                                         ifelse(grepl("GB",cname),"cadetblue1","seagreen3")))))))              
+                                                         ifelse(grepl("GB",cname),"cadetblue1","orchid1")))))))              
 #popsym<-ifelse(grepl("d2",pop2),"23",
 #               ifelse(grepl("d1",pop2),"24",
 #                      ifelse(grepl("d0",pop2),"21","22")))
@@ -4567,7 +4554,7 @@ popcol2<-ifelse(grepl("BB",cname),"black",
 popcol2<-popcol[keep]
 
 popname<-c("BB","VB","PB","SJ","BNP","SP","GB","FH")
-popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3","seagreen3")
+popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3","orchid1")
 #distance matrix and nj tree
 d <- t(gt) %>% dist()
 #dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
@@ -4644,8 +4631,8 @@ library(magrittr)
 library(Rphylip)
 library(ape)
 library(stringr)
-vcf<-read.table("~/analysis/data/fst/arnt_chr8_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
-sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+vcf<-read.table("~/fgfh_post/data/fst/arnt_chr8_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/fgfh_post/scripts/depth/sexscore",header=TRUE)
 cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
 
@@ -4675,19 +4662,19 @@ popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
                                         ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
                                                ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
 popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
-               ifelse(grepl("VB",sexscore[,1]),"grey40",
-                      ifelse(grepl("PB",sexscore[,1]),"grey80",
-                             ifelse(grepl("SJ",sexscore[,1]),"red",
-                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
+               ifelse(grepl("VB",sexscore[,1]),"black",
+                      ifelse(grepl("PB",sexscore[,1]),"black",
+                             ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
+                                    ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
                                            ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
-                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
 
 pop2<-pop[keep]
 popcol2<-popcol[keep]
 popfill2<-popfill[keep]
 
 popname<-c("BB","VB","PB","SJ","BNP","SP","GB")
-popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3")
+popnamec<-c("black","black","black","firebrick2","firebrick2","cadetblue3","cadetblue3")
 #distance matrix and nj tree
 d <- t(gt) %>% dist()
 #dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
@@ -4695,14 +4682,14 @@ mds <- cmdscale(d)
 tr <- nj(d)
 
 #plotting tree
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr8_NJ.jpg",width=400,height=1000)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr8_NJ.jpg",width=400,height=1000)
 plot(tr,"unrooted",show.tip.label=FALSE)
 tiplabels(pch=21,col=popcol2,bg=popfill2,cex=1.2)
 legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
 dev.off()
 
 #plotting mds
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr8_MDS.jpg",width=1000,height=600)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/arnt_chr8_MDS.jpg",width=1000,height=600)
 par(mfrow=c(1,1),mar=c(3,3,0,0))
 plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
      bg=popfill2,bty='l')
@@ -4768,8 +4755,8 @@ library(magrittr)
 library(Rphylip)
 library(ape)
 library(stringr)
-vcf<-read.table("~/analysis/data/fst/aip_chr2_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
-sexscore<-read.table("~/analysis/scripts/depth/sexscore",header=TRUE)
+vcf<-read.table("~/fgfh_post/data/fst/aip_chr2_haplo.vcf.gz",stringsAsFactors = FALSE) #vcf that has been filtered out to only present one allele call per site per individual
+sexscore<-read.table("~/fgfh_post/scripts/depth/sexscore",header=TRUE)
 cname<-c(seq(1:9),as.character(sexscore[,1])) # colnames for the vcf
 colnames(vcf)<-cname
 
@@ -4799,19 +4786,19 @@ popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
                                         ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
                                                ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
 popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
-               ifelse(grepl("VB",sexscore[,1]),"grey40",
-                      ifelse(grepl("PB",sexscore[,1]),"grey80",
-                             ifelse(grepl("SJ",sexscore[,1]),"red",
-                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
+               ifelse(grepl("VB",sexscore[,1]),"black",
+                      ifelse(grepl("PB",sexscore[,1]),"black",
+                             ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
+                                    ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
                                            ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
-                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
 
 pop2<-pop[keep]
 popcol2<-popcol[keep]
 popfill2<-popfill[keep]
 
 popname<-c("BB","VB","PB","SJ","BNP","SP","GB")
-popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3")
+popnamec<-c("black","black","black","firebrick2","firebrick2","cadetblue3","cadetblue3")
 #distance matrix and nj tree
 d <- t(gt) %>% dist()
 #dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
@@ -4819,14 +4806,14 @@ mds <- cmdscale(d)
 tr <- nj(d)
 
 #plotting tree
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/aip_chr2_NJ.jpg",width=400,height=1000)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/aip_chr2_NJ.jpg",width=400,height=1000)
 plot(tr,"unrooted",show.tip.label=FALSE)
 tiplabels(pch=21,col=popcol2,bg=popfill2,cex=1.2)
 legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
 dev.off()
 
 #plotting mds
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/aip_chr2_MDS.jpg",width=1000,height=600)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/aip_chr2_MDS.jpg",width=1000,height=600)
 par(mfrow=c(1,1),mar=c(3,3,0,0))
 plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
      bg=popfill2,bty='l')
@@ -4928,19 +4915,19 @@ popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
                                         ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
                                                ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
 popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
-               ifelse(grepl("VB",sexscore[,1]),"grey40",
-                      ifelse(grepl("PB",sexscore[,1]),"grey80",
-                             ifelse(grepl("SJ",sexscore[,1]),"red",
-                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
+               ifelse(grepl("VB",sexscore[,1]),"black",
+                      ifelse(grepl("PB",sexscore[,1]),"black",
+                             ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
+                                    ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
                                            ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
-                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
 
 pop2<-pop[keep]
 popcol2<-popcol[keep]
 popfill2<-popfill[keep]
 
 popname<-c("BB","VB","PB","SJ","BNP","SP","GB")
-popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3")
+popnamec<-c("black","black","black","firebrick2","firebrick2","cadetblue3","cadetblue3")
 #distance matrix and nj tree
 d <- t(gt) %>% dist()
 #dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
@@ -5058,19 +5045,19 @@ popcol<-ifelse(grepl("BB",sexscore[,1]),"black",
                                         ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
                                                ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
 popfill<-ifelse(grepl("BB",sexscore[,1]),"black",
-               ifelse(grepl("VB",sexscore[,1]),"grey40",
-                      ifelse(grepl("PB",sexscore[,1]),"grey80",
-                             ifelse(grepl("SJ",sexscore[,1]),"red",
-                                    ifelse(grepl("BNP",sexscore[,1]),"lightpink",
+               ifelse(grepl("VB",sexscore[,1]),"black",
+                      ifelse(grepl("PB",sexscore[,1]),"black",
+                             ifelse(grepl("SJ",sexscore[,1]),"firebrick2",
+                                    ifelse(grepl("BNP",sexscore[,1]),"firebrick2",
                                            ifelse(grepl("SP",sexscore[,1]),"cadetblue3",
-                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue1","WRONG")))))))
+                                                  ifelse(grepl("GB",sexscore[,1]),"cadetblue3","WRONG")))))))
 
 pop2<-pop[keep]
 popcol2<-popcol[keep]
 popfill2<-popfill[keep]
 
 popname<-c("BB","VB","PB","SJ","BNP","SP","GB")
-popnamec<-c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3")
+popnamec<-c("black","black","black","firebrick2","firebrick2","cadetblue3","cadetblue3")
 #distance matrix and nj tree
 d <- t(gt) %>% dist()
 #dd<-as.dist(ultrametric(d)) #imputing data for missing values using ultrametric procedure
@@ -5412,10 +5399,9 @@ tiplabels(pch=20,col=popcol2,bg="white",cex=1.2)
 legend("topright",pch=20,cex=1.2,legend=popname,col=popnamec)
 
 #plotting mds
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/pbs_sharedout.jpg",width=1000,height=400)
-par(mfrow=c(1,1),mar=c(3,3,0,0))
-plot(mds,col=popcol2,cex=2,cex.axis=2,pch=21,
-     bg=popfill2,bty='l')
+jpeg(filename="~/Documents//UCD/Projects/Adaptation + Introgression/draft/images/pbs_sharedout.jpg",width=1000,height=400)
+par(mfrow=c(1,1),mar=c(4,5,1,1),mgp=c(2,2,5))
+plot(mds,col=popcol2,cex=4,cex.axis=4,pch=20,bty='l',xlab='',ylab='')
 box(bty='l',lwd=5)
 dev.off()
 #legend("topright",legend=c("BB","VB","PB","SJ","BNP","SP","GB"),col=c("black","black","black","firebrick1","firebrick1","cadetblue3","cadetblue3"),pch=21,cex=2,y.intersp=.5,bty='n',bg=c("black","grey40","grey80","firebrick1","lightpink","cadetblue1","cadetblue3"))
@@ -6247,7 +6233,38 @@ sels = readRDS("~/fgfh_post/data/intro_models/sels.RDS")
 times = readRDS("~/fgfh_post/data/intro_models/times.RDS")
 gs = readRDS("~/fgfh_post/data/intro_models/gs.RDS")
 
+selColor = "orchid1"
+timeColor = "black"
 
+maxCL_mig_stagSweeps.sels = sapply(1 : length(sels), function(i) max(unlist(cl_mig_stagSweeps[[i]])))
+maxCL_sv.sels = sapply(1 : length(sels), function(i) max(unlist(cl_sv[[i]])))
+
+cl_mig_stagSweeps_byTime = lapply(1 : length(times), function(time) lapply(1 : length(sels), function(sel) lapply(1 : length(gs), function(g) cl_mig_stagSweeps[[sel]][[g]][[time]])))
+maxCL_mig_stagSweeps.times = sapply(1 : length(times), function(i) max(unlist(cl_mig_stagSweeps_byTime[[i]])))
+
+selsAll_scaled = (sels[1:31] - sels[1]) / (sels[31] - sels[1]) #get all sels and put on (0,1) scale
+times20_scaled = (times[1:20] - times[1]) / (times[20] - times[1]) #get last times and put on (0,1) scale
+
+#times21_scaled = (times[1:21] - times[1]) / (times[21] - times[1]) #get last times and put on (0,1) scale
+
+yMin = min(c(maxCL_mig_stagSweeps.sels[1:31], maxCL_sv.sels[1:31]) - cl_neutral)
+yMax = max(c(maxCL_mig_stagSweeps.sels[1:31], maxCL_sv.sels[1:31]) - cl_neutral)
+
+jpeg("~/Documents/UCD/Projects/Adaptation + Introgression/review/intro_models.jpeg",width=600,height=400)
+par(oma = c(1,1.5,2,1.5),mar=c(3,3,3,3),mgp=c(1,2.5,0))
+plot(selsAll_scaled, maxCL_mig_stagSweeps.sels[1:31] - cl_neutral, cex.axis = 3, ylim = c(yMin, yMax), type = "l", col = selColor, xlim = c(0, 1), yaxt = "none", xaxt = "none", xlab = "", ylab =  "", lwd = 6, cex.lab = 2)
+box(lwd=6)
+lines(selsAll_scaled, maxCL_sv.sels[1:31] - cl_neutral, col = selColor, lwd = 6, lty = 2)
+axis(1, at = seq(0, 1, length.out = 5), labels = seq(0, 1, length.out = 5), col = selColor, lwd = 6, cex.axis = 3)
+lines(times20_scaled, maxCL_mig_stagSweeps.times[1:20] - cl_neutral, col = timeColor, lwd = 6, lty = 1)
+axis(3, lwd = 6, at = seq(0, 1, length.out = 6), labels = seq(times[1], times[20], length.out = 6), col = timeColor, cex.axis = 3)
+axis(2, at = (0:5)*10^5, labels = (0:5), cex.axis = 3, las = 1)
+#legend("bottomright", lty = c(1,2), legend = c("Introgression", "ILS"), lwd = 3)
+#mtext(line = 3, side = 1, text = "Selection coefficient", cex = 1.3)
+#mtext(line = 3, side = 3, text = "Generations to introgression", cex = 1.1)
+dev.off() 
+
+### Old zoomed in version
 maxCL_mig_stagSweeps.sels = sapply(1 : length(sels), function(i) max(unlist(cl_mig_stagSweeps[[i]])))
 maxCL_sv.sels = sapply(1 : length(sels), function(i) max(unlist(cl_sv[[i]])))
 
@@ -6318,14 +6335,14 @@ dxy4$chr<-factor(dxy4$chr,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","ch
                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
                                      "chr20","chr21","chr22","chr23","chr24"))
 
-tiff("~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/introgression_dxy.tiff",width=1200,height=600)
+tiff("~/Documents/UCD/Projects/Adaptation + Introgression/review/introgression_dxy.tiff",width=1400,height=600)
 palette(c("grey40","grey80"))
 par(mfrow=c(3,1),mar=c(0,4,0,0))
-plot(dxy4[,"BB"],pch=20,cex=1,col=ifelse(dxy4[,"BB"]<col[2],"seagreen3",as.factor(dxy4[,"chr"])),bty='n',
+plot(dxy4[,"BB"],pch=20,cex=2,col=ifelse(dxy4[,"BB"]<col[2],"orchid1",as.factor(dxy4[,"chr"])),bty='n',
      xlab="",ylab="",xaxt='n',ylim=c(-.0271,.01),cex.axis=4)
-plot(dxy4[,"VB"],pch=20,cex=1,col=ifelse(dxy4[,"VB"]<col[1],"seagreen3",as.factor(dxy4[,"chr"])),bty='n',
+plot(dxy4[,"VB"],pch=20,cex=2,col=ifelse(dxy4[,"VB"]<col[1],"orchid1",as.factor(dxy4[,"chr"])),bty='n',
      xlab="",ylab="",xaxt='n',ylim=c(-.0271,.01),cex.axis=4)
-plot(dxy4[,"PB"],pch=20,cex=1,col=ifelse(dxy4[,"PB"]<col[3],"seagreen3",as.factor(dxy4[,"chr"])),bty='n',
+plot(dxy4[,"PB"],pch=20,cex=2,col=ifelse(dxy4[,"PB"]<col[3],"orchid1",as.factor(dxy4[,"chr"])),bty='n',
      xlab="",ylab="",xaxt='n',ylim=c(-.0271,.01),cex.axis=4)
 dev.off()
 
@@ -6346,9 +6363,9 @@ library(Rphylip)
 library(ape)
 library(stringr)
 
-load("~/analysis/scripts/introgression/AHR_elias_plotdata.Rdata")
+load("~/fgfh_post/scripts/introgression/AHR_elias_plotdata.Rdata")
 names<-row.names(mds)
-popcol<-ifelse(grepl("-",names),"seagreen3",
+popcol<-ifelse(grepl("-",names),"orchid1",
                ifelse(grepl("BB",names),"black",
                       ifelse(grepl("VB",names),"black",
                              ifelse(grepl("PB",names),"black",
@@ -6356,14 +6373,14 @@ popcol<-ifelse(grepl("-",names),"seagreen3",
                                            ifelse(grepl("BNP",names),"firebrick2",
                                                   ifelse(grepl("SP",names),"cadetblue3",
                                                          ifelse(grepl("GB",names),"cadetblue3","WRONG"))))))))
-popcol2<-ifelse(grepl("-",names),"seagreen3",
+popcol2<-ifelse(grepl("-",names),"orchid1",
                ifelse(grepl("BB",names),"black",
-                      ifelse(grepl("VB",names),"grey40",
-                             ifelse(grepl("PB",names),"grey80",
+                      ifelse(grepl("VB",names),"black",
+                             ifelse(grepl("PB",names),"black",
                                     ifelse(grepl("SJ",names),"firebrick2",
-                                           ifelse(grepl("BNP",names),"lightpink",
+                                           ifelse(grepl("BNP",names),"firebrick2",
                                                   ifelse(grepl("SP",names),"cadetblue3",
-                                                         ifelse(grepl("GB",names),"cadetblue1","WRONG"))))))))               
+                                                         ifelse(grepl("GB",names),"cadetblue3","WRONG"))))))))               
 popsym<-ifelse(grepl("d2",pop2),"23",
                ifelse(grepl("d1",pop2),"24",
                       ifelse(grepl("d0",pop2),"21","22")))
@@ -6373,8 +6390,9 @@ plot(tr,type="unrooted",show.tip.label=FALSE)
 tiplabels(pch=as.numeric(popsym),col=popcol,bg=popcol2,cex=1.5)
 
 #plotting MDS
-tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/introgression_mds.tiff",width=650,height=600)
-plot(mds,col=popcol,cex=2,cex.axis=2,pch=as.numeric(popsym),
+tiff("~/Documents/UCD/Projects/Adaptation + Introgression/review/introgression_mds.tiff",width=650,height=600)
+par(mgp=c(2,2,5))
+plot(mds,col=popcol,cex=2,cex.axis=2.5,pch=as.numeric(popsym),
      bg=popcol2,bty='n',xlab='',ylab='')
 box(bty='l',lwd=5)
 dev.off()
@@ -6386,7 +6404,7 @@ dev.off()
 ```{r}
 library('ggplot2')
 library('reshape')
-block<-read.table("~/analysis/data/introgression/grandis_int_blocks.txt",sep='\t',head=TRUE) #reading in introgression blocks
+block<-read.table("~/fgfh_post/data/introgression/grandis_int_blocks.txt",sep='\t',head=TRUE) #reading in introgression blocks
 block[,"sam"]<-sub("SJSP","SJ",block[,"sam"])
 subw<-block[,"count"]>4 #filtering regions with less than 4 outliers present
 block2<-block[subw,]
@@ -6412,16 +6430,16 @@ counts2<-melt(counts)
 colnames(counts2)<-c("size","pop","count")
 counts2$pop<-factor(counts2$pop,levels=c("BB","VB","PB","SJ","BNP","SP","GB"))
 
-tiff("~/backup/UCD/Projects/Adaptation + Introgression/draft/images/introgression_size.tiff",width=700,height=400)
+tiff("~/Documents/UCD/Projects/Adaptation + Introgression/review/introgression_size.tiff",width=700,height=400)
 ggplot(counts2,
        aes(x=size/1000000,y=count,by=pop,color=pop))+
 #  geom_line(aes(col=pop),lwd=3)+
   stat_smooth(aes(y=count,x=size/1000000),method=lm,formula=y~poly(x,5),se=FALSE,lwd=3)+
   theme_classic()+
-  scale_color_manual(values=c("black","grey40","grey80","firebrick2","lightpink","cadetblue3","cadetblue1"))+
+  scale_color_manual(values=c("black","black","black","firebrick2","firebrick2","cadetblue3","cadetblue3"))+
   theme(axis.line=element_line(size=2),
-        axis.text.x=element_text(size=20),
-        axis.text.y=element_text(size=20),
+        axis.text.x=element_text(size=30),
+        axis.text.y=element_text(size=30),
         axis.title.x=element_blank(),
         axis.title.y=element_blank())
 dev.off()
