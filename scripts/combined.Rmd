@@ -3147,7 +3147,7 @@ while(length(line <- readLines(f,n=1)) > 0) {
 ###Calculating Hudson's Fst from pi and dxy
 
 ```{r}
-load("~/analysis/data/comparison/noah_stats.RData") #loading data produced from individual SNP call pi and dxy calculations
+load("~/fgfh_post/data/comparison/noah_stats.RData") #loading data produced from individual SNP call pi and dxy calculations
 
 pops<-c("BB","VB","PB","SJSP","BNP","GB","SP") #creating a vector of names for our populations
 
@@ -3195,7 +3195,7 @@ allpbs <- cbind(
   BNP = bnppbs[])
 
 write.table(allpbs,
-            file="~/analysis/data/fst/intermpbs20kb.bed",
+            file="~/fgfh_post/data/fst/intermpbs20kb.bed",
             sep = "\t", 
             quote = FALSE,
             row.names = FALSE,
@@ -3205,14 +3205,14 @@ sjc<-quantile(sjpbs[],prob=.99,na.rm=TRUE)
 bnpc<-quantile(bnppbs[],prob=.99,na.rm=TRUE)
 
 all<-sjpbs[]>sjc & bnppbs[]>bnpc
-write.table(na.omit(allpbs[all,1:3]),"~/analysis/data/fst/interm_pbs_shared.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
+write.table(na.omit(allpbs[all,1:3]),"~/fgfh_post/data/fst/interm_pbs_shared.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep='\t')
 #source("http://bioconductor.org/biocLite.R")
 #biocLite()
 library("rtracklayer")
 
-bed1=import("~/analysis/data/fst/intermpbs20kb.bed")
+bed1=import("~/fgfh_post/data/fst/intermpbs20kb.bed")
 
-bedall=import("~/analysis/data/fst/interm_pbs_shared.bed")
+bedall=import("~/fgfh_post/data/fst/interm_pbs_shared.bed")
 bed1overlall=bed1[bed1 %over% bedall]
 hitsall<-findOverlaps(bedall,bed1)
 allhit<-subjectHits(hitsall)
@@ -3225,11 +3225,11 @@ allpbs[allhit,"all"]<-allpbs[allhit,"all"]+1
 allpbsc<-allpbs %>% 
   filter(str_detect(Chr,"chr"))
 
-jpeg(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/intermediates.jpeg",width=1000,height=800)
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/review/intermediates.jpeg",width=1200,height=800)
 palette(c("grey50","grey90"))
 par(mfrow=c(2,1),mar=c(0,3,0,0))
-plot(allpbsc[,"sj"],pch=20,cex=.5,col=ifelse(allpbs[,"all"]>0,"red",sort(as.factor(allpbs[,1]))),ylim=c(-1,1),xaxt='n')
-plot(allpbsc[,"bnp"],pch=20,cex=.5,col=ifelse(allpbs[,"all"]>0,"red",sort(as.factor(allpbs[,1]))),ylim=c(-1,1),xaxt='n')
+plot(allpbsc[,"sj"],pch=20,cex=3,col=ifelse(allpbs[,"all"]>0,"red",sort(as.factor(allpbs[,1]))),ylim=c(-1.3,1.3),xaxt='n',cex.axis=2)
+plot(allpbsc[,"bnp"],pch=20,cex=3,col=ifelse(allpbs[,"all"]>0,"red",sort(as.factor(allpbs[,1]))),ylim=c(-1.3,1.3),xaxt='n',cex.axis=2)
 dev.off()
 ```
 
@@ -3437,12 +3437,12 @@ awk '$4>3.231165 || $5>2.609672  || $6>3.752385 || $7>3.139116 || $8>2.731015' |
 ## Now let's plot up some figures with the merged z statistics
 
 ```{r}
-zpbsn<-read.table("~/analysis/data/dfst/zpbs_20kb",sep='\t',header=FALSE)
+zpbsn<-read.table("~/fgfh_post/data/dfst/zpbs_20kb",sep='\t',header=FALSE)
 zpbs<-zpbsn %>% 
   filter(str_detect(V1,"chr")) #filtering only chromosome mapped regions
 
 #using data from the outlier regions in order to select regions of interest that are shared, res unique or interm unique
-pbs_out_temp<-read.table("~/analysis/data/dfst/zregions_max_20kb.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
+pbs_out_temp<-read.table("~/fgfh_post/data/dfst/zregions_max_20kb.bed",stringsAsFactors = FALSE) #loads a pbs vector with windows merged within 50kb of each other and with max and windows count statistics
 names<-c("Scaf","start","end","BBmax","BBcount","VBmax","VBcount","PBmax","PBcount","SJmax","SJcount","BNPmax","BNPcount") #naming columns
 colnames(pbs_out_temp)<-names
 
@@ -3452,29 +3452,29 @@ all<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]
 res<-pbs_out[,4]>col[1] & pbs_out[,6]>col[2] & pbs_out[,8]>col[3] & pbs_out[,10]<col[4] & pbs_out[,12]<col[5]
 interm<-pbs_out[,4]<col[1] & pbs_out[,6]<col[2] & pbs_out[,8]<col[3] & pbs_out[,10]>col[4] & pbs_out[,12]>col[5]
 
-write.table(zpbs[,1:3],"~/analysis/data/dfst/zpbs.bed",row.names = FALSE,col.names = FALSE,quote=FALSE, sep="\t") #saving background genomic regions in bed format
-write.table(pbs_out[all,1:3],"~/analysis/data/dfst/pbs_regions_sharedall.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t") #saving shared regions to look at overlap with the 1kb regions
-write.table(pbs_out[res,1:3],"~/analysis/data/dfst/pbs_regions_sharedres.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t")
-write.table(pbs_out[interm,1:3],"~/analysis/data/dfst/pbs_regions_sharedinterm.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t")
+write.table(zpbs[,1:3],"~/fgfh_post/data/dfst/zpbs.bed",row.names = FALSE,col.names = FALSE,quote=FALSE, sep="\t") #saving background genomic regions in bed format
+write.table(pbs_out[all,1:3],"~/fgfh_post/data/dfst/pbs_regions_sharedall.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t") #saving shared regions to look at overlap with the 1kb regions
+write.table(pbs_out[res,1:3],"~/fgfh_post/data/dfst/pbs_regions_sharedres.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t")
+write.table(pbs_out[interm,1:3],"~/fgfh_post/data/dfst/pbs_regions_sharedinterm.bed",row.names = FALSE,col.names = FALSE,quote = FALSE,sep="\t")
 
 #only run source() and biocLite() if you don't have them installed
 # source("http://bioconductor.org/biocLite.R")
 # biocLite()
 library("rtracklayer")
 
-bed1=import("~/analysis/data/dfst/zpbs.bed")
+bed1=import("~/fgfh_post/data/dfst/zpbs.bed")
 
-bedall=import("~/analysis/data/dfst/pbs_regions_sharedall.bed")
+bedall=import("~/fgfh_post/data/dfst/pbs_regions_sharedall.bed")
 bed1overlall=bed1[bed1 %over% bedall]
 hitsall<-findOverlaps(bedall,bed1)
 allhit<-subjectHits(hitsall)
 
-bedres=import("~/analysis/data/dfst/pbs_regions_sharedres.bed")
+bedres=import("~/fgfh_post/data/dfst/pbs_regions_sharedres.bed")
 bed1overlres=bed1[bed1 %over% bedres]
 hitsres<-findOverlaps(bedres,bed1)
 reshit<-subjectHits(hitsres)
 
-bedinterm=import("~/analysis/data/dfst/pbs_regions_sharedinterm.bed")
+bedinterm=import("~/fgfh_post/data/dfst/pbs_regions_sharedinterm.bed")
 bed1overlinterm=bed1[bed1 %over% bedinterm]
 hitsinterm<-findOverlaps(bedinterm,bed1)
 intermhit<-subjectHits(hitsinterm)
@@ -3486,42 +3486,55 @@ zpbs[allhit,"all"]<-zpbs[allhit,"all"]+1
 zpbs[reshit,"res"]<-zpbs[reshit,"res"]+1
 zpbs[intermhit,"interm"]<-zpbs[intermhit,"interm"]+1
 
+# Color function ----
+t_col <- function(color, percent = 50, name = NULL) {
+#	  color = color name
+#	percent = % transparency
+#	   name = an optional name for the color
+## Get RGB values for named color
+  rgb.val <- col2rgb(color)
+## Make new color using input color as base and alpha set by transparency
+  t.col <- rgb(rgb.val[1], rgb.val[2], rgb.val[3],
+               max = 255,
+               alpha = (100-percent)*255/100,
+               names = name)
+## Save the color
+  invisible(t.col)
+
+}
+mycol <- t_col("pink", perc = 100, name = "lt.pink")
+
 zpbs$Scaf<-factor(zpbs$Scaf,levels=c("chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10",
                                      "chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19",
                                      "chr20","chr21","chr22","chr23","chr24")) #factors are sometimes not sorted together with it, so sorting them separately
-tiff(filename="~/backup/UCD/Projects/Adaptation + Introgression/draft/images/zpbs.jpeg",width=1200,height=800)
+tiff(filename="~/Documents//UCD/Projects/Adaptation + Introgression/review/zpbs.jpeg",width=1200,height=800)
 
 palette(c("grey50","grey90"))
 par(mfrow=c(5,1),mar=c(0,3,0,0))
-plot(zpbs[,4],pch=20,cex=1.2,
-     col=ifelse(zpbs[,"all"]>0,"purple",
-                ifelse(zpbs[,"res"]>0,"black",
-                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+plot(zpbs[,4],pch=20,cex=3,
+     col=ifelse(zpbs[,"all"]>0,"purple",sort(as.factor(zpbs[,1]))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+points(zpbs[,4],pch=20,cex=3,col=ifelse(zpbs[,"all"]>0,"purple",mycol))
 
-plot(zpbs[,5],pch=20,cex=1.2,
-     col=ifelse(zpbs[,"all"]>0,"purple",
-                ifelse(zpbs[,"res"]>0,"black",
-                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+plot(zpbs[,5],pch=20,cex=3,
+     col=ifelse(zpbs[,"all"]>0,"purple",sort(as.factor(zpbs[,1]))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+points(zpbs[,5],pch=20,cex=3,col=ifelse(zpbs[,"all"]>0,"purple",mycol))
 
-plot(zpbs[,6],pch=20,cex=1.2,
-     col=ifelse(zpbs[,"all"]>0,"purple",
-                ifelse(zpbs[,"res"]>0,"black",
-                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+plot(zpbs[,6],pch=20,cex=3,
+     col=ifelse(zpbs[,"all"]>0,"purple",sort(as.factor(zpbs[,1]))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+points(zpbs[,6],pch=20,cex=3,col=ifelse(zpbs[,"all"]>0,"purple",mycol))
 
-plot(zpbs[,7],pch=20,cex=1.2,
-     col=ifelse(zpbs[,"all"]>0,"purple",
-                ifelse(zpbs[,"res"]>0,"black",
-                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+plot(zpbs[,7],pch=20,cex=3,
+     col=ifelse(zpbs[,"all"]>0,"purple",sort(as.factor(zpbs[,1]))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+points(zpbs[,7],pch=20,cex=3,col=ifelse(zpbs[,"all"]>0,"purple",mycol))
 
-plot(zpbs[,8],pch=20,cex=1.2,
-     col=ifelse(zpbs[,"all"]>0,"purple",
-                ifelse(zpbs[,"res"]>0,"black",
-                       ifelse(zpbs[,"interm"]>0,"firebrick2",sort(as.factor(zpbs[,1]))))),
+plot(zpbs[,8],pch=20,cex=3,
+     col=ifelse(zpbs[,"all"]>0,"purple",sort(as.factor(zpbs[,1]))),
      xlab="",xaxt='n',cex.lab=1,cex.axis=2.2,bty="n",ylim=c(-40,40),yaxs="i")
+points(zpbs[,8],pch=20,cex=3,col=ifelse(zpbs[,"all"]>0,"purple",mycol))
 
 dev.off()
 
@@ -4323,10 +4336,10 @@ subsmooth <- function(vec,by=10,width=11){
 ###Plotting CHR1/AHR region------------
 pbsc1<-pbsc %>% filter(str_detect(Scaf,"\\bchr1\\b"))
 
-jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/Ahr1a2a.jpg",width=1000,height=800)
-par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/review/Ahr1a2a.jpg",width=1000,height=800)
+par(mfrow=c(5,1),mar=c(4,6,0,0),mgp=c(1,2,0))
 for(i in 1:5){
-  plot(subsmooth(pbsc1[1:5000,i+3]),pch=20,cex=.8,ylim=c(0,1.8),bty='l',cex.axis=2,ylab='',xlab='')
+  plot(subsmooth(pbsc1[1:5000,i+3]),pch=20,cex=.8,ylim=c(0,1.8),bty='l',cex.axis=4,ylab='',xlab='')
   box(bty='l',lwd=3)
   abline(v=c(70,77),col="red",lty=2,lwd=4)
   abline(v=c(79,84),col="purple",lty=2,lwd=4)
@@ -4453,11 +4466,11 @@ legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
 
 pbsc10<-pbsc %>% filter(str_detect(Scaf,"\\bchr10\\b"))
 
-jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/draft/images/Arnt_chr10.jpg",width=1000,height=800)
-par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/review/Arnt_chr10.jpg",width=1000,height=800)
+par(mfrow=c(5,1),mar=c(4,6,0,0),mgp=c(1,2,0))
 
 for(i in 1:5){
-  plot(pbsc10[20000:30000,i+3],pch=20,cex=.5,ylim=c(0,.6),bty='l',cex.axis=2,ylab='',xlab='', col="black")
+  plot(pbsc10[20000:30000,i+3],pch=20,cex=.5,ylim=c(0,.6),bty='l',cex.axis=4,ylab='',xlab='', col="black")
   box(bty='l',lwd=3)
   abline(v=c(3940,3965),col="red",lty=2,lwd=1.5)
 }
@@ -4585,15 +4598,18 @@ legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
 ###ARNT Chr8 outlier
 ```{r}
 #plotting ARNT chr8----
+
+
 pbsc8<-pbsc %>% filter(str_detect(Scaf,"\\bchr8\\b"))
 
-par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
-
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/review/Arnt_chr8.jpg",width=1000,height=800)
+par(mfrow=c(5,1),mar=c(4,6,0,0),mgp=c(1,2,0))
 for(i in 1:5){
-  plot(subsmooth(pbsc8[14000:18000,i+3]),pch=20,cex=.5,ylim=c(0,.5),bty='l',cex.axis=2,ylab='',xlab='')
+  plot(subsmooth(pbsc8[14000:18000,i+3]),pch=20,cex=.5,ylim=c(0,.5),bty='l',cex.axis=4,ylab='',xlab='')
   box(bty='l',lwd=3)
   abline(v=c(170,173),col="red",lty=2,lwd=1.5)
 }
+dev.off()
 
 ```
 
@@ -4711,14 +4727,15 @@ legend("topleft",pch=20,cex=.8,legend=popname,col=popnamec,y.intersp=.7)
 #plotting AIP chr2----
 pbsc2<-pbsc %>% filter(str_detect(Scaf,"\\bchr2\\b"))
 
-par(mfrow=c(5,1),mar=c(3,3,0,0),mgp=c(1,1,0))
+jpeg(filename="~/Documents/UCD/Projects/Adaptation + Introgression/review/Arnt_chr2.jpg",width=1000,height=800)
+par(mfrow=c(5,1),mar=c(4,6,0,0),mgp=c(1,2,0))
 
 for(i in 1:5){
-  plot(subsmooth(pbsc2[23000:26000,i+3]),pch=20,cex=.5,ylim=c(0,.4),bty='l',cex.axis=2,ylab='',xlab='')
+  plot(subsmooth(pbsc2[23000:26000,i+3]),pch=20,cex=.5,ylim=c(0,.4),bty='l',cex.axis=4,ylab='',xlab='')
   box(bty='l',lwd=3)
   abline(v=c(140,142),col="red",lty=2,lwd=1.5)
 }
-
+dev.off()
 ```
 
 ```{bash}
